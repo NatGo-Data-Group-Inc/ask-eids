@@ -1,0 +1,6 @@
+{
+  "anomaly_score": true,
+  "waste_driver": true,
+  "recommended_action": true,
+  "pmo_summary_line": true
+}

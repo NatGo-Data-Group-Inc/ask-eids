@@ -1,0 +1,25 @@
+{
+  "name": "ask-eids-phase1-cost-anomaly-flow",
+  "description": "Phase 1 orchestration-only Bedrock scaffold for synthetic CUR validation",
+  "nodes": [
+    {
+      "id": "ingest-cur",
+      "type": "lambda",
+      "purpose": "Load parquet and optional sandbox overlays"
+    },
+    {
+      "id": "reason-anomalies",
+      "type": "prompt",
+      "purpose": "Invoke Ask EIDS-promoted anomaly narrative prompt"
+    },
+    {
+      "id": "publish-report",
+      "type": "lambda",
+      "purpose": "Write markdown and JSON artifacts for PMO review"
+    }
+  ],
+  "handoff_contract": {
+    "ask_eids_role": "Reasoning over curated cost findings and generating narratives",
+    "bedrock_role": "Prompt lifecycle, orchestration, and governed execution"
+  }
+}
