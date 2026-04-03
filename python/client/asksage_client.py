@@ -40,13 +40,13 @@ That means:
 Usage examples
 --------------
 Run with defaults:
-    python chatgenai.py
+    python -m python.client.asksage_client
 
 Run and stage files before first prompt:
-    python chatgenai.py --attach-files /path/spec.md /path/errors.log
+    python -m python.client.asksage_client --attach-files /path/spec.md /path/errors.log
 
 Override model:
-    python chatgenai.py --model gpt-4.1
+    python -m python.client.asksage_client --model gpt-4.1
 
 Useful slash commands inside the client:
     /help
@@ -69,11 +69,12 @@ import os
 import sys
 import textwrap
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional
 
-from asksageclient import AskSageClient
+if TYPE_CHECKING:
+    from asksageclient import AskSageClient
 
 # Optional readline support.
 # On most Linux systems this gives you:
@@ -107,7 +108,7 @@ class ChatTurn:
     role: str
     content: str
     timestamp: str = field(
-        default_factory=lambda: datetime.utcnow().isoformat(timespec="seconds") + "Z"
+        default_factory=lambda: datetime.now(UTC).isoformat(timespec="seconds").replace("+00:00", "Z")
     )
 
 
@@ -148,6 +149,7 @@ def save_readline_history(history_path: str) -> None:
         return
 
     try:
+        Path(history_path).expanduser().parent.mkdir(parents=True, exist_ok=True)
         readline.write_history_file(history_path)
     except Exception:
         pass
@@ -164,7 +166,7 @@ class AskSageInteractiveChat:
 
     def __init__(
         self,
-        client: AskSageClient,
+        client: Any,
         model: str,
         allowed_models: Optional[List[str]] = None,
         system_prompt: str = "",
@@ -239,8 +241,10 @@ class AskSageInteractiveChat:
 
     def save_transcript(self, path: str) -> None:
         """Save all relevant local session state to JSON."""
+        destination = Path(path).expanduser()
+        destination.parent.mkdir(parents=True, exist_ok=True)
         payload = {
-            "saved_at": datetime.utcnow().isoformat(timespec="seconds") + "Z",
+            "saved_at": datetime.now(UTC).isoformat(timespec="seconds").replace("+00:00", "Z"),
             "model": self.model,
             "allowed_models": self.allowed_models,
             "system_prompt": self.system_prompt,
@@ -256,12 +260,12 @@ class AskSageInteractiveChat:
             "attached_files": [item.__dict__ for item in self.attached_files],
         }
 
-        with open(path, "w", encoding="utf-8") as outfile:
+        with destination.open("w", encoding="utf-8") as outfile:
             json.dump(payload, outfile, indent=2)
 
     def load_transcript(self, path: str) -> None:
         """Load a previously saved local session JSON file."""
-        with open(path, "r", encoding="utf-8") as infile:
+        with Path(path).expanduser().open("r", encoding="utf-8") as infile:
             payload = json.load(infile)
 
         loaded_model = payload.get("model", self.model)
@@ -553,17 +557,44 @@ class AskSageInteractiveChat:
         """
         Extract assistant text from a defensive set of possible response shapes.
         """
+        def extract(value: Any) -> Optional[str]:
+            if value is None:
+                return None
+
+            if isinstance(value, str):
+                return value
+
+            if isinstance(value, list):
+                parts: List[str] = []
+                for item in value:
+                    nested = extract(item)
+                    if nested:
+                        parts.append(nested)
+                return "\n".join(parts) if parts else None
+
+            if isinstance(value, dict):
+                for key in ("message", "response", "content", "answer", "text"):
+                    nested = extract(value.get(key))
+                    if nested:
+                        return nested
+
+                for key in ("choices", "messages", "parts", "delta"):
+                    nested = extract(value.get(key))
+                    if nested:
+                        return nested
+
+                return None
+
+            return str(value)
+
         if response is None:
             return "[No response returned]"
 
-        if isinstance(response, str):
-            return response
+        extracted = extract(response)
+        if extracted:
+            return extracted
 
-        if isinstance(response, dict):
-            for key in ("message", "response", "content", "answer", "text"):
-                value = response.get(key)
-                if isinstance(value, str):
-                    return value
+        if isinstance(response, (dict, list)):
             return json.dumps(response, indent=2)
 
         return str(response)
@@ -938,10 +969,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--ca-bundle",
-        default=os.getenv(
-            "ASKSAGE_CA_BUNDLE",
-            "/efs/di/tjansto/.ssh/asksage_ca_bundle.pem",
-        ),
+        default=os.getenv("ASKSAGE_CA_BUNDLE", ""),
         help="Path to CA bundle PEM.",
     )
 
@@ -960,7 +988,7 @@ def parse_args() -> argparse.Namespace:
         "--autosave",
         default=os.getenv(
             "ASKSAGE_AUTOSAVE",
-            "/efs/di/tjansto/logs/asksage_chat_session.json",
+            str(Path.home() / ".asksage" / "asksage_chat_session.json"),
         ),
         help="Autosave transcript JSON path.",
     )
@@ -1026,17 +1054,30 @@ def main() -> int:
     # Configure persistent readline history if available.
     history_path = os.getenv(
         "ASKSAGE_READLINE_HISTORY",
-        "/efs/di/tjansto/logs/asksage_readline_history.txt",
+        str(Path.home() / ".asksage" / "asksage_readline_history.txt"),
     )
     setup_readline_history(history_path)
 
-    client = AskSageClient(
-        email=args.email,
-        api_key=args.api_key,
-        user_base_url=args.user_base_url,
-        server_base_url=args.server_base_url,
-        path_to_CA_Bundle=args.ca_bundle,
-    )
+    try:
+        from asksageclient import AskSageClient
+    except ImportError as exc:
+        print(
+            "asksageclient is not installed. Install it in this environment before "
+            "running the interactive client.",
+            file=sys.stderr,
+        )
+        raise SystemExit(2) from exc
+
+    client_kwargs = {
+        "email": args.email,
+        "api_key": args.api_key,
+        "user_base_url": args.user_base_url,
+        "server_base_url": args.server_base_url,
+    }
+    if args.ca_bundle:
+        client_kwargs["path_to_CA_Bundle"] = args.ca_bundle
+
+    client = AskSageClient(**client_kwargs)
 
     chat = AskSageInteractiveChat(
         client=client,
