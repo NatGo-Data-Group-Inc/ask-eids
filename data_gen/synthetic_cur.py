@@ -41,6 +41,10 @@ SERVICE_PROFILES: tuple[ServiceProfile, ...] = (
     ServiceProfile("AmazonBedrock", "InputTokens", "InvokeModel", "1K-Tokens", 0.003, 0.018),
 )
 
+SERVICE_PROFILE_BY_NAME = {
+    profile.service: profile for profile in SERVICE_PROFILES
+}
+
 
 SCENARIO_DEFAULT = {
     "scenario": "baseline_operations",
@@ -110,6 +114,20 @@ def random_resource_id(service: str, index: int) -> str:
     return f"{prefix}-{index:05d}"
 
 
+def apply_service_profile(row: dict, profile: ServiceProfile, index: int) -> dict:
+    row.update(
+        {
+            "line_item_product_code": profile.service,
+            "line_item_usage_type": profile.usage_type,
+            "line_item_operation": profile.operation,
+            "pricing_unit": profile.unit,
+            "resource_id": random_resource_id(profile.service, index),
+            "service": profile.service,
+        }
+    )
+    return row
+
+
 def build_baseline_row(index: int, rng: random.Random) -> dict:
     profile = rng.choice(SERVICE_PROFILES)
     usage_amount = round(rng.uniform(1.0, 72.0), 2)
@@ -145,15 +163,15 @@ def build_baseline_row(index: int, rng: random.Random) -> dict:
 
 def inject_scenario(row: dict, rng: random.Random, scenario_name: str) -> dict:
     scenario = SCENARIO_LIBRARY[scenario_name]
+    profile = SERVICE_PROFILE_BY_NAME[scenario["service"]]
     usage_low, usage_high = scenario["usage_hours_range"]
     cost_low, cost_high = scenario["cost_range"]
     usage_hours = round(rng.uniform(usage_low, usage_high), 2)
     cost = round(rng.uniform(cost_low, cost_high), 2)
 
+    row = apply_service_profile(row, profile, int(str(row["resource_id"]).split("-")[-1]))
     row.update(
         {
-            "line_item_product_code": scenario["service"],
-            "service": scenario["service"],
             "scenario": scenario_name,
             "technical_debt_event": scenario["technical_debt_event"],
             "anomaly_score": scenario["anomaly_score"],
@@ -177,10 +195,9 @@ def generate_rows(row_count: int, seed: int = 42) -> list[dict]:
     for index in range(row_count):
         row = build_baseline_row(index, rng)
         if index == 0:
+            row = apply_service_profile(row, SERVICE_PROFILE_BY_NAME["AmazonEMR"], index)
             row.update(
                 {
-                    "service": "AmazonEMR",
-                    "line_item_product_code": "AmazonEMR",
                     "region": "us-gov-west-1",
                     "product_region": "us-gov-west-1",
                     "usage_hours": 72,

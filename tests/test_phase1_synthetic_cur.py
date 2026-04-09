@@ -7,12 +7,21 @@ from pathlib import Path
 import pyarrow.parquet as pq
 
 from data_gen.sandbox_overlay import apply_overlay
-from data_gen.synthetic_cur import generate_rows, run, validate_against_sample
+from data_gen.synthetic_cur import (
+    SERVICE_PROFILE_BY_NAME,
+    generate_rows,
+    run,
+    validate_against_sample,
+)
 
 
 def test_seeded_row_matches_sample_expectations() -> None:
     rows = generate_rows(10, seed=42)
     assert rows[0]["service"] == "AmazonEMR"
+    assert rows[0]["line_item_usage_type"] == "EMR-InstanceUsage"
+    assert rows[0]["line_item_operation"] == "RunJobFlow"
+    assert rows[0]["pricing_unit"] == "Hrs"
+    assert rows[0]["resource_id"] == "emr-00000"
     assert rows[0]["region"] == "us-gov-west-1"
     assert rows[0]["usage_hours"] == 72
     assert rows[0]["cost"] == 1840.22
@@ -36,6 +45,23 @@ def test_overlay_application_updates_matching_rows() -> None:
     assert updated[1]["cost"] == "999.99"
     assert updated[1]["overlay_note"] == "sandbox-derived"
     assert updated[1]["data_source"] == "synthetic+overlay"
+
+
+def test_scenario_rows_keep_service_specific_cur_fields() -> None:
+    rows = generate_rows(40, seed=42)
+
+    for row in rows:
+        if row["scenario"] == "baseline_operations":
+            continue
+
+        profile = SERVICE_PROFILE_BY_NAME[row["service"]]
+        assert row["line_item_product_code"] == profile.service
+        assert row["line_item_usage_type"] == profile.usage_type
+        assert row["line_item_operation"] == profile.operation
+        assert row["pricing_unit"] == profile.unit
+        assert row["resource_id"].startswith(
+            profile.service.replace("Amazon", "").replace("AWS", "").lower() + "-"
+        )
 
 
 def test_run_writes_phase1_bundle(tmp_path: Path) -> None:
