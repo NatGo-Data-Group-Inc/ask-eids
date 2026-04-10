@@ -1,0 +1,131 @@
+{
+  "generated_at": "2026-04-10T13:34:52Z",
+  "mode": "local",
+  "baseline_type": "governance_repeatability",
+  "mode_description": "Deterministic local replay for governance, repeatability, and auditable snapshots.",
+  "model": "gpt-4o",
+  "packet_format": "json",
+  "dataset_path": "output\\phase1\\synthetic_cur.json",
+  "prompt_count": 5,
+  "summary": {
+    "row_count": 250,
+    "scenario_counts": {
+      "baseline_operations": 222,
+      "cluster_left_running": 12,
+      "orphan_ebs_leakage": 8,
+      "redshift_scan_spike": 8
+    },
+    "anomaly_count": 28,
+    "top_services_by_cost": [
+      {
+        "service": "AmazonEMR",
+        "cost": 54650.43
+      },
+      {
+        "service": "AmazonRedshift",
+        "cost": 12679.57
+      },
+      {
+        "service": "AmazonEC2",
+        "cost": 4472.76
+      },
+      {
+        "service": "AWSGlue",
+        "cost": 601.98
+      },
+      {
+        "service": "AmazonS3",
+        "cost": 49.03
+      }
+    ],
+    "anomaly_examples": [
+      {
+        "service": "AmazonEMR",
+        "region": "us-gov-west-1",
+        "scenario": "cluster_left_running",
+        "technical_debt_event": "missed_shutdown_hook",
+        "usage_hours": 72,
+        "cost": 1840.22,
+        "waste_driver": "missed shutdown automation",
+        "recommended_action": "Bedrock flow scheduled cluster teardown check",
+        "pmo_summary_line": "EMR waste due to automation gap caused 72 excess compute hours"
+      },
+      {
+        "service": "AmazonEMR",
+        "region": "us-gov-west-1",
+        "scenario": "cluster_left_running",
+        "technical_debt_event": "missed_shutdown_hook",
+        "usage_hours": 89.59,
+        "cost": 1732.18,
+        "waste_driver": "missed shutdown automation",
+        "recommended_action": "Bedrock flow scheduled cluster teardown check",
+        "pmo_summary_line": "EMR waste due to automation gap caused 90 excess compute hours"
+      },
+      {
+        "service": "AmazonEMR",
+        "region": "us-gov-east-1",
+        "scenario": "cluster_left_running",
+        "technical_debt_event": "missed_shutdown_hook",
+        "usage_hours": 84.28,
+        "cost": 2405.54,
+        "waste_driver": "missed shutdown automation",
+        "recommended_action": "Bedrock flow scheduled cluster teardown check",
+        "pmo_summary_line": "EMR waste due to automation gap caused 84 excess compute hours"
+      },
+      {
+        "service": "AmazonEC2",
+        "region": "us-gov-west-1",
+        "scenario": "orphan_ebs_leakage",
+        "technical_debt_event": "orphaned_storage_cleanup_gap",
+        "usage_hours": 178.32,
+        "cost": 240.14,
+        "waste_driver": "orphaned block storage",
+        "recommended_action": "Bedrock flow orphaned resource sweep",
+        "pmo_summary_line": "Detached storage continued accruing cost after instance retirement"
+      },
+      {
+        "service": "AmazonEC2",
+        "region": "us-gov-west-1",
+        "scenario": "orphan_ebs_leakage",
+        "technical_debt_event": "orphaned_storage_cleanup_gap",
+        "usage_hours": 171.73,
+        "cost": 445.68,
+        "waste_driver": "orphaned block storage",
+        "recommended_action": "Bedrock flow orphaned resource sweep",
+        "pmo_summary_line": "Detached storage continued accruing cost after instance retirement"
+      }
+    ]
+  },
+  "snapshots": [
+    {
+      "title": "Cost Anomaly Detection",
+      "slug": "cost_anomaly_detection",
+      "markdown": "output\\_codex_replay_auto_local_smoke\\cost_anomaly_detection.md",
+      "json": "output\\_codex_replay_auto_local_smoke\\cost_anomaly_detection.json"
+    },
+    {
+      "title": "Technical Debt Correlation",
+      "slug": "technical_debt_correlation",
+      "markdown": "output\\_codex_replay_auto_local_smoke\\technical_debt_correlation.md",
+      "json": "output\\_codex_replay_auto_local_smoke\\technical_debt_correlation.json"
+    },
+    {
+      "title": "FTE Replacement ROI",
+      "slug": "fte_replacement_roi",
+      "markdown": "output\\_codex_replay_auto_local_smoke\\fte_replacement_roi.md",
+      "json": "output\\_codex_replay_auto_local_smoke\\fte_replacement_roi.json"
+    },
+    {
+      "title": "PMO Executive Summary",
+      "slug": "pmo_executive_summary",
+      "markdown": "output\\_codex_replay_auto_local_smoke\\pmo_executive_summary.md",
+      "json": "output\\_codex_replay_auto_local_smoke\\pmo_executive_summary.json"
+    },
+    {
+      "title": "Bedrock Transition Recommendation",
+      "slug": "bedrock_transition_recommendation",
+      "markdown": "output\\_codex_replay_auto_local_smoke\\bedrock_transition_recommendation.md",
+      "json": "output\\_codex_replay_auto_local_smoke\\bedrock_transition_recommendation.json"
+    }
+  ]
+}

@@ -11,6 +11,7 @@ import argparse
 import difflib
 import json
 import os
+import re
 from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -25,6 +26,17 @@ class PromptBaseline:
     title: str
     slug: str
     instruction: str
+
+
+REPLAY_REQUIREMENTS = [
+    "Use only the supplied synthetic cost context.",
+    "State assumptions when the summary is insufficient.",
+    "Respond in markdown.",
+    "Do not invent benchmarks, ROI factors, scenario counts, or cost values that are not present in the supplied summary.",
+    "If the instruction asks for estimates not fully supported by the summary, provide a qualitative assessment and explicitly name the missing inputs.",
+    "Prefer plain markdown with ASCII punctuation; avoid Mermaid, LaTeX, and decorative Unicode characters.",
+    "Preserve the Ask EIDS reasoning role and avoid orchestration implementation detail unless asked.",
+]
 
 
 def slugify(value: str) -> str:
@@ -123,32 +135,147 @@ def build_dataset_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-def build_prompt_packet(
+def build_prompt_packet_data(
     baseline: PromptBaseline,
     summary: dict[str, Any],
     dataset_path: str | Path,
-) -> str:
-    """Build the replay payload that gets sent to a model."""
-    packet = {
+) -> dict[str, Any]:
+    """Build the structured replay payload prior to rendering."""
+    return {
         "task": baseline.title,
         "instruction": baseline.instruction,
         "dataset_path": str(dataset_path),
         "synthetic_dataset_summary": summary,
-        "requirements": [
-            "Use only the supplied synthetic cost context.",
-            "State assumptions when the summary is insufficient.",
-            "Respond in markdown.",
-            "Preserve the Ask EIDS reasoning role and avoid orchestration implementation detail unless asked.",
-        ],
+        "requirements": REPLAY_REQUIREMENTS,
     }
-    return json.dumps(packet, indent=2)
+
+
+def build_prompt_packet(
+    baseline: PromptBaseline,
+    summary: dict[str, Any],
+    dataset_path: str | Path,
+    packet_format: str = "json",
+) -> str:
+    """Build the replay payload that gets sent to a model."""
+    packet = build_prompt_packet_data(baseline, summary, dataset_path)
+    if packet_format == "json":
+        return json.dumps(packet, indent=2)
+    if packet_format != "markdown":
+        raise ValueError(f"Unsupported packet format: {packet_format}")
+
+    scenario_lines = [
+        f"- {scenario}: {count}"
+        for scenario, count in packet["synthetic_dataset_summary"]["scenario_counts"].items()
+    ]
+    top_service_lines = [
+        f"- {item['service']}: ${float(item['cost']):,.2f}"
+        for item in packet["synthetic_dataset_summary"]["top_services_by_cost"]
+    ]
+    anomaly_lines = [
+        (
+            f"- {item['service']} | {item['region']} | {item['scenario']} | "
+            f"{item['waste_driver']} | recommended: {item['recommended_action']}"
+        )
+        for item in packet["synthetic_dataset_summary"]["anomaly_examples"]
+    ]
+
+    markdown_lines = [
+        f"# Task: {packet['task']}",
+        "",
+        "## Instruction",
+        packet["instruction"],
+        "",
+        "## Dataset",
+        f"- dataset_path: {packet['dataset_path']}",
+        f"- row_count: {packet['synthetic_dataset_summary']['row_count']}",
+        f"- anomaly_count: {packet['synthetic_dataset_summary']['anomaly_count']}",
+        "",
+        "## Scenario Counts",
+        *scenario_lines,
+        "",
+        "## Top Services By Cost",
+        *top_service_lines,
+        "",
+        "## Representative Anomaly Examples",
+        *(anomaly_lines or ["- None"]),
+        "",
+        "## Requirements",
+        *(f"- {item}" for item in packet["requirements"]),
+        "",
+        "## Synthetic Dataset Summary JSON",
+        "```json",
+        json.dumps(packet["synthetic_dataset_summary"], indent=2),
+        "```",
+    ]
+    return "\n".join(markdown_lines)
+
+
+def build_payload_metadata(message: str, preview_chars: int = 600) -> dict[str, Any]:
+    """Capture lightweight payload diagnostics for debugging."""
+    preview = message[:preview_chars]
+    return {
+        "char_count": len(message),
+        "byte_count_utf8": len(message.encode("utf-8")),
+        "line_count": len(message.splitlines()),
+        "preview": preview,
+        "preview_truncated": len(preview) < len(message),
+    }
+
+
+def resolve_packet_format(mode: str, packet_format: str) -> str:
+    """Resolve packet format defaults without hiding explicit user choice."""
+    if packet_format == "auto":
+        return "markdown" if mode == "asksage" else "json"
+    if packet_format not in {"json", "markdown"}:
+        raise ValueError(f"Unsupported packet format: {packet_format}")
+    return packet_format
+
+
+def parse_replay_payload(message: str) -> dict[str, Any]:
+    """Parse a replay payload from either JSON or markdown packet format."""
+    stripped = message.lstrip()
+    if stripped.startswith("{"):
+        return json.loads(message)
+
+    title_match = re.search(r"^# Task:\s*(.+)$", message, flags=re.MULTILINE)
+    instruction_match = re.search(
+        r"^## Instruction\s*\n(?P<body>.*?)(?:\n## |\Z)",
+        message,
+        flags=re.MULTILINE | re.DOTALL,
+    )
+    dataset_match = re.search(r"^- dataset_path:\s*(.+)$", message, flags=re.MULTILINE)
+    summary_match = re.search(
+        r"^## Synthetic Dataset Summary JSON\s*\n```json\s*\n(?P<body>.*?)\n```",
+        message,
+        flags=re.MULTILINE | re.DOTALL,
+    )
+
+    if not title_match or not summary_match:
+        raise ValueError("Replay payload format is not recognized")
+
+    requirements = re.findall(r"^## Requirements\s*$([\s\S]*?)(?:^## |\Z)", message, flags=re.MULTILINE)
+    requirement_lines: list[str] = []
+    if requirements:
+        requirement_lines = [
+            line[2:].strip()
+            for line in requirements[0].splitlines()
+            if line.strip().startswith("- ")
+        ]
+
+    return {
+        "task": title_match.group(1).strip(),
+        "instruction": instruction_match.group("body").strip() if instruction_match else "",
+        "dataset_path": dataset_match.group(1).strip() if dataset_match else "",
+        "synthetic_dataset_summary": json.loads(summary_match.group("body")),
+        "requirements": requirement_lines,
+    }
 
 
 class LocalReplayClient:
     """Deterministic fallback for governance baselines, not model validation."""
 
     def query(self, message: str, model: str) -> dict[str, str]:
-        payload = json.loads(message)
+        payload = parse_replay_payload(message)
         task = payload["task"]
         summary = payload["synthetic_dataset_summary"]
         top_service = summary["top_services_by_cost"][0]
@@ -435,6 +562,9 @@ def run_replay(
     output_dir: str | Path,
     mode: str = "local",
     model: str = "gpt-4o",
+    packet_format: str = "auto",
+    payload_preview_chars: int = 600,
+    print_payload_stats: bool = False,
     email: str | None = None,
     api_key: str | None = None,
 ) -> dict[str, Any]:
@@ -443,6 +573,7 @@ def run_replay(
     rows = load_dataset(dataset_path)
     summary = build_dataset_summary(rows)
     client = create_client(mode=mode, email=email, api_key=api_key)
+    resolved_packet_format = resolve_packet_format(mode=mode, packet_format=packet_format)
 
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
@@ -451,7 +582,24 @@ def run_replay(
     results: list[dict[str, Any]] = []
 
     for baseline in prompts:
-        payload = build_prompt_packet(baseline, summary, dataset_path)
+        payload = build_prompt_packet(
+            baseline,
+            summary,
+            dataset_path,
+            packet_format=resolved_packet_format,
+        )
+        payload_metadata = build_payload_metadata(payload, preview_chars=payload_preview_chars)
+        if print_payload_stats:
+            print(
+                json.dumps(
+                    {
+                        "slug": baseline.slug,
+                        "packet_format": resolved_packet_format,
+                        **payload_metadata,
+                    },
+                    indent=2,
+                )
+            )
         response = client.query(message=payload, model=model)
         response_text = extract_response_text(response)
         record = {
@@ -462,7 +610,14 @@ def run_replay(
             "model": model,
             "generated_at": timestamp,
             "dataset_path": str(dataset_path),
-            "prompt_packet": json.loads(payload),
+            "packet_format": resolved_packet_format,
+            "prompt_message": payload,
+            "prompt_packet": (
+                build_prompt_packet_data(baseline, summary, dataset_path)
+                if resolved_packet_format == "json"
+                else None
+            ),
+            "payload_metadata": payload_metadata,
             "response_markdown": response_text,
         }
         results.append(record)
@@ -486,6 +641,7 @@ def run_replay(
             else "Real AskSage execution for reasoning and output validation."
         ),
         "model": model,
+        "packet_format": resolved_packet_format,
         "dataset_path": str(dataset_path),
         "prompt_count": len(prompts),
         "summary": summary,
@@ -543,6 +699,23 @@ def build_parser() -> argparse.ArgumentParser:
         default="gpt-4o",
         help="Model name to pass to the replay client.",
     )
+    parser.add_argument(
+        "--packet-format",
+        choices=("auto", "json", "markdown"),
+        default="auto",
+        help="Render replay payloads as JSON or markdown/plain text. auto uses markdown for asksage and json for local.",
+    )
+    parser.add_argument(
+        "--payload-preview-chars",
+        type=int,
+        default=600,
+        help="Number of payload characters to persist in preview metadata.",
+    )
+    parser.add_argument(
+        "--print-payload-stats",
+        action="store_true",
+        help="Print payload size and preview metadata for each prompt during replay.",
+    )
     parser.add_argument("--email", default=None, help="Optional AskSage email override.")
     parser.add_argument("--api-key", default=None, help="Optional AskSage API key override.")
     parser.add_argument(
@@ -580,6 +753,9 @@ def main() -> None:
         output_dir=args.output_dir,
         mode=args.mode,
         model=args.model,
+        packet_format=args.packet_format,
+        payload_preview_chars=args.payload_preview_chars,
+        print_payload_stats=args.print_payload_stats,
         email=args.email,
         api_key=args.api_key,
     )

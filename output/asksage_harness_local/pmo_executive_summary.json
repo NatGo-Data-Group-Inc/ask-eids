@@ -1,0 +1,110 @@
+{
+  "title": "PMO Executive Summary",
+  "slug": "pmo_executive_summary",
+  "instruction": "Convert findings into a 1-page leadership-ready markdown summary with risk, cost impact, and recommended next actions.",
+  "mode": "local",
+  "model": "gpt-4o",
+  "generated_at": "2026-04-10T12:06:57Z",
+  "dataset_path": "output/phase1/synthetic_cur.json",
+  "prompt_packet": {
+    "task": "PMO Executive Summary",
+    "instruction": "Convert findings into a 1-page leadership-ready markdown summary with risk, cost impact, and recommended next actions.",
+    "dataset_path": "output/phase1/synthetic_cur.json",
+    "synthetic_dataset_summary": {
+      "row_count": 250,
+      "scenario_counts": {
+        "baseline_operations": 222,
+        "cluster_left_running": 12,
+        "orphan_ebs_leakage": 8,
+        "redshift_scan_spike": 8
+      },
+      "anomaly_count": 28,
+      "top_services_by_cost": [
+        {
+          "service": "AmazonEMR",
+          "cost": 54650.43
+        },
+        {
+          "service": "AmazonRedshift",
+          "cost": 12679.57
+        },
+        {
+          "service": "AmazonEC2",
+          "cost": 4472.76
+        },
+        {
+          "service": "AWSGlue",
+          "cost": 601.98
+        },
+        {
+          "service": "AmazonS3",
+          "cost": 49.03
+        }
+      ],
+      "anomaly_examples": [
+        {
+          "service": "AmazonEMR",
+          "region": "us-gov-west-1",
+          "scenario": "cluster_left_running",
+          "technical_debt_event": "missed_shutdown_hook",
+          "usage_hours": 72,
+          "cost": 1840.22,
+          "waste_driver": "missed shutdown automation",
+          "recommended_action": "Bedrock flow scheduled cluster teardown check",
+          "pmo_summary_line": "EMR waste due to automation gap caused 72 excess compute hours"
+        },
+        {
+          "service": "AmazonEMR",
+          "region": "us-gov-west-1",
+          "scenario": "cluster_left_running",
+          "technical_debt_event": "missed_shutdown_hook",
+          "usage_hours": 89.59,
+          "cost": 1732.18,
+          "waste_driver": "missed shutdown automation",
+          "recommended_action": "Bedrock flow scheduled cluster teardown check",
+          "pmo_summary_line": "EMR waste due to automation gap caused 90 excess compute hours"
+        },
+        {
+          "service": "AmazonEMR",
+          "region": "us-gov-east-1",
+          "scenario": "cluster_left_running",
+          "technical_debt_event": "missed_shutdown_hook",
+          "usage_hours": 84.28,
+          "cost": 2405.54,
+          "waste_driver": "missed shutdown automation",
+          "recommended_action": "Bedrock flow scheduled cluster teardown check",
+          "pmo_summary_line": "EMR waste due to automation gap caused 84 excess compute hours"
+        },
+        {
+          "service": "AmazonEC2",
+          "region": "us-gov-west-1",
+          "scenario": "orphan_ebs_leakage",
+          "technical_debt_event": "orphaned_storage_cleanup_gap",
+          "usage_hours": 178.32,
+          "cost": 240.14,
+          "waste_driver": "orphaned block storage",
+          "recommended_action": "Bedrock flow orphaned resource sweep",
+          "pmo_summary_line": "Detached storage continued accruing cost after instance retirement"
+        },
+        {
+          "service": "AmazonEC2",
+          "region": "us-gov-west-1",
+          "scenario": "orphan_ebs_leakage",
+          "technical_debt_event": "orphaned_storage_cleanup_gap",
+          "usage_hours": 171.73,
+          "cost": 445.68,
+          "waste_driver": "orphaned block storage",
+          "recommended_action": "Bedrock flow orphaned resource sweep",
+          "pmo_summary_line": "Detached storage continued accruing cost after instance retirement"
+        }
+      ]
+    },
+    "requirements": [
+      "Use only the supplied synthetic cost context.",
+      "State assumptions when the summary is insufficient.",
+      "Respond in markdown.",
+      "Preserve the Ask EIDS reasoning role and avoid orchestration implementation detail unless asked."
+    ]
+  },
+  "response_markdown": "# PMO Executive Summary\n\n- Synthetic rows reviewed: 250\n- Anomalies requiring attention: 28\n- Highest cost concentration: AmazonEMR at $54,650.43\n- Recommended next action: prioritize the dominant waste driver and validate prompt promotion criteria."
+}

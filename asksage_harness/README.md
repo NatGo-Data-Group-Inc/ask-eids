@@ -13,6 +13,9 @@ Per ADR 001, no orchestration logic belongs here. Bedrock-owned flow and lifecyc
 - `python -m asksage_harness.replay --mode local` replays the baseline prompt pack against `output/phase1/synthetic_cur.json`
 - The harness writes markdown and JSON snapshots plus `manifest.json` under `output/asksage_harness/`
 - `--mode asksage` uses the real `asksageclient` when enclave credentials and connectivity are available
+- `--packet-format auto|json|markdown` switches between the original JSON payload and a plain-text markdown payload that more closely matches the interactive client style
+- `--packet-format auto` is the default and resolves to `json` for `--mode local` and `markdown` for `--mode asksage`
+- `--print-payload-stats` emits payload size and preview metadata for each prompt to help isolate AskSage failure modes
 - `python -m asksage_harness.replay compare --baseline-dir ... --candidate-dir ...` compares two snapshot runs and writes `comparison.md` plus `comparison.json`
 
 ## Mode Semantics
@@ -21,3 +24,5 @@ Per ADR 001, no orchestration logic belongs here. Bedrock-owned flow and lifecyc
 - Local mode confirms dataset loading, prompt parsing, summary construction, and snapshot generation
 - Local mode does not validate real AskSage reasoning quality or connectivity
 - `--mode asksage` is the operational reasoning baseline and should be used for real model evaluation
+- AskSage mode now defaults to markdown payloads because JSON packet mode previously triggered internal AskSage errors in enclave testing
+- JSON packet mode remains available as an explicit debug option

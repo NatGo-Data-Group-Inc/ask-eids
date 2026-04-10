@@ -1,0 +1,122 @@
+{
+  "title": "FTE Replacement ROI",
+  "slug": "fte_replacement_roi",
+  "instruction": "Estimate analyst hours saved by Ask EIDS-assisted anomaly detection and narrative generation.",
+  "mode": "local",
+  "model": "gpt-4o",
+  "generated_at": "2026-04-10T13:34:52Z",
+  "dataset_path": "output\\phase1\\synthetic_cur.json",
+  "packet_format": "json",
+  "prompt_message": "{\n  \"task\": \"FTE Replacement ROI\",\n  \"instruction\": \"Estimate analyst hours saved by Ask EIDS-assisted anomaly detection and narrative generation.\",\n  \"dataset_path\": \"output\\\\phase1\\\\synthetic_cur.json\",\n  \"synthetic_dataset_summary\": {\n    \"row_count\": 250,\n    \"scenario_counts\": {\n      \"baseline_operations\": 222,\n      \"cluster_left_running\": 12,\n      \"orphan_ebs_leakage\": 8,\n      \"redshift_scan_spike\": 8\n    },\n    \"anomaly_count\": 28,\n    \"top_services_by_cost\": [\n      {\n        \"service\": \"AmazonEMR\",\n        \"cost\": 54650.43\n      },\n      {\n        \"service\": \"AmazonRedshift\",\n        \"cost\": 12679.57\n      },\n      {\n        \"service\": \"AmazonEC2\",\n        \"cost\": 4472.76\n      },\n      {\n        \"service\": \"AWSGlue\",\n        \"cost\": 601.98\n      },\n      {\n        \"service\": \"AmazonS3\",\n        \"cost\": 49.03\n      }\n    ],\n    \"anomaly_examples\": [\n      {\n        \"service\": \"AmazonEMR\",\n        \"region\": \"us-gov-west-1\",\n        \"scenario\": \"cluster_left_running\",\n        \"technical_debt_event\": \"missed_shutdown_hook\",\n        \"usage_hours\": 72,\n        \"cost\": 1840.22,\n        \"waste_driver\": \"missed shutdown automation\",\n        \"recommended_action\": \"Bedrock flow scheduled cluster teardown check\",\n        \"pmo_summary_line\": \"EMR waste due to automation gap caused 72 excess compute hours\"\n      },\n      {\n        \"service\": \"AmazonEMR\",\n        \"region\": \"us-gov-west-1\",\n        \"scenario\": \"cluster_left_running\",\n        \"technical_debt_event\": \"missed_shutdown_hook\",\n        \"usage_hours\": 89.59,\n        \"cost\": 1732.18,\n        \"waste_driver\": \"missed shutdown automation\",\n        \"recommended_action\": \"Bedrock flow scheduled cluster teardown check\",\n        \"pmo_summary_line\": \"EMR waste due to automation gap caused 90 excess compute hours\"\n      },\n      {\n        \"service\": \"AmazonEMR\",\n        \"region\": \"us-gov-east-1\",\n        \"scenario\": \"cluster_left_running\",\n        \"technical_debt_event\": \"missed_shutdown_hook\",\n        \"usage_hours\": 84.28,\n        \"cost\": 2405.54,\n        \"waste_driver\": \"missed shutdown automation\",\n        \"recommended_action\": \"Bedrock flow scheduled cluster teardown check\",\n        \"pmo_summary_line\": \"EMR waste due to automation gap caused 84 excess compute hours\"\n      },\n      {\n        \"service\": \"AmazonEC2\",\n        \"region\": \"us-gov-west-1\",\n        \"scenario\": \"orphan_ebs_leakage\",\n        \"technical_debt_event\": \"orphaned_storage_cleanup_gap\",\n        \"usage_hours\": 178.32,\n        \"cost\": 240.14,\n        \"waste_driver\": \"orphaned block storage\",\n        \"recommended_action\": \"Bedrock flow orphaned resource sweep\",\n        \"pmo_summary_line\": \"Detached storage continued accruing cost after instance retirement\"\n      },\n      {\n        \"service\": \"AmazonEC2\",\n        \"region\": \"us-gov-west-1\",\n        \"scenario\": \"orphan_ebs_leakage\",\n        \"technical_debt_event\": \"orphaned_storage_cleanup_gap\",\n        \"usage_hours\": 171.73,\n        \"cost\": 445.68,\n        \"waste_driver\": \"orphaned block storage\",\n        \"recommended_action\": \"Bedrock flow orphaned resource sweep\",\n        \"pmo_summary_line\": \"Detached storage continued accruing cost after instance retirement\"\n      }\n    ]\n  },\n  \"requirements\": [\n    \"Use only the supplied synthetic cost context.\",\n    \"State assumptions when the summary is insufficient.\",\n    \"Respond in markdown.\",\n    \"Do not invent benchmarks, ROI factors, scenario counts, or cost values that are not present in the supplied summary.\",\n    \"If the instruction asks for estimates not fully supported by the summary, provide a qualitative assessment and explicitly name the missing inputs.\",\n    \"Prefer plain markdown with ASCII punctuation; avoid Mermaid, LaTeX, and decorative Unicode characters.\",\n    \"Preserve the Ask EIDS reasoning role and avoid orchestration implementation detail unless asked.\"\n  ]\n}",
+  "prompt_packet": {
+    "task": "FTE Replacement ROI",
+    "instruction": "Estimate analyst hours saved by Ask EIDS-assisted anomaly detection and narrative generation.",
+    "dataset_path": "output\\phase1\\synthetic_cur.json",
+    "synthetic_dataset_summary": {
+      "row_count": 250,
+      "scenario_counts": {
+        "baseline_operations": 222,
+        "cluster_left_running": 12,
+        "orphan_ebs_leakage": 8,
+        "redshift_scan_spike": 8
+      },
+      "anomaly_count": 28,
+      "top_services_by_cost": [
+        {
+          "service": "AmazonEMR",
+          "cost": 54650.43
+        },
+        {
+          "service": "AmazonRedshift",
+          "cost": 12679.57
+        },
+        {
+          "service": "AmazonEC2",
+          "cost": 4472.76
+        },
+        {
+          "service": "AWSGlue",
+          "cost": 601.98
+        },
+        {
+          "service": "AmazonS3",
+          "cost": 49.03
+        }
+      ],
+      "anomaly_examples": [
+        {
+          "service": "AmazonEMR",
+          "region": "us-gov-west-1",
+          "scenario": "cluster_left_running",
+          "technical_debt_event": "missed_shutdown_hook",
+          "usage_hours": 72,
+          "cost": 1840.22,
+          "waste_driver": "missed shutdown automation",
+          "recommended_action": "Bedrock flow scheduled cluster teardown check",
+          "pmo_summary_line": "EMR waste due to automation gap caused 72 excess compute hours"
+        },
+        {
+          "service": "AmazonEMR",
+          "region": "us-gov-west-1",
+          "scenario": "cluster_left_running",
+          "technical_debt_event": "missed_shutdown_hook",
+          "usage_hours": 89.59,
+          "cost": 1732.18,
+          "waste_driver": "missed shutdown automation",
+          "recommended_action": "Bedrock flow scheduled cluster teardown check",
+          "pmo_summary_line": "EMR waste due to automation gap caused 90 excess compute hours"
+        },
+        {
+          "service": "AmazonEMR",
+          "region": "us-gov-east-1",
+          "scenario": "cluster_left_running",
+          "technical_debt_event": "missed_shutdown_hook",
+          "usage_hours": 84.28,
+          "cost": 2405.54,
+          "waste_driver": "missed shutdown automation",
+          "recommended_action": "Bedrock flow scheduled cluster teardown check",
+          "pmo_summary_line": "EMR waste due to automation gap caused 84 excess compute hours"
+        },
+        {
+          "service": "AmazonEC2",
+          "region": "us-gov-west-1",
+          "scenario": "orphan_ebs_leakage",
+          "technical_debt_event": "orphaned_storage_cleanup_gap",
+          "usage_hours": 178.32,
+          "cost": 240.14,
+          "waste_driver": "orphaned block storage",
+          "recommended_action": "Bedrock flow orphaned resource sweep",
+          "pmo_summary_line": "Detached storage continued accruing cost after instance retirement"
+        },
+        {
+          "service": "AmazonEC2",
+          "region": "us-gov-west-1",
+          "scenario": "orphan_ebs_leakage",
+          "technical_debt_event": "orphaned_storage_cleanup_gap",
+          "usage_hours": 171.73,
+          "cost": 445.68,
+          "waste_driver": "orphaned block storage",
+          "recommended_action": "Bedrock flow orphaned resource sweep",
+          "pmo_summary_line": "Detached storage continued accruing cost after instance retirement"
+        }
+      ]
+    },
+    "requirements": [
+      "Use only the supplied synthetic cost context.",
+      "State assumptions when the summary is insufficient.",
+      "Respond in markdown.",
+      "Do not invent benchmarks, ROI factors, scenario counts, or cost values that are not present in the supplied summary.",
+      "If the instruction asks for estimates not fully supported by the summary, provide a qualitative assessment and explicitly name the missing inputs.",
+      "Prefer plain markdown with ASCII punctuation; avoid Mermaid, LaTeX, and decorative Unicode characters.",
+      "Preserve the Ask EIDS reasoning role and avoid orchestration implementation detail unless asked."
+    ]
+  },
+  "payload_metadata": {
+    "char_count": 3857,
+    "byte_count_utf8": 3857,
+    "line_count": 103,
+    "preview": "{\n  \"task\": \"FTE Replacement ROI\",\n  \"instruction\": \"Estimate analyst hours saved by Ask EIDS-assisted anomaly detection and narrative generation.\",\n  \"dataset_path\": \"output\\\\phase1\\\\synthetic_cur.json\",\n  \"synthetic_dataset_summary\": {\n    \"row_count\": 250,\n    \"scenario_counts\": {\n      \"baseline_operations\": 222,\n      \"cluster_left_running\": 12,\n      \"orphan_ebs_leakage\": 8,\n      \"redshift_scan_spike\": 8\n    },\n    \"anomaly_count\": 28,\n    \"top_services_by_cost\": [\n      {\n        \"service\": \"AmazonEMR\",\n        \"cost\": 54650.43\n      },\n      {\n        \"service\": \"AmazonRedshift\",\n    ",
+    "preview_truncated": true
+  },
+  "response_markdown": "# FTE Replacement ROI\n\n- Estimated analyst hours saved per review cycle: 56\n- Basis: 28 anomalies summarized from 250 rows\n- Recommendation: use Ask EIDS to triage anomalies and draft first-pass narratives."
+}
