@@ -8,7 +8,7 @@ import json
 import random
 from collections import Counter
 from dataclasses import dataclass
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Iterable
 
@@ -133,7 +133,7 @@ def build_baseline_row(index: int, rng: random.Random) -> dict:
     usage_amount = round(rng.uniform(1.0, 72.0), 2)
     unit_rate = rng.uniform(profile.min_rate, profile.max_rate)
     cost = round(usage_amount * unit_rate, 2)
-    usage_start = datetime(2026, 3, 1, tzinfo=UTC) + timedelta(hours=index * 3)
+    usage_start = datetime(2026, 3, 1, tzinfo=timezone.utc) + timedelta(hours=index * 3)
     usage_end = usage_start + timedelta(hours=1)
 
     row = {

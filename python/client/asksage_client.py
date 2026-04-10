@@ -69,7 +69,7 @@ import os
 import sys
 import textwrap
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, List, Optional
 
@@ -108,7 +108,7 @@ class ChatTurn:
     role: str
     content: str
     timestamp: str = field(
-        default_factory=lambda: datetime.now(UTC).isoformat(timespec="seconds").replace("+00:00", "Z")
+        default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
     )
 
 
@@ -244,7 +244,7 @@ class AskSageInteractiveChat:
         destination = Path(path).expanduser()
         destination.parent.mkdir(parents=True, exist_ok=True)
         payload = {
-            "saved_at": datetime.now(UTC).isoformat(timespec="seconds").replace("+00:00", "Z"),
+            "saved_at": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
             "model": self.model,
             "allowed_models": self.allowed_models,
             "system_prompt": self.system_prompt,
