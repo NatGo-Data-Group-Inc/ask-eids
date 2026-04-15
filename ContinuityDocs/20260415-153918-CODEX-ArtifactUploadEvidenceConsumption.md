@@ -104,3 +104,35 @@
 
 **Notes / Outcomes**
 * This change prevents new files in those locations from being added, but does not by itself remove already tracked large blobs that caused the earlier GitHub push rejection.
+
+## Entry - 2026-04-15 16:31:00 (local)
+
+**Goal**
+* Remove tracked runtime artifacts from Git history and push the repository to the private GitHub remote.
+
+**Constraints/Assumptions**
+* User explicitly approved Git cleanup and push work for phases 1 through 3.
+* `server/data/` is a runtime/test directory resolved by `server/src/config/runtime.js`, not a required committed seed-data directory.
+
+**Key Decisions**
+* Used a full-history rewrite to preserve the local commit sequence while removing generated paths, instead of replacing history with a new orphan commit.
+* Removed both `server/data/` and `.playwright-mcp/` from history, then pruned `refs/original` and unreachable objects before pushing.
+
+**State**
+* Done: Rewrote local history to remove generated runtime artifacts and browser-debug outputs.
+* Done: Verified `git rev-list --objects --all` no longer returns `server/data/` or `.playwright-mcp/` paths.
+* Done: Pushed cleaned `main` to `origin` at `https://github.com/ArchieDB-ai/AskEIDS.git`.
+* Now: Commit the final proof documentation updates so the remote repo reflects the completed cleanup record.
+* Next: Push the final documentation-only follow-up commit.
+
+**Open Questions**
+* None.
+
+**Working Set**
+* `.gitignore`
+* `docs/implementation/20260415-162300-CODEX-GitHistoryCleanupForPush.md`
+* `ContinuityDocs/20260415-153918-CODEX-ArtifactUploadEvidenceConsumption.md`
+
+**Notes / Outcomes**
+* `git count-objects -vH` dropped to a packed repository size of `473.55 KiB` after pruning.
+* `git push -u origin main` succeeded after the history cleanup.
