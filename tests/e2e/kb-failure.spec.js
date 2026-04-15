@@ -11,5 +11,7 @@ test('ask failure renders scoped error without crashing the page', async ({ page
   await page.getByTestId('ask-submit').click();
 
   await expect(page.getByTestId('ask-error-state')).toBeVisible();
+  await expect(page.getByTestId('ask-retry')).toBeVisible();
+  await expect(page.getByTestId('ask-input')).toHaveValue('What decisions were made this sprint?');
   await expect(page.getByTestId('product-page')).toBeVisible();
 });

@@ -10,6 +10,10 @@ export function docPackPath(...segments) {
   return path.resolve('EIDS-Prototype-Document-Pack', ...segments);
 }
 
+export function fixturePath(...segments) {
+  return path.resolve('tests', 'fixtures', ...segments);
+}
+
 export function longText(seed) {
   return `${seed} ${'This update is evidence-rich and intentionally long enough to satisfy the validation constraints. '.repeat(4)}`.trim();
 }

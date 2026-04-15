@@ -833,3 +833,100 @@
 * Phase status updates:
   * `docs/implementation/20260415-143350-CODEX-Phase6Execution.md` marked complete.
   * `docs/implementation/20260415-125134-CODEX-SixPhaseFsfsExecutionPlan.md` now marks Phase 6 complete.
+
+## Entry - 2026-04-15 15:21:23 (local)
+
+**Goal (incl. success criteria):**
+* Produce a full UXRD companion document for generalized artifact upload and evidence consumption in the current AskEIDS app.
+* Store the UXRD in `PRD/` using streaming writes and create a working implementation note in `docs/implementation/`.
+
+**Constraints/Assumptions:**
+* User explicitly requested the `uxrd-creator` workflow and confirmed the work is no longer in Plan Mode.
+* The UXRD must be frontend-only, while remaining aligned to the existing full-stack ingestion plan.
+* Repo rules require streaming writes for initial file creation to avoid Windows IO failures.
+
+**Key decisions:**
+* Scope the UXRD as an end-to-end UX companion covering upload, processing, Sources, Ask, search, reports, downstream product updates, accessibility, selectors, and Playwright proof.
+* Preserve existing app patterns: custom CSS tokens, query-param routing, React Query, react-hook-form modals, toast feedback, and unsupported viewport handling.
+* Treat transcript upload as the compatibility specialization of a broader artifact-upload UX.
+
+**State:**
+* **Done:** Re-scanned `package.json`, `client/src/App.jsx`, `client/src/styles/runtime.css`, `client/src/lib/api.js`, `server/src/app.js`, `server/src/services/domain/readModel.service.js`, and relevant Playwright specs.
+* **Now:** Writing the UXRD implementation note and streaming the main UXRD into `PRD/`.
+* **Next:** Sanity-check the written docs and summarize completion status to the user.
+
+**Open questions (mark `UNCONFIRMED` if needed):**
+* None.
+
+**Working set (files/ids/commands):**
+* `PRD/20260415-152123-CODEX-ArtifactUploadEvidenceConsumptionUXRD.md`
+* `docs/implementation/20260415-152123-CODEX-ArtifactUploadEvidenceConsumptionUXRD.md`
+* `ContinuityDocs/20260415-083125-CODEX-WireExistingHtmlToFsfs.md`
+* `Set-Content`
+* `Add-Content`
+
+**Notes / Outcomes (optional):**
+* The UXRD will be written in streaming sections to stay within the Windows IO constraints documented in repo instructions.
+
+## Entry - 2026-04-15 15:27:45 (local)
+
+**Goal (incl. success criteria):**
+* Complete the UXRD authoring task by finishing the document, reviewing the written output, and leaving behind updated trace docs.
+
+**Constraints/Assumptions:**
+* The UXRD had to be written to `PRD/` in streaming chunks to avoid Windows IO failures.
+* The document needed to remain frontend-only while staying aligned to the current implementation and ingestion plan.
+
+**Key decisions:**
+* Kept the UXRD focused on user-visible artifact upload, processing, Sources, Ask/search/report consumption, accessibility, and proof requirements.
+* Preserved current app conventions instead of inventing a new design system or navigation model.
+
+**State:**
+* **Done:** Wrote `PRD/20260415-152123-CODEX-ArtifactUploadEvidenceConsumptionUXRD.md`, reviewed the head/tail of the file, and updated `docs/implementation/20260415-152123-CODEX-ArtifactUploadEvidenceConsumptionUXRD.md`.
+* **Now:** Summarizing the completed deliverable and any remaining follow-on suggestions for the user.
+* **Next:** Wait for the user to choose whether to refine the UXRD or move into implementation.
+
+**Open questions (mark `UNCONFIRMED` if needed):**
+* None.
+
+**Working set (files/ids/commands):**
+* `PRD/20260415-152123-CODEX-ArtifactUploadEvidenceConsumptionUXRD.md`
+* `docs/implementation/20260415-152123-CODEX-ArtifactUploadEvidenceConsumptionUXRD.md`
+* `ContinuityDocs/20260415-083125-CODEX-WireExistingHtmlToFsfs.md`
+* `Set-Content`
+* `Add-Content`
+* `Get-Content`
+
+**Notes / Outcomes (optional):**
+* The UXRD is sized as a full implementation-ready companion spec and includes ACs, Playwright stubs, selectors, React handoff, and UI-facing API contracts.
+
+## Entry - 2026-04-15 15:39:20 (local)
+
+**Goal (incl. success criteria):**
+* Tighten the newly written UXRD based on review feedback so it is fully decision-complete before feature implementation begins.
+
+**Constraints/Assumptions:**
+* Only targeted UXRD edits were needed; the broader document remained sound.
+* Changes needed to preserve alignment with the current app shell and evidence-first product direction.
+
+**Key decisions:**
+* Added a supported artifact matrix covering extensions, allowed types, defaults, mutability, preview behavior, and downstream impact.
+* Locked drawer focus behavior, polling cadence/timeout rules, structured-import confirmation, report regeneration behavior, and binary-vs-text source actions.
+* Replaced fragile `latest-upload`-style selectors with deterministic ID-pattern selectors and corrected AC-022 traceability.
+
+**State:**
+* **Done:** Patched `PRD/20260415-152123-CODEX-ArtifactUploadEvidenceConsumptionUXRD.md` and updated the working implementation note.
+* **Now:** Summarizing the validated fixes and the remaining next-step recommendation to the user.
+* **Next:** Wait for the user to either request further UXRD refinement or move into implementation from the patched spec.
+
+**Open questions (mark `UNCONFIRMED` if needed):**
+* None.
+
+**Working set (files/ids/commands):**
+* `PRD/20260415-152123-CODEX-ArtifactUploadEvidenceConsumptionUXRD.md`
+* `docs/implementation/20260415-152123-CODEX-ArtifactUploadEvidenceConsumptionUXRD.md`
+* `ContinuityDocs/20260415-083125-CODEX-WireExistingHtmlToFsfs.md`
+* `apply_patch`
+
+**Notes / Outcomes (optional):**
+* The UXRD now contains the small but important behavioral decisions that were previously implicit, especially around artifact taxonomy and async trust behavior.

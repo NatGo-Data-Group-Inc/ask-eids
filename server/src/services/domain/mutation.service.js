@@ -9,6 +9,20 @@ import { buildChunkArtifacts } from '../rag/chunking.service.js';
 import { buildMailboxSyncDelta } from '../connectors/mailboxConnector.service.js';
 import { buildAdoSyncDelta } from '../connectors/adoConnector.service.js';
 import { runAdoMcpEnrichment } from '../connectors/adoMcpAdapter.service.js';
+import {
+  buildSourceSummary,
+  buildTestSourceId,
+  extractArtifactContent,
+  parseStructuredImportRows,
+  validateArtifactUpload,
+} from '../ingest/artifactUpload.service.js';
+import { getSourceTypeDefinition, isStructuredImportType } from '../../../../shared/artifactTypes.js';
+
+const artifactUploadFailureAttempts = new Map();
+
+export function resetMutationHarnessState() {
+  artifactUploadFailureAttempts.clear();
+}
 
 function artifactKeyForSource(productId, sourceId, fileName) {
   return path.posix.join(productId, 'sources', sourceId, fileName);
@@ -60,7 +74,7 @@ function parseAttendees(input) {
   return Array.isArray(input)
     ? input.map((item) => String(item || '').trim()).filter(Boolean).slice(0, 20)
     : input
-      ? [String(input).trim()].filter(Boolean)
+      ? String(input).split(',').map((item) => item.trim()).filter(Boolean).slice(0, 20)
       : [];
 }
 
@@ -226,6 +240,7 @@ export function createMutationService({
     const builtReport = buildCorpusReport(current, payload.productId);
     const reportWithBodies = {
       ...builtReport,
+      evidenceVersion: Number(product.evidenceVersion || current.productData[payload.productId]?.evidenceVersion || 1),
       sections: builtReport.sections.map((section) => ({
         ...section,
         bodyGenerated: section.body,
@@ -822,6 +837,301 @@ export function createMutationService({
     return { jobId, sourceId, status: 'queued' };
   }
 
+  async function queueArtifactJob(productId, file, body, options = {}) {
+    const validated = validateArtifactUpload({
+      body: {
+        ...body,
+        productId,
+      },
+      file,
+      metadataFile: options.metadataFile || null,
+      errorCodes,
+    });
+
+    if (validated.sourceType === 'transcript') {
+      return queueTranscriptJob(productId, file, {
+        meetingTitle: validated.title,
+        meetingDate: validated.sourceDate,
+        attendees: validated.participants,
+        notes: validated.notes,
+      }, options);
+    }
+
+    const failureKey = `${productId}:${options.testCase || ''}`;
+    if (options.testCase === 'artifactUploadFailure' && !artifactUploadFailureAttempts.has(failureKey)) {
+      artifactUploadFailureAttempts.set(failureKey, 1);
+      throw new HttpError(503, errorCodes.INTERNAL_ERROR, 'Something went wrong. Try again.', { retryable: true });
+    }
+
+    const state = await readState();
+    const fallbackSourceId = `src-${state.nextIds.source++}`;
+    const sourceId = buildTestSourceId(file.originalname, fallbackSourceId);
+    const jobId = `job-${state.nextIds.job++}`;
+    const participants = parseAttendees(validated.participants);
+    const title = validated.title;
+    const sourceDate = validated.sourceDate;
+    const sourceType = validated.sourceType;
+    const rawArtifactKey = artifactKeyForSource(productId, sourceId, file.originalname);
+    const normalizedArtifactKey = artifactKeyForSource(productId, sourceId, 'normalized.txt');
+    await artifactStore.writeBufferArtifact({
+      bucketType: 'raw',
+      key: rawArtifactKey,
+      buffer: file.buffer,
+      contentType: file.mimetype || 'application/octet-stream',
+    });
+
+    await updateState((draft) => {
+      draft.nextIds.source = state.nextIds.source;
+      draft.nextIds.job = state.nextIds.job;
+      const jobCreatedAt = nowIso();
+      draft.jobs[jobId] = {
+        jobId,
+        jobType: 'ingest',
+        productId,
+        status: 'queued',
+        stage: 'queued',
+        sourceType,
+        createdAt: jobCreatedAt,
+        updatedAt: jobCreatedAt,
+        result: {
+          sourceId,
+          title,
+          updatedDomains: isStructuredImportType(sourceType) ? ['sources', 'ask', 'reports', 'data'] : ['sources', 'ask', 'reports'],
+        },
+      };
+      const data = draft.productData[productId];
+      const sourceSummary = buildSourceSummary({
+        sourceType,
+        sourceDate,
+        title,
+        author: validated.author || draft.session.user.displayName,
+        participants,
+        warningText: null,
+        processingStatus: 'queued',
+      });
+      data.sources.unshift({
+        id: sourceId,
+        type: sourceType,
+        title,
+        date: sourceDate,
+        meta: sourceSummary.meta,
+        previewText: 'Artifact queued for processing.',
+        author: validated.author || draft.session.user.displayName,
+        participants,
+        contentType: file.mimetype || 'application/octet-stream',
+        rawArtifactKey,
+        normalizedArtifactKey,
+        ingestStatus: 'queued',
+        indexed: false,
+        chunkArtifacts: [],
+        metadata: {
+          ...validated.metadata,
+          sourceFamily: getSourceTypeDefinition(sourceType)?.family || 'document',
+        },
+        warningText: null,
+        openable: true,
+      });
+      appendAuditEvent(draft, {
+        actorSub: draft.session?.user?.sub || 'user-123',
+        productId,
+        action: 'artifact.upload_queued',
+        targetType: 'source',
+        targetId: sourceId,
+        payload: { jobId, title, sourceType, sourceDate },
+      });
+      return draft;
+    });
+
+    setTimeout(async () => {
+      try {
+        await updateState((draft) => {
+          draft.jobs[jobId] = {
+            ...draft.jobs[jobId],
+            status: 'running',
+            stage: 'extracting',
+            updatedAt: nowIso(),
+          };
+          const source = draft.productData[productId].sources.find((item) => item.id === sourceId);
+          if (source) {
+            source.ingestStatus = 'running';
+            source.meta = buildSourceSummary({
+              sourceType,
+              sourceDate,
+              title,
+              author: source.author,
+              participants,
+              warningText: null,
+              processingStatus: 'running',
+            }).meta;
+          }
+          return draft;
+        });
+
+        const extracted = extractArtifactContent({ file, sourceType, testCase: options.testCase || '' });
+        await artifactStore.writeTextArtifact({
+          bucketType: 'normalized',
+          key: normalizedArtifactKey,
+          content: extracted.normalizedText,
+          contentType: 'text/plain; charset=utf-8',
+        });
+
+        const chunkArtifacts = buildChunkArtifacts({
+          productId,
+          sourceId,
+          sourceType,
+          sourceDate,
+          title,
+          author: validated.author || state.session.user.displayName,
+          participants,
+          text: extracted.normalizedText,
+        });
+        for (const chunk of chunkArtifacts) {
+          await artifactStore.writeTextArtifact({
+            bucketType: 'normalized',
+            key: chunk.chunkKey,
+            content: chunk.chunkText,
+            contentType: 'text/markdown; charset=utf-8',
+          });
+          await artifactStore.writeTextArtifact({
+            bucketType: 'normalized',
+            key: chunk.metadataKey,
+            content: JSON.stringify(chunk.metadata, null, 2),
+            contentType: 'application/json; charset=utf-8',
+          });
+        }
+
+        await indexTranscriptEvidence({
+          chunks: chunkArtifacts.map((chunk) => ({
+            sourceId,
+            chunkIndex: chunk.chunkIndex,
+            chunkText: chunk.chunkText,
+            metadata: {
+              ...chunk.metadata,
+              application: 'AskEIDS',
+              environment: process.env.NODE_ENV ?? 'development',
+            },
+          })),
+        });
+
+        const structuredRows = isStructuredImportType(sourceType)
+          ? parseStructuredImportRows({ sourceType, text: extracted.normalizedText })
+          : null;
+        const sourceDefinition = getSourceTypeDefinition(sourceType);
+        const terminalStatus = extracted.warningText ? 'partial' : 'completed';
+        const updatedDomains = isStructuredImportType(sourceType) ? ['sources', 'ask', 'reports', 'data'] : ['sources', 'ask', 'reports'];
+
+        await updateState((draft) => {
+          const data = draft.productData[productId];
+          const product = draft.products.find((item) => item.id === productId);
+          const source = data.sources.find((item) => item.id === sourceId);
+          if (source) {
+            const sourceSummary = buildSourceSummary({
+              sourceType,
+              sourceDate,
+              title,
+              author: source.author,
+              participants,
+              warningText: extracted.warningText,
+              processingStatus: terminalStatus,
+            });
+            source.meta = sourceSummary.meta;
+            source.previewText = extracted.previewText;
+            source.normalizedArtifactKey = normalizedArtifactKey;
+            source.chunkArtifacts = chunkArtifacts.map((chunk) => ({
+              chunkIndex: chunk.chunkIndex,
+              chunkKey: chunk.chunkKey,
+              metadataKey: chunk.metadataKey,
+              tokenCount: chunk.tokenCount,
+            }));
+            source.metadata = {
+              ...(source.metadata || {}),
+              ...(validated.metadata || {}),
+              ...(extracted.metadata || {}),
+            };
+            source.indexed = true;
+            source.ingestStatus = terminalStatus;
+            source.warningText = extracted.warningText;
+          }
+          data.sourceContents[sourceId] = extracted.normalizedText;
+          if (structuredRows && sourceDefinition?.dataset) {
+            data.data[sourceDefinition.dataset] = structuredRows;
+            data.lastStructuredImport = {
+              sourceId,
+              title,
+              dataset: sourceDefinition.dataset,
+              sourceType,
+              updatedAt: nowIso(),
+            };
+          }
+          product.evidenceVersion = Number(product.evidenceVersion || 1) + 1;
+          data.evidenceVersion = product.evidenceVersion;
+          data.latestEvidenceUpdate = {
+            sourceId,
+            title,
+            sourceType,
+            message: 'New evidence is now available across Sources, Ask, and reports.',
+            updatedDomains,
+            impactType: isStructuredImportType(sourceType) ? 'structured' : 'evidence_only',
+          };
+          product.recentSignals.unshift({
+            id: `sig-${Date.now()}`,
+            dateLabel: nowDateLabel(),
+            type: sourceType,
+            title: `${title} processed`,
+          });
+          draft.jobs[jobId] = {
+            ...draft.jobs[jobId],
+            status: terminalStatus,
+            stage: terminalStatus,
+            updatedAt: nowIso(),
+            result: {
+              sourceId,
+              title,
+              updatedDomains,
+            },
+          };
+          return draft;
+        });
+      } catch (error) {
+        await updateState((draft) => {
+          const source = draft.productData[productId].sources.find((item) => item.id === sourceId);
+          if (source) {
+            source.ingestStatus = 'failed';
+            source.indexed = false;
+            source.warningText = 'We couldn’t process this artifact right now. Your entries are still here. Review the error and try again.';
+            source.meta = buildSourceSummary({
+              sourceType,
+              sourceDate,
+              title,
+              author: source.author,
+              participants,
+              warningText: source.warningText,
+              processingStatus: 'failed',
+            }).meta;
+          }
+          draft.jobs[jobId] = {
+            ...draft.jobs[jobId],
+            status: 'failed',
+            stage: 'failed',
+            errorCode: errorCodes.INTERNAL_ERROR,
+            message: error.message,
+            retryable: true,
+            updatedAt: nowIso(),
+          };
+          return draft;
+        });
+      }
+    }, 400);
+
+    return {
+      jobId,
+      sourceId,
+      status: 'queued',
+      title,
+      updatedDomains: isStructuredImportType(sourceType) ? ['sources', 'ask', 'reports', 'data'] : ['sources', 'ask', 'reports'],
+    };
+  }
+
   async function publishWeeklyUpdate(productId, payload, actorSub) {
     const state = await readState();
     const weeklyUpdateId = `wu-${state.nextIds.weekly++}`;
@@ -1100,6 +1410,7 @@ export function createMutationService({
   }
 
   return {
+    queueArtifactJob,
     queueTranscriptJob,
     publishWeeklyUpdate,
     queueReportJob,

@@ -3,11 +3,22 @@ import { Navigate, Route, Routes, useLocation, useNavigate, useParams, useSearch
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { apiGet, apiSend, apiUpload } from './lib/api.js';
+import {
+  buildArtifactTitle,
+  getDefaultSourceType,
+  getSourceTypeLabel,
+  getSourceTypeOptions,
+  isBinarySourceType,
+  isStructuredImportType,
+  isSupportedArtifactFile,
+} from '../../shared/artifactTypes.js';
 
 const ToastContext = createContext({ pushToast: () => {} });
+const AnnounceContext = createContext({ announce: () => {} });
 
 export default function App() {
   const [toasts, setToasts] = useState([]);
+  const [announcement, setAnnouncement] = useState('');
   const supported = useViewportSupported();
 
   function pushToast(message) {
@@ -18,15 +29,23 @@ export default function App() {
     }, 2600);
   }
 
+  function announce(message) {
+    setAnnouncement('');
+    window.setTimeout(() => setAnnouncement(message), 10);
+  }
+
   if (!supported) {
     return <UnsupportedViewport />;
   }
 
   return (
-    <ToastContext.Provider value={{ pushToast }}>
-      <AppShell />
-      <ToastRegion toasts={toasts} />
-    </ToastContext.Provider>
+    <AnnounceContext.Provider value={{ announce }}>
+      <ToastContext.Provider value={{ pushToast }}>
+        <AppShell />
+        <ToastRegion toasts={toasts} />
+        <div aria-live="polite" aria-atomic="true" className="sr-only" data-testid="aria-live-region">{announcement}</div>
+      </ToastContext.Provider>
+    </AnnounceContext.Provider>
   );
 }
 
@@ -211,6 +230,10 @@ function useViewportSupported() {
 
 function useToasts() {
   return useContext(ToastContext);
+}
+
+function useAnnouncements() {
+  return useContext(AnnounceContext);
 }
 
 function getHarnessParams() {
@@ -454,13 +477,27 @@ function ProductPage() {
   const navigate = useNavigate();
   const { productId } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
+  const queryClient = useQueryClient();
   const rolePreset = searchParams.get('asRole') || '';
   const tab = searchParams.get('tab') || 'overview';
   const tabValues = ['overview', 'timeline', 'data', 'sources', 'reports'];
+  const [dismissedStatusSourceId, setDismissedStatusSourceId] = useState('');
   const productQuery = useQuery({
     queryKey: ['product', rolePreset, productId],
     queryFn: () => apiGet(withRole(`/api/v1/products/${productId}`, rolePreset)),
+    refetchInterval: (query) => (['queued', 'running'].includes(query.state.data?.overview?.latestIngest?.status) ? 800 : false),
+    refetchIntervalInBackground: true,
   });
+
+  useEffect(() => {
+    const latestIngest = productQuery.data?.overview?.latestIngest;
+    if (!latestIngest || !['completed', 'partial'].includes(latestIngest.status)) {
+      return;
+    }
+    queryClient.invalidateQueries({ queryKey: ['sources', rolePreset, productId] });
+    queryClient.invalidateQueries({ queryKey: ['data', rolePreset, productId] });
+    queryClient.invalidateQueries({ queryKey: ['report', rolePreset, productId] });
+  }, [productQuery.data?.overview?.latestIngest?.jobId, productQuery.data?.overview?.latestIngest?.status, productId, queryClient, rolePreset]);
 
   function setParams(entries) {
     setSearchParams((current) => {
@@ -502,6 +539,8 @@ function ProductPage() {
   }
 
   const { product, permissions, health, overview } = productQuery.data;
+  const latestIngest = overview.latestIngest;
+  const visibleIngest = latestIngest && latestIngest.sourceId !== dismissedStatusSourceId ? latestIngest : null;
 
   return (
     <div className="page" data-testid="product-page">
@@ -535,6 +574,13 @@ function ProductPage() {
           </button>
         ))}
       </div>
+      {visibleIngest ? (
+        <ArtifactIngestStatusPanel
+          ingest={visibleIngest}
+          onViewSources={() => setParams({ tab: 'sources', sourceId: visibleIngest.sourceId })}
+          onDismiss={() => setDismissedStatusSourceId(visibleIngest.sourceId)}
+        />
+      ) : null}
       {tab === 'overview' ? <OverviewView productId={productId} product={product} permissions={permissions} health={health} overview={overview} rolePreset={rolePreset} setParam={setParam} setParams={setParams} /> : null}
       {tab === 'timeline' ? <TimelineView productId={productId} rolePreset={rolePreset} searchParams={searchParams} setParam={setParam} /> : null}
       {tab === 'data' ? <DataView productId={productId} rolePreset={rolePreset} searchParams={searchParams} setParam={setParam} /> : null}
@@ -547,19 +593,30 @@ function ProductPage() {
 function OverviewView({ productId, product, permissions, health, overview, rolePreset, setParam, setParams }) {
   const queryClient = useQueryClient();
   const { pushToast } = useToasts();
+  const { announce } = useAnnouncements();
   const [askInput, setAskInput] = useState('');
-  const [showTranscriptModal, setShowTranscriptModal] = useState(false);
+  const [showArtifactModal, setShowArtifactModal] = useState(false);
   const [showWeeklyModal, setShowWeeklyModal] = useState(false);
-  const askMutation = useMutation({ mutationFn: (question) => apiSend(withRole(`/api/v1/products/${productId}/ask`, rolePreset), 'POST', { question }) });
-  const transcriptMutation = useMutation({
-    mutationFn: (formData) => apiUpload(withRole(`/api/v1/products/${productId}/transcripts`, rolePreset), formData),
+  const askMutation = useMutation({
+    mutationFn: (question) => apiSend(withRole(`/api/v1/products/${productId}/ask`, rolePreset), 'POST', { question }),
+    onMutate: () => {
+      announce('Ask request in progress.');
+    },
     onSuccess: () => {
-      pushToast('Transcript uploaded');
-      setShowTranscriptModal(false);
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ['product', rolePreset, productId] });
-        queryClient.invalidateQueries({ queryKey: ['sources', rolePreset, productId] });
-      }, 400);
+      announce('Ask response ready.');
+    },
+    onError: () => {
+      announce('Ask request failed.');
+    },
+  });
+  const artifactMutation = useMutation({
+    mutationFn: ({ formData }) => apiUpload(withRole(`/api/v1/products/${productId}/sources`, rolePreset), formData),
+    onSuccess: (payload) => {
+      pushToast(payload.status === 'completed' ? 'Artifact processed' : 'Artifact queued for processing');
+      setShowArtifactModal(false);
+      announce('Artifact queued for processing.');
+      queryClient.invalidateQueries({ queryKey: ['product', rolePreset, productId] });
+      queryClient.invalidateQueries({ queryKey: ['sources', rolePreset, productId] });
     },
   });
   const weeklyMutation = useMutation({
@@ -578,6 +635,14 @@ function OverviewView({ productId, product, permissions, health, overview, roleP
     }
     askMutation.mutate(askInput);
   }
+
+  function retryAsk() {
+    if (askInput.trim().length < 3) {
+      return;
+    }
+    askMutation.mutate(askInput);
+  }
+
   return (
     <div className="overview-grid">
       <div>
@@ -616,16 +681,12 @@ function OverviewView({ productId, product, permissions, health, overview, roleP
             {health.gapItems.map((item) => <div key={item.id} className={`kh-gap-item ${item.level}`}>{item.level === 'miss' ? '✗' : '⚠'} {item.text}</div>)}
           </div>
           {health.biggestGap ? <div className="evidence-gap-warn"><strong>Biggest gap:</strong> {health.biggestGap}</div> : null}
-          {overview.pendingIngestCount > 0 ? (
-            <div className="evidence-gap-warn" data-testid="ingest-pending-state">
-              {overview.pendingIngestCount} transcript ingest job{overview.pendingIngestCount > 1 ? 's are' : ' is'} still processing.
-            </div>
-          ) : null}
           <div className="kh-actions">
-            {permissions.canUploadTranscript ? <button className="kh-action-btn" data-testid="upload-transcript-button" onClick={() => setShowTranscriptModal(true)}>Upload Transcript</button> : null}
+            {permissions.canUploadArtifact ? <button className="kh-action-btn" data-testid="upload-artifact-button" onClick={() => setShowArtifactModal(true)}>Upload Artifact</button> : null}
             {permissions.canUpdateWeekly ? <button className="kh-action-btn" data-testid="update-weekly-button" onClick={() => setShowWeeklyModal(true)}>Update Weekly</button> : null}
           </div>
         </div>
+        {overview.latestEvidenceUpdate ? <EvidenceUpdatedBanner update={overview.latestEvidenceUpdate} /> : null}
       </div>
       <div>
         <div className="current-state-card">
@@ -666,11 +727,24 @@ function OverviewView({ productId, product, permissions, health, overview, roleP
           <div className="ask-suggestions">
             {overview.askSuggestions.map((suggestion) => <button key={suggestion} type="button" className="ask-suggestion" onClick={() => { setAskInput(suggestion); askMutation.mutate(suggestion); }}>{suggestion}</button>)}
           </div>
-          {askMutation.isError ? <div className="inline-error-panel" data-testid="ask-error-state">We couldn’t answer that question right now. Try again.</div> : null}
-          {askMutation.data ? <AskAnswer answer={askMutation.data} onOpenSource={(sourceId) => setParams({ tab: 'sources', sourceId })} /> : null}
+          {askMutation.isPending ? <div className="ask-loading" data-testid="ask-loading">Searching current evidence…</div> : null}
+          {askMutation.isError ? (
+            <div className="inline-error-panel" data-testid="ask-error-state">
+              <div>We couldn’t retrieve evidence right now. Try again.</div>
+              <button type="button" className="secondary-btn" data-testid="ask-retry" onClick={retryAsk}>Retry</button>
+            </div>
+          ) : null}
+          {askMutation.isSuccess && !askMutation.isPending && !askMutation.isError ? <AskAnswer answer={askMutation.data} onOpenSource={(sourceId) => setParams({ tab: 'sources', sourceId })} /> : null}
         </div>
       </div>
-      {showTranscriptModal ? <TranscriptModal busy={transcriptMutation.isPending} onClose={() => setShowTranscriptModal(false)} onSubmit={(formData) => transcriptMutation.mutate(formData)} /> : null}
+      {showArtifactModal ? (
+        <UploadArtifactModal
+          busy={artifactMutation.isPending}
+          onClose={() => setShowArtifactModal(false)}
+          onSubmit={(payload) => artifactMutation.mutate(payload)}
+          error={artifactMutation.isError ? artifactMutation.error : null}
+        />
+      ) : null}
       {showWeeklyModal ? <WeeklyModal busy={weeklyMutation.isPending} onClose={() => setShowWeeklyModal(false)} onSubmit={(payload) => weeklyMutation.mutate(payload)} /> : null}
     </div>
   );
@@ -788,6 +862,11 @@ function DataView({ productId, rolePreset, searchParams, setParam }) {
           </button>
         ))}
       </div>
+      {data?.importImpact ? (
+        <div className="data-import-impact-badge" data-testid="data-import-impact-badge">
+          Structured import applied from {data.importImpact.title}. This upload updates structured product data shown in the Data tab.
+        </div>
+      ) : null}
       {data ? (
         <div className="data-table-wrap">
           <table className="data-table">
@@ -841,7 +920,8 @@ function DataView({ productId, rolePreset, searchParams, setParam }) {
 function SourcesView({ productId, rolePreset, searchParams, setParam }) {
   const filter = searchParams.get('sourceFilter') || 'all';
   const sourceId = searchParams.get('sourceId');
-  const sourceFilterValues = ['all', 'transcript', 'email', 'document', 'weekly', 'ado'];
+  const sourceFilterValues = ['all', 'transcript', 'slide_deck', 'spreadsheet', 'email', 'document', 'weekly', 'ado'];
+  const triggerRef = useRef(null);
   const { data } = useQuery({
     queryKey: ['sources', rolePreset, productId, filter],
     queryFn: () => apiGet(withRole(`/api/v1/products/${productId}/sources?type=${filter}`, rolePreset)),
@@ -853,13 +933,22 @@ function SourcesView({ productId, rolePreset, searchParams, setParam }) {
   });
 
   function closeSourceDetail() {
-    const next = new URLSearchParams(searchParams);
-    next.delete('sourceId');
-    if (rolePreset) {
-      next.set('asRole', rolePreset);
-    }
-    window.history.replaceState({}, '', `${window.location.pathname}?${next.toString()}`);
+    setParam('sourceId', '');
+    window.setTimeout(() => triggerRef.current?.focus?.(), 0);
   }
+
+  useEffect(() => {
+    if (!sourceId) {
+      return;
+    }
+    function onKeyDown(event) {
+      if (event.key === 'Escape') {
+        closeSourceDetail();
+      }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [sourceId, searchParams]);
 
   return (
     <div data-testid="sources-view">
@@ -875,18 +964,27 @@ function SourcesView({ productId, rolePreset, searchParams, setParam }) {
             onClick={() => setParam('sourceFilter', item)}
             onKeyDown={(event) => moveFocusInButtonGroup(event, sourceFilterValues, item, (nextValue) => setParam('sourceFilter', nextValue), 'source-filters')}
           >
-            {item === 'all' ? 'All' : item}
+            {item === 'all' ? 'All' : item.replace('_', ' ')}
           </button>
         ))}
       </div>
       <div className="source-list">
         {data?.items.map((source) => (
-          <button key={source.id} type="button" className="source-item" data-testid={`source-item-${source.id}`} onClick={() => setParam('sourceId', source.id)}>
+          <button
+            key={source.id}
+            type="button"
+            className={`source-item ${source.processingStatus}`}
+            data-testid={`source-item-${source.id}`}
+            onClick={(event) => {
+              triggerRef.current = event.currentTarget;
+              setParam('sourceId', source.id);
+            }}
+          >
             <div className="source-info">
               <div className="source-title">{source.title}</div>
               <div className="source-meta">{source.date} · {source.meta}</div>
             </div>
-            <span className="source-badge" style={{ background: 'var(--blue-50)', color: 'var(--blue-700)' }}>{source.type}</span>
+            <span className="source-badge" style={{ background: source.processingStatus === 'partial' ? 'var(--amber-100)' : 'var(--blue-50)', color: source.processingStatus === 'partial' ? 'var(--amber-700)' : 'var(--blue-700)' }}>{source.typeLabel}</span>
           </button>
         ))}
       </div>
@@ -899,8 +997,13 @@ function SourcesView({ productId, rolePreset, searchParams, setParam }) {
             </div>
             <div className="ddp-field"><strong>Date:</strong> {new Date(sourceDetailQuery.data.source.sourceDate).toLocaleString()}</div>
             <div className="ddp-field"><strong>Author:</strong> {sourceDetailQuery.data.source.author}</div>
-            <div className="ddp-field"><strong>Preview:</strong> {sourceDetailQuery.data.source.previewText}</div>
-            <div className="drawer-actions"><a className="primary-btn" href={withRole(sourceDetailQuery.data.source.openUrl, rolePreset)}>Open Source</a></div>
+            {sourceDetailQuery.data.source.warningText ? <div className="inline-warning-panel" data-testid="source-parser-warning">{sourceDetailQuery.data.source.warningText}</div> : null}
+            <div className="ddp-field" data-testid="source-preview-content"><strong>Preview:</strong> {sourceDetailQuery.data.source.previewText}</div>
+            <div className="drawer-actions">
+              {sourceDetailQuery.data.source.binary
+                ? <a className="primary-btn" data-testid="source-download-original" href={withRole(sourceDetailQuery.data.source.openUrl, rolePreset)}>Download Original</a>
+                : <a className="primary-btn" data-testid="source-open-source" href={withRole(sourceDetailQuery.data.source.openUrl, rolePreset)}>Open Source</a>}
+            </div>
           </div>
         </div>
       ) : null}
@@ -1086,6 +1189,12 @@ function ReportsView({ productId, product, permissions, rolePreset, searchParams
 
   return (
     <div data-testid="reports-view">
+      {report.requiresRegeneration ? (
+        <div className="inline-warning-panel" data-testid="report-regenerate-notice">
+          {report.regenerateNotice}
+          <button type="button" className="secondary-btn" data-testid="report-regenerate-button" onClick={() => generateMutation.mutate()}>Regenerate</button>
+        </div>
+      ) : null}
       <div className="report-coverage" data-testid="report-coverage-card">
         <h3>Evidence Coverage for This Period</h3>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
@@ -1165,9 +1274,240 @@ function ReportsView({ productId, product, permissions, rolePreset, searchParams
   );
 }
 
-function TranscriptModal({ busy, onClose, onSubmit }) {
-  const { register, handleSubmit, formState: { errors } } = useForm();
-  return <div className="modal-overlay" onClick={onClose}><div className="modal-panel" data-testid="upload-transcript-modal" onClick={(event) => event.stopPropagation()}><h2>Upload Transcript</h2><form className="form-grid" onSubmit={handleSubmit((values) => { const formData = new FormData(); formData.append('meetingTitle', values.meetingTitle); formData.append('meetingDate', values.meetingDate); formData.append('notes', values.notes || ''); if (values.file?.[0]) { formData.append('file', values.file[0]); } onSubmit(formData); })}><div className="form-grid two"><div className="form-field"><label htmlFor="transcript-title">Meeting Title *</label><input id="transcript-title" data-testid="transcript-title-input" {...register('meetingTitle', { required: 'Enter a meeting title' })} />{errors.meetingTitle ? <span className="field-error">{errors.meetingTitle.message}</span> : null}</div><div className="form-field"><label htmlFor="transcript-date">Meeting Date *</label><input id="transcript-date" type="date" data-testid="transcript-date-input" {...register('meetingDate', { required: 'Choose a meeting date' })} />{errors.meetingDate ? <span className="field-error">{errors.meetingDate.message}</span> : null}</div></div><div className="form-field"><label htmlFor="transcript-file">Transcript File *</label><input id="transcript-file" type="file" data-testid="transcript-file-input" {...register('file', { required: 'Choose a transcript file' })} />{errors.file ? <span className="field-error">{errors.file.message}</span> : null}</div><div className="form-field"><label htmlFor="transcript-notes">Notes</label><textarea id="transcript-notes" data-testid="transcript-notes-input" {...register('notes')}></textarea></div><div className="modal-actions"><button type="button" className="secondary-btn" onClick={onClose}>Cancel</button><button type="submit" className="primary-btn" data-testid="transcript-submit" disabled={busy}>Upload</button></div></form></div></div>;
+function ArtifactIngestStatusPanel({ ingest, onViewSources, onDismiss }) {
+  const statusLabel = ingest.status === 'completed'
+    ? 'Completed'
+    : ingest.status === 'partial'
+      ? 'Processed with limitations'
+      : ingest.status === 'failed'
+        ? 'Failed'
+        : ingest.status === 'running'
+          ? 'Processing'
+          : 'Queued';
+  const testId = ingest.status === 'completed'
+    ? 'artifact-processing-complete'
+    : ingest.status === 'partial'
+      ? 'artifact-processing-warning'
+      : ingest.status === 'failed'
+        ? 'artifact-processing-failed'
+        : 'artifact-processing-status';
+
+  return (
+    <div className={`artifact-status-panel ${ingest.status}`} data-testid={testId}>
+      <div>
+        <div className="asp-title">Artifact Processing</div>
+        <div className="asp-copy">{ingest.title} · {statusLabel}</div>
+        {ingest.warningText ? <div className="asp-warning">{ingest.warningText}</div> : null}
+      </div>
+      <div className="asp-actions">
+        <button type="button" className="secondary-btn" onClick={onViewSources}>View in Sources</button>
+        {['completed', 'failed', 'partial'].includes(ingest.status) ? <button type="button" className="secondary-btn" onClick={onDismiss}>Dismiss</button> : null}
+      </div>
+    </div>
+  );
+}
+
+function EvidenceUpdatedBanner({ update }) {
+  if (!update?.message) {
+    return null;
+  }
+  return <div className="evidence-updated-banner" data-testid="evidence-updated-banner">{update.message}</div>;
+}
+
+function UploadArtifactModal({ busy, onClose, onSubmit, error }) {
+  const titleRef = useRef(null);
+  const triggerRef = useRef(null);
+  const { register, setValue, getValues, watch, setError, clearErrors, formState: { errors } } = useForm({
+    defaultValues: {
+      title: '',
+      sourceDate: '',
+      sourceType: '',
+      author: '',
+      participants: '',
+      notes: '',
+      structuredImpactConfirmed: false,
+    },
+  });
+  const [artifactFile, setArtifactFile] = useState(null);
+  const [metadataFile, setMetadataFile] = useState(null);
+  const selectedType = watch('sourceType');
+  const sourceOptions = artifactFile ? getSourceTypeOptions(artifactFile.name) : [];
+  const defaultType = artifactFile ? getDefaultSourceType(artifactFile.name) : '';
+  const lockedType = artifactFile && sourceOptions.length === 1;
+
+  useEffect(() => {
+    triggerRef.current = document.activeElement;
+    window.setTimeout(() => titleRef.current?.focus(), 0);
+    function onKeyDown(event) {
+      if (event.key === 'Escape' && !busy) {
+        onClose();
+      }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      triggerRef.current?.focus?.();
+    };
+  }, [busy, onClose]);
+
+  useEffect(() => {
+    if (!error?.error?.field) {
+      return;
+    }
+    setError(error.error.field, { type: 'server', message: error.error.message });
+  }, [error, setError]);
+
+  function handleArtifactFile(file) {
+    setArtifactFile(file || null);
+    clearErrors('file');
+    clearErrors('sourceType');
+    if (!file) {
+      return;
+    }
+    if (!isSupportedArtifactFile(file.name)) {
+      setError('file', { type: 'manual', message: 'File type not supported' });
+      return;
+    }
+    const inferredTitle = buildArtifactTitle(file.name);
+    if (!getValues('title')) {
+      setValue('title', inferredTitle, { shouldDirty: true });
+    }
+    const inferredType = getDefaultSourceType(file.name);
+    setValue('sourceType', inferredType, { shouldDirty: true, shouldValidate: true });
+  }
+
+  function validateForm() {
+    const values = getValues();
+    let valid = true;
+    if (!artifactFile) {
+      setError('file', { type: 'manual', message: 'Choose an artifact file' });
+      valid = false;
+    } else if (!isSupportedArtifactFile(artifactFile.name)) {
+      setError('file', { type: 'manual', message: 'File type not supported' });
+      valid = false;
+    }
+    if (!values.sourceDate) {
+      setError('sourceDate', { type: 'manual', message: 'Choose a source date' });
+      valid = false;
+    } else if (new Date(`${values.sourceDate}T00:00:00Z`).getTime() > new Date(`${new Date().toISOString().slice(0, 10)}T00:00:00Z`).getTime()) {
+      setError('sourceDate', { type: 'manual', message: 'Source date cannot be in the future' });
+      valid = false;
+    }
+    if (!values.sourceType) {
+      setError('sourceType', { type: 'manual', message: 'Choose a source type' });
+      valid = false;
+    }
+    if (isStructuredImportType(values.sourceType) && !values.structuredImpactConfirmed) {
+      setError('structuredImpactConfirmed', { type: 'manual', message: 'Confirm that this upload updates structured product data' });
+      valid = false;
+    }
+    return valid;
+  }
+
+  function buildPayload() {
+    const values = getValues();
+    const formData = new FormData();
+    formData.append('file', artifactFile);
+    formData.append('sourceType', values.sourceType);
+    formData.append('sourceDate', values.sourceDate);
+    formData.append('title', values.title || '');
+    formData.append('author', values.author || '');
+    formData.append('participants', values.participants || '');
+    formData.append('notes', values.notes || '');
+    formData.append('structuredImpactConfirmed', values.structuredImpactConfirmed ? 'true' : 'false');
+    if (metadataFile) {
+      formData.append('metadataFile', metadataFile);
+    }
+    return { formData };
+  }
+
+  function submit(event) {
+    event.preventDefault();
+    clearErrors();
+    if (!validateForm()) {
+      return;
+    }
+    onSubmit(buildPayload());
+  }
+
+  return (
+    <div className="modal-overlay" onClick={() => !busy && onClose()}>
+      <div className="modal-panel artifact-modal-panel" data-testid="upload-artifact-modal" onClick={(event) => event.stopPropagation()}>
+        <h2 ref={titleRef} tabIndex={-1} data-testid="artifact-modal-title">Upload Artifact</h2>
+        <p className="modal-helper">Upload one supported artifact at a time. The application will process it and update evidence-driven views when processing completes.</p>
+        <form className="form-grid" onSubmit={submit}>
+          <div className="form-field">
+            <label htmlFor="artifact-file">Artifact file</label>
+            <input id="artifact-file" type="file" data-testid="artifact-file-input" onChange={(event) => handleArtifactFile(event.target.files?.[0] || null)} />
+            {errors.file ? <span className="field-error" data-testid="artifact-file-error">{errors.file.message}</span> : null}
+          </div>
+          <div className="form-grid two">
+            <div className="form-field">
+              <label htmlFor="artifact-source-type">Source type</label>
+              <select
+                id="artifact-source-type"
+                data-testid="artifact-source-type-select"
+                disabled={lockedType}
+                value={selectedType}
+                onChange={(event) => setValue('sourceType', event.target.value, { shouldDirty: true, shouldValidate: true })}
+              >
+                <option value="">Select a source type</option>
+                {sourceOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+              </select>
+              {errors.sourceType ? <span className="field-error" data-testid="artifact-source-type-error">{errors.sourceType.message}</span> : null}
+            </div>
+            <div className="form-field">
+              <label htmlFor="artifact-date">Source date</label>
+              <input id="artifact-date" type="date" data-testid="artifact-date-input" {...register('sourceDate')} />
+              {errors.sourceDate ? <span className="field-error" data-testid="artifact-date-error">{errors.sourceDate.message}</span> : null}
+            </div>
+          </div>
+          <div className="form-field">
+            <label htmlFor="artifact-title">Title</label>
+            <input id="artifact-title" data-testid="artifact-title-input" {...register('title')} />
+            {errors.title ? <span className="field-error" data-testid="artifact-title-error">{errors.title.message}</span> : null}
+          </div>
+          <div className="form-grid two">
+            <div className="form-field">
+              <label htmlFor="artifact-author">Author</label>
+              <input id="artifact-author" data-testid="artifact-author-input" {...register('author')} />
+            </div>
+            <div className="form-field">
+              <label htmlFor="artifact-participants">Participants</label>
+              <input id="artifact-participants" data-testid="artifact-participants-input" {...register('participants')} />
+            </div>
+          </div>
+          <div className="form-field">
+            <label htmlFor="artifact-notes">Notes</label>
+            <textarea id="artifact-notes" data-testid="artifact-notes-input" {...register('notes')}></textarea>
+          </div>
+          <div className="form-field">
+            <label htmlFor="artifact-metadata-file">Metadata file</label>
+            <input id="artifact-metadata-file" type="file" data-testid="artifact-metadata-file-input" onChange={(event) => setMetadataFile(event.target.files?.[0] || null)} />
+          </div>
+          {isStructuredImportType(selectedType) ? (
+            <label className="structured-impact-confirm" data-testid="structured-impact-confirmation">
+              <input type="checkbox" {...register('structuredImpactConfirmed')} />
+              <span>This upload updates structured product data shown in the Data tab.</span>
+            </label>
+          ) : (
+            <div className="modal-helper subtle">Structured imports can update product tables. Narrative documents, decks, emails, and transcripts enrich evidence and reporting without directly overwriting structured rows.</div>
+          )}
+          {errors.structuredImpactConfirmed ? <span className="field-error">{errors.structuredImpactConfirmed.message}</span> : null}
+          {error?.error && !error.error.field ? (
+            <div className="inline-error-panel" data-testid="artifact-inline-error">
+              <div>We couldn’t process this artifact right now. Your entries are still here. Review the error and try again.</div>
+              {error.error.retryable ? <button type="button" className="secondary-btn" data-testid="artifact-retry-button" onClick={() => onSubmit(buildPayload())}>Retry</button> : null}
+            </div>
+          ) : null}
+          <div className="modal-actions">
+            <button type="button" className="secondary-btn" data-testid="artifact-cancel" onClick={onClose} disabled={busy}>Cancel</button>
+            <button type="submit" className="primary-btn" data-testid="artifact-submit" disabled={busy}>{busy ? 'Uploading…' : 'Upload Artifact'}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
 }
 
 function WeeklyModal({ busy, onClose, onSubmit }) {

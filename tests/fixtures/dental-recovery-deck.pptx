@@ -1,0 +1,21 @@
+SLIDE 1: Dental Leadership Readout Deck
+TITLE: Dental Leadership Readout Deck
+BULLETS:
+- Vendor recovery milestones improved after the April 15 review.
+- Leadership asked for explicit blocker ownership and weekly evidence snapshots.
+NOTES:
+- Ask should be able to cite this deck when users ask what changed in the leadership readout deck.
+
+SLIDE 2: Recovery Decisions
+TITLE: Recovery Decisions
+BULLETS:
+- Decision: keep the vendor recovery workstream active through Sprint 3.
+- Decision: escalate blocker B-003 until contract execution is complete.
+NOTES:
+- Lowry owns vendor confirmation.
+
+SLIDE 3: Risks
+TITLE: Risks and Blockers
+BULLETS:
+- Risk R-IMP-001 captures dependency drift in the vendor test environment.
+- Blocker B-003 remains the critical gating item.

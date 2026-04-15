@@ -1,0 +1,3 @@
+id,title,severity,status,owner,changed,description,mitigation
+R-IMP-001,Imported vendor dependency risk,high,open,Lowry,2026-04-15T09:00:00.000Z,Vendor dependency drift remains unresolved,Confirm vendor timeline and publish mitigation
+R-IMP-002,Imported test readiness risk,med,open,Jaden,2026-04-15T09:15:00.000Z,Test readiness evidence is incomplete,Collect updated readiness evidence

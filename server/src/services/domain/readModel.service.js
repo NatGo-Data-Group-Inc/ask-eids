@@ -1,4 +1,5 @@
 import { HttpError } from '../common/httpError.js';
+import { getFilterKeyForSourceType, getSourceTypeLabel, isBinarySourceType } from '../../../../shared/artifactTypes.js';
 
 export function createReadModelService({ errorCodes }) {
   function resolveProductScope(state, rolePreset) {
@@ -175,9 +176,15 @@ export function createReadModelService({ errorCodes }) {
   function productPayload(state, productId, rolePreset) {
     const product = getProductOrThrow(state, productId, rolePreset);
     const permissions = getPermissions(state, rolePreset);
-    const pendingIngestCount = Object.values(state.jobs || {})
-      .filter((job) => job.jobType === 'ingest' && job.productId === productId && ['queued', 'running'].includes(job.status))
-      .length;
+    const ingestJobs = Object.values(state.jobs || {})
+      .filter((job) => job.jobType === 'ingest' && job.productId === productId)
+      .sort((left, right) => new Date(right.updatedAt || right.createdAt || 0) - new Date(left.updatedAt || left.createdAt || 0));
+    const latestIngestJob = ingestJobs[0] || null;
+    const pendingIngestCount = ingestJobs.filter((job) => ['queued', 'running'].includes(job.status)).length;
+    const productData = state.productData[productId];
+    const latestSource = latestIngestJob?.result?.sourceId
+      ? productData?.sources?.find((item) => item.id === latestIngestJob.result.sourceId)
+      : null;
     return {
       product: {
         id: product.id,
@@ -192,6 +199,7 @@ export function createReadModelService({ errorCodes }) {
         },
       },
       permissions: {
+        canUploadArtifact: permissions.canUploadArtifact ?? permissions.canUploadTranscript,
         canUploadTranscript: permissions.canUploadTranscript,
         canUpdateWeekly: permissions.canUpdateWeekly,
         canEditReport: permissions.canEditReport,
@@ -212,6 +220,19 @@ export function createReadModelService({ errorCodes }) {
         recentSignals: product.recentSignals,
         askSuggestions: product.askSuggestions,
         pendingIngestCount,
+        latestIngest: latestIngestJob
+          ? {
+            jobId: latestIngestJob.jobId,
+            status: latestIngestJob.status,
+            stage: latestIngestJob.stage || latestIngestJob.status,
+            sourceId: latestIngestJob.result?.sourceId || null,
+            title: latestSource?.title || latestIngestJob.title || latestIngestJob.result?.title || 'Uploaded artifact',
+            sourceType: latestSource?.type || latestIngestJob.sourceType || null,
+            warningText: latestSource?.warningText || latestIngestJob.message || null,
+            updatedDomains: latestIngestJob.result?.updatedDomains || [],
+          }
+          : null,
+        latestEvidenceUpdate: productData?.latestEvidenceUpdate || null,
       },
     };
   }
@@ -227,23 +248,37 @@ export function createReadModelService({ errorCodes }) {
   }
 
   function dataPayload(state, productId, dataset = 'risks', rolePreset = 'lead') {
-    const rows = getProductDataOrThrow(state, productId, rolePreset).data[dataset];
-    return { dataset, count: rows.length, rows };
+    const data = getProductDataOrThrow(state, productId, rolePreset);
+    const rows = data.data[dataset];
+    return {
+      dataset,
+      count: rows.length,
+      rows,
+      importImpact: data.lastStructuredImport?.dataset === dataset ? data.lastStructuredImport : null,
+    };
   }
 
   function sourcesPayload(state, productId, type = 'all', rolePreset = 'lead') {
     const all = getProductDataOrThrow(state, productId, rolePreset).sources;
-    const filtered = type === 'all' ? all : all.filter((source) => source.type === type);
+    const filtered = type === 'all' ? all : all.filter((source) => getFilterKeyForSourceType(source.type) === type || source.type === type);
+    const buildCount = (filterKey) => all.filter((source) => getFilterKeyForSourceType(source.type) === filterKey).length;
     return {
       counts: {
         all: all.length,
-        transcript: all.filter((source) => source.type === 'transcript').length,
-        email: all.filter((source) => source.type === 'email').length,
-        document: all.filter((source) => source.type === 'document').length,
-        weekly: all.filter((source) => source.type === 'weekly').length,
-        ado: all.filter((source) => source.type === 'ado').length,
+        transcript: buildCount('transcript'),
+        email: buildCount('email'),
+        document: buildCount('document'),
+        slide_deck: buildCount('slide_deck'),
+        spreadsheet: buildCount('spreadsheet'),
+        weekly: buildCount('weekly'),
+        ado: buildCount('ado'),
       },
-      items: filtered,
+      items: filtered.map((source) => ({
+        ...source,
+        filterKey: getFilterKeyForSourceType(source.type),
+        typeLabel: getSourceTypeLabel(source.type),
+        processingStatus: source.ingestStatus || 'completed',
+      })),
     };
   }
 
@@ -265,6 +300,10 @@ export function createReadModelService({ errorCodes }) {
           contentType: source.contentType,
         },
         previewText: source.previewText,
+        processingStatus: source.ingestStatus || 'completed',
+        warningText: source.warningText || null,
+        typeLabel: getSourceTypeLabel(source.type),
+        binary: isBinarySourceType(source.type),
         openUrl: `/api/v1/products/${productId}/sources/${sourceId}/content`,
       },
     };

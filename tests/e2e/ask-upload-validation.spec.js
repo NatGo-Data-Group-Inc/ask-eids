@@ -11,21 +11,26 @@ test('ask button stays disabled for short queries', async ({ page }) => {
   await expect(page.getByTestId('ask-submit')).toBeDisabled();
 });
 
-test('transcript modal remains open with user metadata when upload fails validation', async ({ page }) => {
+test('artifact upload validation failures', async ({ page }) => {
   await page.goto('/products/dental?tab=overview');
-  await page.getByTestId('upload-transcript-button').click();
-  await expect(page.getByTestId('upload-transcript-modal')).toBeVisible();
+  await page.getByTestId('upload-artifact-button').click();
+  await expect(page.getByTestId('upload-artifact-modal')).toBeVisible();
 
-  await page.getByTestId('transcript-title-input').fill('Validation Failure Transcript');
-  await page.getByTestId('transcript-date-input').fill('2026-04-11');
-  await page.getByTestId('transcript-file-input').setInputFiles({
+  await page.getByTestId('artifact-submit').click();
+  await expect(page.getByTestId('artifact-file-error')).toContainText('Choose an artifact file');
+  await expect(page.getByTestId('artifact-date-error')).toContainText('Choose a source date');
+
+  await page.getByTestId('artifact-title-input').fill('Validation Failure Artifact');
+  await page.getByTestId('artifact-date-input').fill('2026-04-15');
+  await page.getByTestId('artifact-file-input').setInputFiles({
     name: 'unsupported.exe',
     mimeType: 'application/octet-stream',
     buffer: Buffer.from('not-supported'),
   });
-  await page.getByTestId('transcript-submit').click();
+  await page.getByTestId('artifact-submit').click();
 
-  await expect(page.getByTestId('upload-transcript-modal')).toBeVisible();
-  await expect(page.getByTestId('transcript-title-input')).toHaveValue('Validation Failure Transcript');
-  await expect(page.getByTestId('transcript-date-input')).toHaveValue('2026-04-11');
+  await expect(page.getByTestId('upload-artifact-modal')).toBeVisible();
+  await expect(page.getByTestId('artifact-file-error')).toContainText('File type not supported');
+  await expect(page.getByTestId('artifact-title-input')).toHaveValue('Validation Failure Artifact');
+  await expect(page.getByTestId('artifact-date-input')).toHaveValue('2026-04-15');
 });

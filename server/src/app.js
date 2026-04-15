@@ -11,7 +11,7 @@ import { createRuntimeStateRepository } from './services/state/runtimeState.repo
 import { HttpError } from './services/common/httpError.js';
 import { createReadModelService } from './services/domain/readModel.service.js';
 import { createAskService } from './services/domain/ask.service.js';
-import { createMutationService } from './services/domain/mutation.service.js';
+import { createMutationService, resetMutationHarnessState } from './services/domain/mutation.service.js';
 
 const runtimeConfig = getRuntimeConfig();
 const runtimeDir = runtimeConfig.storage.paths.runtimeDir;
@@ -61,6 +61,7 @@ export async function resetRuntimeData() {
   await fs.mkdir(uploadsDir, { recursive: true });
   await fs.mkdir(exportsDir, { recursive: true });
   await fs.rm(runtimeConfig.storage.paths.runtimeFile, { force: true });
+  resetMutationHarnessState();
   await initializeCorpusRuntime();
 }
 
@@ -241,6 +242,23 @@ export async function buildApp({ withVite = false } = {}) {
     ));
   });
 
+  app.post('/api/v1/products/:productId/sources', upload.fields([{ name: 'file', maxCount: 1 }, { name: 'metadataFile', maxCount: 1 }]), async (req, res) => {
+    const state = await readState();
+    readModel.getProductOrThrow(state, req.params.productId, req.user.rolePreset);
+    const permissions = readModel.getPermissions(state, req.user.rolePreset);
+    if (!(permissions.canUploadArtifact ?? permissions.canUploadTranscript)) {
+      throw new HttpError(403, ERROR_CODES.FORBIDDEN, 'You do not have access to upload artifacts for this product.');
+    }
+    const file = req.files?.file?.[0] || null;
+    const metadataFile = req.files?.metadataFile?.[0] || null;
+    res.status(202).json(await mutationService.queueArtifactJob(
+      req.params.productId,
+      file,
+      req.body,
+      { testCase: String(req.query.testCase || ''), metadataFile }
+    ));
+  });
+
   app.post('/api/v1/products/:productId/weekly-updates', async (req, res) => {
     const state = await readState();
     readModel.getProductOrThrow(state, req.params.productId, req.user.rolePreset);
@@ -260,11 +278,16 @@ export async function buildApp({ withVite = false } = {}) {
     const state = await readState();
     readModel.getProductOrThrow(state, req.params.productId, req.user.rolePreset);
     const report = state.reports[req.params.reportId];
+    const product = state.products.find((item) => item.id === req.params.productId);
     if (!report) {
       throw readModel.notFound('Report not found.');
     }
     res.json({
       ...report,
+      requiresRegeneration: Number(report.evidenceVersion || 0) < Number(product?.evidenceVersion || 0),
+      regenerateNotice: Number(report.evidenceVersion || 0) < Number(product?.evidenceVersion || 0)
+        ? 'New evidence is available. Regenerate to include it.'
+        : null,
       sections: (report.sections || []).map((section) => ({
         ...section,
         body: section.bodyCurrent ?? section.body,

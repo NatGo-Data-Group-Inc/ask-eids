@@ -8,9 +8,9 @@ export function createSeedState() {
       },
     },
     rolePresets: {
-      lead: { role: 'lead', canUploadTranscript: true, canUpdateWeekly: true, canEditReport: true, canExportReport: true },
-      editor: { role: 'editor', canUploadTranscript: true, canUpdateWeekly: true, canEditReport: true, canExportReport: true },
-      read: { role: 'read', canUploadTranscript: false, canUpdateWeekly: false, canEditReport: false, canExportReport: true },
+      lead: { role: 'lead', canUploadArtifact: true, canUploadTranscript: true, canUpdateWeekly: true, canEditReport: true, canExportReport: true },
+      editor: { role: 'editor', canUploadArtifact: true, canUploadTranscript: true, canUpdateWeekly: true, canEditReport: true, canExportReport: true },
+      read: { role: 'read', canUploadArtifact: false, canUploadTranscript: false, canUpdateWeekly: false, canEditReport: false, canExportReport: true },
     },
     products: [
       {
@@ -25,6 +25,7 @@ export function createSeedState() {
         pi: 4,
         sprint: 2,
         stakeholders: ['Dr. Sohl', 'Juan', 'Lowry'],
+        evidenceVersion: 1,
         lastSync: '2026-04-13T14:00:00.000Z',
         highlights: [
           { id: 'gap-1', level: 'warn', text: '2 meetings missing transcripts' },
@@ -58,6 +59,7 @@ export function createSeedState() {
         pi: 4,
         sprint: 2,
         stakeholders: ['Sandy', 'Anna K.'],
+        evidenceVersion: 1,
         lastSync: '2026-04-15T11:00:00.000Z',
         highlights: [{ id: 'ok-1', level: 'ok', text: 'All sources current' }],
         okItems: [{ id: 'ok-1', text: 'All sources current' }],
@@ -78,6 +80,7 @@ export function createSeedState() {
         pi: 4,
         sprint: 1,
         stakeholders: ['Cmd. Jones'],
+        evidenceVersion: 1,
         lastSync: '2026-04-12T09:00:00.000Z',
         highlights: [{ id: 'gap-1', level: 'miss', text: 'PM handoff incomplete' }],
         okItems: [],
@@ -98,6 +101,7 @@ export function createSeedState() {
         pi: 4,
         sprint: 2,
         stakeholders: ['Sandy'],
+        evidenceVersion: 1,
         lastSync: '2026-04-10T12:00:00.000Z',
         highlights: [{ id: 'gap-1', level: 'warn', text: 'Weekly update stale 18 days' }],
         okItems: [],
@@ -118,6 +122,7 @@ export function createSeedState() {
         pi: 4,
         sprint: 2,
         stakeholders: [],
+        evidenceVersion: 1,
         lastSync: '2026-04-15T08:00:00.000Z',
         highlights: [{ id: 'gap-1', level: 'warn', text: '1 transcript missing' }],
         okItems: [{ id: 'ok-1', text: 'Weekly update current' }],
@@ -138,6 +143,7 @@ export function createSeedState() {
         pi: 4,
         sprint: 2,
         stakeholders: [],
+        evidenceVersion: 1,
         lastSync: '2026-04-15T13:30:00.000Z',
         highlights: [{ id: 'ok-1', level: 'ok', text: 'All sources current' }],
         okItems: [{ id: 'ok-1', text: 'All sources current' }],
@@ -149,6 +155,9 @@ export function createSeedState() {
     ],
     productData: {
       dental: {
+        evidenceVersion: 1,
+        lastStructuredImport: null,
+        latestEvidenceUpdate: null,
         timelineCoverage: [
           { id: 'c1', status: 'ok', text: 'Risks synced' },
           { id: 'c2', status: 'ok', text: 'Blockers synced' },
@@ -200,7 +209,38 @@ export function createSeedState() {
         ]
       }
     },
-    reports: {},
+    reports: {
+      'rep-seeded': {
+        reportId: 'rep-seeded',
+        productId: 'dental',
+        reportType: 'weekly',
+        period: {
+          preset: 'current',
+          start: '2026-04-09T00:00:00.000Z',
+          end: '2026-04-15T23:59:59.000Z',
+        },
+        evidenceVersion: 1,
+        generatedAt: '2026-04-15T10:00:00.000Z',
+        coverage: {
+          percentage: 78,
+          items: [
+            { label: 'Sources ingested', status: 'ok', count: 5, expected: 5 },
+            { label: 'Evidence freshness', status: 'warn', count: 3, expected: 5 },
+          ],
+          warningText: 'Coverage is adequate, but a newer artifact may improve confidence.',
+        },
+        sections: [
+          {
+            sectionId: 'executive-summary',
+            title: 'Executive Summary',
+            body: 'Dental remains at risk because the vendor contract and test-environment timeline continue to threaten Sprint 3 execution.',
+            bodyCurrent: 'Dental remains at risk because the vendor contract and test-environment timeline continue to threaten Sprint 3 execution.',
+            revision: 1,
+            editedAt: null,
+          },
+        ],
+      },
+    },
     jobs: {},
     telemetryEvents: [],
     auditEvents: [],

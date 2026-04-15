@@ -11,9 +11,9 @@ const fixedSessionUser = {
   email: 'bjennings@example.mil',
 };
 const fixedRolePresets = {
-  lead: { role: 'lead', canUploadTranscript: true, canUpdateWeekly: true, canEditReport: true, canExportReport: true },
-  editor: { role: 'editor', canUploadTranscript: true, canUpdateWeekly: true, canEditReport: true, canExportReport: true },
-  read: { role: 'read', canUploadTranscript: false, canUpdateWeekly: false, canEditReport: false, canExportReport: true },
+  lead: { role: 'lead', canUploadArtifact: true, canUploadTranscript: true, canUpdateWeekly: true, canEditReport: true, canExportReport: true },
+  editor: { role: 'editor', canUploadArtifact: true, canUploadTranscript: true, canUpdateWeekly: true, canEditReport: true, canExportReport: true },
+  read: { role: 'read', canUploadArtifact: false, canUploadTranscript: false, canUpdateWeekly: false, canEditReport: false, canExportReport: true },
 };
 const binaryFallbackFormats = new Set(['pdf', 'pptx', 'xlsx']);
 const textLikeFormats = new Set(['md', 'csv', 'eml']);
@@ -756,6 +756,9 @@ export async function buildInitialCorpusState() {
     const narrativeText = latestWeeklyEntry?.weekly?.summary || latestEntry.previewText;
 
     productData[productId] = {
+      evidenceVersion: 1,
+      lastStructuredImport: null,
+      latestEvidenceUpdate: null,
       timelineCoverage: coverage.coverageStrip,
       timelineGroups: buildTimelineGroups(sortedEntries),
       data,
@@ -789,6 +792,7 @@ export async function buildInitialCorpusState() {
       pi: piMatch ? Number.parseInt(piMatch[1], 10) : 4,
       sprint: sprintMatch ? Number.parseInt(sprintMatch[1], 10) : 1,
       stakeholders,
+      evidenceVersion: 1,
       lastSync: sortedEntries[0].isoDate,
       highlights: coverage.highlights,
       okItems: coverage.okItems,
@@ -801,6 +805,7 @@ export async function buildInitialCorpusState() {
   }
 
   const sortedProducts = sortProducts(products);
+  const dentalProduct = sortedProducts.find((product) => product.id === 'dental');
   return {
     session: { user: fixedSessionUser },
     rolePresets: fixedRolePresets,
@@ -811,7 +816,38 @@ export async function buildInitialCorpusState() {
     },
     products: sortedProducts,
     productData,
-    reports: {},
+    reports: dentalProduct ? {
+      'rep-seeded': {
+        reportId: 'rep-seeded',
+        productId: 'dental',
+        reportType: 'weekly',
+        period: {
+          preset: 'current',
+          start: '2026-04-09T00:00:00.000Z',
+          end: '2026-04-15T23:59:59.000Z',
+        },
+        evidenceVersion: Number(dentalProduct.evidenceVersion || 1),
+        generatedAt: '2026-04-15T10:00:00.000Z',
+        coverage: {
+          percentage: 78,
+          items: [
+            { label: 'Sources ingested', status: 'ok', count: 5, expected: 5 },
+            { label: 'Evidence freshness', status: 'warn', count: 3, expected: 5 },
+          ],
+          warningText: 'Coverage is adequate, but a newer artifact may improve confidence.',
+        },
+        sections: [
+          {
+            sectionId: 'executive-summary',
+            title: 'Executive Summary',
+            body: 'Dental remains at risk because the vendor contract and test-environment timeline continue to threaten Sprint 3 execution.',
+            bodyCurrent: 'Dental remains at risk because the vendor contract and test-environment timeline continue to threaten Sprint 3 execution.',
+            revision: 1,
+            editedAt: null,
+          },
+        ],
+      },
+    } : {},
     jobs: {},
     connectorProfiles: {
       'mailbox-dental': {
