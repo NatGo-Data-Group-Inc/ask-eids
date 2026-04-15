@@ -1,0 +1,19 @@
+{
+  "metadataAttributes": {
+    "product_id": "dental",
+    "product_name": "DENTAL / DENCLASS",
+    "wave": "wave-01-operational",
+    "wave_label": "Operational Week",
+    "source_type": "risk_export",
+    "document_date": "2026-04-10",
+    "author": "Jaden Cole",
+    "title": "Dental Risks and Issues Export \u2014 Updated",
+    "pi": 4,
+    "sprint": 2,
+    "contains_decisions": false,
+    "contains_action_items": false,
+    "status_signal": "risk",
+    "stakeholders": "Jaden Cole; Lowry Beckett",
+    "demo_effect": "Escalates the FHIR migration dependency from medium to high."
+  }
+}

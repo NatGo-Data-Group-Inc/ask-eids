@@ -1,0 +1,19 @@
+{
+  "metadataAttributes": {
+    "product_id": "essence",
+    "product_name": "ESSENCE Transition Support",
+    "wave": "wave-00-baseline",
+    "wave_label": "Baseline",
+    "source_type": "weekly_update",
+    "document_date": "2026-03-30",
+    "author": "Commander Melissa Jones",
+    "title": "ESSENCE Weekly Update \u2014 March 30",
+    "pi": 4,
+    "sprint": 1,
+    "contains_decisions": false,
+    "contains_action_items": true,
+    "status_signal": "risk",
+    "stakeholders": "Commander Melissa Jones; Virginia Howard",
+    "demo_effect": "Shows a sparse, weak-quality weekly update with obvious gaps."
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "metadataAttributes": {
+    "product_id": "dental",
+    "product_name": "DENTAL / DENCLASS",
+    "wave": "wave-02-escalation",
+    "wave_label": "Escalation Week",
+    "source_type": "ado_export",
+    "document_date": "2026-04-13",
+    "author": "Whitney Core Force",
+    "title": "Dental ADO Export \u2014 Escalation",
+    "pi": 4,
+    "sprint": 2,
+    "contains_decisions": false,
+    "contains_action_items": false,
+    "status_signal": "risk",
+    "stakeholders": "Whitney Core Force; Jaden Cole",
+    "demo_effect": "Captures deferred stories, newly blocked items, and the FHIR critical path."
+  }
+}

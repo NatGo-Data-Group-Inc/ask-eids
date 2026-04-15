@@ -1,0 +1,19 @@
+{
+  "metadataAttributes": {
+    "product_id": "essence",
+    "product_name": "ESSENCE Transition Support",
+    "wave": "wave-00-baseline",
+    "wave_label": "Baseline",
+    "source_type": "email",
+    "document_date": "2026-03-28",
+    "author": "Former Contractor PM",
+    "title": "Email \u2014 ESSENCE Open Items",
+    "pi": 4,
+    "sprint": 1,
+    "contains_decisions": false,
+    "contains_action_items": true,
+    "status_signal": "risk",
+    "stakeholders": "Former Contractor PM; Commander Melissa Jones",
+    "demo_effect": "Creates a fragmentary email trail referencing missing files and unresolved dependencies."
+  }
+}

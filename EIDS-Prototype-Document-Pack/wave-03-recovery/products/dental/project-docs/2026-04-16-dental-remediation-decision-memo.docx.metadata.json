@@ -1,0 +1,19 @@
+{
+  "metadataAttributes": {
+    "product_id": "dental",
+    "product_name": "DENTAL / DENCLASS",
+    "wave": "wave-03-recovery",
+    "wave_label": "Recovery Week",
+    "source_type": "decision_memo",
+    "document_date": "2026-04-16",
+    "author": "Benjiman Jennings",
+    "title": "Dental Remediation Decision Memo",
+    "pi": 4,
+    "sprint": 2,
+    "contains_decisions": true,
+    "contains_action_items": false,
+    "status_signal": "caution",
+    "stakeholders": "Benjiman Jennings; Jaden Cole; Lowry Beckett",
+    "demo_effect": "Explains the recovery path and why the product is improving but not fully healthy yet."
+  }
+}

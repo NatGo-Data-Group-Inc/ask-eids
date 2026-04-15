@@ -1,0 +1,19 @@
+{
+  "metadataAttributes": {
+    "product_id": "optima",
+    "product_name": "OPTIMA Care Coordination",
+    "wave": "wave-00-baseline",
+    "wave_label": "Baseline",
+    "source_type": "product_brief",
+    "document_date": "2026-03-24",
+    "author": "Anna Kim",
+    "title": "Optima Product Brief",
+    "pi": 4,
+    "sprint": 1,
+    "contains_decisions": false,
+    "contains_action_items": false,
+    "status_signal": "healthy",
+    "stakeholders": "Sandy Pierce; Robin Holt; Chris Alvarez",
+    "demo_effect": "Establishes a well-documented healthy contrast product."
+  }
+}

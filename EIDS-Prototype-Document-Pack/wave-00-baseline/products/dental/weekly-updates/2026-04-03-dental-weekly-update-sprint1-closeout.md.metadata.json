@@ -1,0 +1,19 @@
+{
+  "metadataAttributes": {
+    "product_id": "dental",
+    "product_name": "DENTAL / DENCLASS",
+    "wave": "wave-00-baseline",
+    "wave_label": "Baseline",
+    "source_type": "weekly_update",
+    "document_date": "2026-04-03",
+    "author": "Jaden Cole",
+    "title": "Dental Weekly Update \u2014 Sprint 1 Closeout",
+    "pi": 4,
+    "sprint": 1,
+    "contains_decisions": false,
+    "contains_action_items": true,
+    "status_signal": "caution",
+    "stakeholders": "Jaden Cole; Robin Holt; Chris Alvarez",
+    "demo_effect": "Closes Sprint 1 and mentions pending vendor dependency concerns before the escalation begins."
+  }
+}

@@ -1,0 +1,5 @@
+objective_id,objective,status,percent_complete,owner,due_date,notes
+PIO-1,FHIR endpoint mapping complete,In Progress,45,Jaden Cole,2026-04-24,Mapping workshop held; 9 of 14 endpoint groups resolved.
+PIO-2,Security assessment delivered,Not Started,10,Bromley Security Team,2026-04-30,Waiting on final endpoint inventory.
+PIO-3,Test environment ready,At Risk,20,Lowry Beckett,2026-04-22,Credentialing and vendor timeline remain uncertain.
+PIO-4,Stakeholder demo delivered,Planned,0,Jaden Cole,2026-05-01,Tentatively aligned to Sprint 3 end.

@@ -1,0 +1,19 @@
+{
+  "metadataAttributes": {
+    "product_id": "dental",
+    "product_name": "DENTAL / DENCLASS",
+    "wave": "wave-02-escalation",
+    "wave_label": "Escalation Week",
+    "source_type": "email",
+    "document_date": "2026-04-11",
+    "author": "Jaden Cole",
+    "title": "Email \u2014 Blocker Escalation",
+    "pi": 4,
+    "sprint": 2,
+    "contains_decisions": false,
+    "contains_action_items": true,
+    "status_signal": "risk",
+    "stakeholders": "Jaden Cole; Benjiman Jennings; Lowry Beckett",
+    "demo_effect": "Shows the PM escalating the issue as it becomes operationally material."
+  }
+}

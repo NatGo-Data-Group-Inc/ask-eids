@@ -1,0 +1,19 @@
+{
+  "metadataAttributes": {
+    "product_id": "dental",
+    "product_name": "DENTAL / DENCLASS",
+    "wave": "wave-01-operational",
+    "wave_label": "Operational Week",
+    "source_type": "email",
+    "document_date": "2026-04-07",
+    "author": "Dr. Minji Sohl",
+    "title": "Email \u2014 Test Schedule Approval",
+    "pi": 4,
+    "sprint": 2,
+    "contains_decisions": true,
+    "contains_action_items": false,
+    "status_signal": "healthy",
+    "stakeholders": "Dr. Minji Sohl; Jaden Cole",
+    "demo_effect": "Adds a stakeholder approval event that the Ask panel can cite."
+  }
+}

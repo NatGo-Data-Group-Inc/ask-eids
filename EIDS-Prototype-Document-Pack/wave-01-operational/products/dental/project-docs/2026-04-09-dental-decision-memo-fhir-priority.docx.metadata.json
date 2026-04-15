@@ -1,0 +1,19 @@
+{
+  "metadataAttributes": {
+    "product_id": "dental",
+    "product_name": "DENTAL / DENCLASS",
+    "wave": "wave-01-operational",
+    "wave_label": "Operational Week",
+    "source_type": "decision_memo",
+    "document_date": "2026-04-09",
+    "author": "Benjiman Jennings",
+    "title": "Dental Decision Memo \u2014 FHIR Priority",
+    "pi": 4,
+    "sprint": 2,
+    "contains_decisions": true,
+    "contains_action_items": false,
+    "status_signal": "risk",
+    "stakeholders": "Benjiman Jennings; Jaden Cole",
+    "demo_effect": "Codifies the leadership decision to prioritize FHIR over new feature work."
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "metadataAttributes": {
+    "product_id": "essence",
+    "product_name": "ESSENCE Transition Support",
+    "wave": "wave-00-baseline",
+    "wave_label": "Baseline",
+    "source_type": "blocker_export",
+    "document_date": "2026-04-02",
+    "author": "Commander Melissa Jones",
+    "title": "ESSENCE Blockers Export",
+    "pi": 4,
+    "sprint": 1,
+    "contains_decisions": false,
+    "contains_action_items": false,
+    "status_signal": "risk",
+    "stakeholders": "Commander Melissa Jones",
+    "demo_effect": "Adds blocker data while still leaving the product obviously under-documented."
+  }
+}

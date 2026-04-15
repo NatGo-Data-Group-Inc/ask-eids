@@ -1,0 +1,19 @@
+{
+  "metadataAttributes": {
+    "product_id": "dental",
+    "product_name": "DENTAL / DENCLASS",
+    "wave": "wave-00-baseline",
+    "wave_label": "Baseline",
+    "source_type": "email",
+    "document_date": "2026-04-02",
+    "author": "Lowry Beckett",
+    "title": "Email \u2014 Sandbox Concern",
+    "pi": 4,
+    "sprint": 1,
+    "contains_decisions": false,
+    "contains_action_items": true,
+    "status_signal": "caution",
+    "stakeholders": "Lowry Beckett; Jaden Cole",
+    "demo_effect": "Introduces early warning signs about the vendor sandbox that later become a formal risk."
+  }
+}

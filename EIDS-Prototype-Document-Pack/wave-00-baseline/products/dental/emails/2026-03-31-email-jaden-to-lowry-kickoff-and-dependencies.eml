@@ -1,0 +1,36 @@
+Subject: Dental PI 4 kickoff: dependencies, owners, and early risks
+From: Jaden Cole <jaden.cole@eids.mil>
+To: Lowry Beckett <lowry.beckett@eids.mil>
+Cc: Benjiman Jennings <benjiman.jennings@eids.mil>,
+ Robin Holt <robin.holt@eids.mil>
+Date: Tue, 31 Mar 2026 08:12:00 -0400
+Message-ID: <177626014902.1909.12282141920900426208@eids.mil>
+X-Demo-Product: dental
+X-Demo-Wave: wave-00-baseline
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+MIME-Version: 1.0
+
+Lowry,
+
+As discussed in the PI 4 kickoff, I need the dependency picture in writing so=
+ we can stop carrying it around as verbal context. Right now the two things I=
+ want on record are:
+
+1. the expected vendor sandbox availability date,
+2. the credentialing process for named users.
+
+We can keep making progress on mapping and planning, but if the sandbox dates=
+ move, the narrative for Dental changes quickly and I want us ahead of that.
+
+Please reply with the current working assumptions and any dates you feel comf=
+ortable committing to in email.
+
+Thanks,
+Jaden
+
+---
+Notes for record:
+- PI 4 objective tracker will be published this week.
+- Architecture workshop is still planned for 4/3.
+- Dr. Sohl wants a revised test cadence before Sprint 2 begins.

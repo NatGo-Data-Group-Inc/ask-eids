@@ -1,0 +1,19 @@
+{
+  "metadataAttributes": {
+    "product_id": "dental",
+    "product_name": "DENTAL / DENCLASS",
+    "wave": "wave-02-escalation",
+    "wave_label": "Escalation Week",
+    "source_type": "security_summary",
+    "document_date": "2026-04-12",
+    "author": "Bromley Security Team",
+    "title": "Dental Security Assessment v2",
+    "pi": 4,
+    "sprint": 2,
+    "contains_decisions": false,
+    "contains_action_items": false,
+    "status_signal": "caution",
+    "stakeholders": "Bromley Security Team; Jaden Cole",
+    "demo_effect": "Shows a revised security posture after leadership re-scoping and mitigation planning."
+  }
+}

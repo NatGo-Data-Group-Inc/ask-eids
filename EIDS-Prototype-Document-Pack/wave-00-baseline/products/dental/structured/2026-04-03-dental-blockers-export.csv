@@ -1,0 +1,2 @@
+blocker_id,title,status,owner,opened_date,last_changed,related_risk,impact,unblock_plan
+B-001,Test credentials pending from vendor,Open,Lowry Beckett,2026-04-01,2026-04-03,R-011,Prevents end-to-end validation in shared sandbox.,Vendor to send named users and credential window by 4/5.

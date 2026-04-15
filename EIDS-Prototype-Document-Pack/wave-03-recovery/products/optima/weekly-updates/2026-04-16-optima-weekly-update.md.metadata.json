@@ -1,0 +1,19 @@
+{
+  "metadataAttributes": {
+    "product_id": "optima",
+    "product_name": "OPTIMA Care Coordination",
+    "wave": "wave-03-recovery",
+    "wave_label": "Recovery Week",
+    "source_type": "weekly_update",
+    "document_date": "2026-04-16",
+    "author": "Anna Kim",
+    "title": "Optima Weekly Update \u2014 April 16",
+    "pi": 4,
+    "sprint": 2,
+    "contains_decisions": false,
+    "contains_action_items": true,
+    "status_signal": "healthy",
+    "stakeholders": "Anna Kim; Sandy Pierce",
+    "demo_effect": "Keeps the healthy comparison product current through the final demo wave."
+  }
+}

@@ -1,0 +1,7 @@
+node_modules/
+dist/
+playwright-report/
+test-results/
+server/data/runtime-db.json
+server/data/uploads/
+server/data/exports/

@@ -1,0 +1,19 @@
+{
+  "metadataAttributes": {
+    "product_id": "essence",
+    "product_name": "ESSENCE Transition Support",
+    "wave": "wave-00-baseline",
+    "wave_label": "Baseline",
+    "source_type": "risk_export",
+    "document_date": "2026-04-02",
+    "author": "Commander Melissa Jones",
+    "title": "ESSENCE Risks Export",
+    "pi": 4,
+    "sprint": 1,
+    "contains_decisions": false,
+    "contains_action_items": false,
+    "status_signal": "risk",
+    "stakeholders": "Commander Melissa Jones",
+    "demo_effect": "Creates minimal structured evidence but not enough to offset missing narrative continuity."
+  }
+}

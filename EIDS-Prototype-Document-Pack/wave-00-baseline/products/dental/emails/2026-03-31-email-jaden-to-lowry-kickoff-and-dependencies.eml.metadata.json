@@ -1,0 +1,19 @@
+{
+  "metadataAttributes": {
+    "product_id": "dental",
+    "product_name": "DENTAL / DENCLASS",
+    "wave": "wave-00-baseline",
+    "wave_label": "Baseline",
+    "source_type": "email",
+    "document_date": "2026-03-31",
+    "author": "Jaden Cole",
+    "title": "Email \u2014 Kickoff and Dependencies",
+    "pi": 4,
+    "sprint": 1,
+    "contains_decisions": false,
+    "contains_action_items": true,
+    "status_signal": "baseline",
+    "stakeholders": "Jaden Cole; Lowry Beckett",
+    "demo_effect": "Seeds the first email thread referencing environment dependencies and ownership."
+  }
+}

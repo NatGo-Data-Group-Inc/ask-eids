@@ -1,0 +1,19 @@
+{
+  "metadataAttributes": {
+    "product_id": "dental",
+    "product_name": "DENTAL / DENCLASS",
+    "wave": "wave-03-recovery",
+    "wave_label": "Recovery Week",
+    "source_type": "slide_deck",
+    "document_date": "2026-04-16",
+    "author": "Benjiman Jennings",
+    "title": "Dental Leadership Readout Deck",
+    "pi": 4,
+    "sprint": 2,
+    "contains_decisions": false,
+    "contains_action_items": false,
+    "status_signal": "caution",
+    "stakeholders": "Benjiman Jennings; Robin Holt; Chris Alvarez",
+    "demo_effect": "Provides a final leadership-ready artifact summarizing progression from risk to managed recovery."
+  }
+}

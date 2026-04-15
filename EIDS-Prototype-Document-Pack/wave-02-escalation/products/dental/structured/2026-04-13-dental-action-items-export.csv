@@ -1,0 +1,5 @@
+action_id,source,description,owner,due_date,status,linked_item
+A-021,Sprint 2 Review,Document phased mitigation options for vendor delay,Jaden Cole,2026-04-13,In Progress,R-014
+A-022,Leadership Sync,Obtain legal path for unsigned vendor contract,Benjiman Jennings,2026-04-15,Open,B-003
+A-023,Leadership Sync,Update cost impact estimate for stakeholder review,Jaden Cole,2026-04-14,Open,R-015
+A-024,Leadership Sync,Stand up mock service path for demo continuity,Dev Team B,2026-04-18,Open,B-004

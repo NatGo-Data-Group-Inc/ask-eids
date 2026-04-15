@@ -1,0 +1,19 @@
+{
+  "metadataAttributes": {
+    "product_id": "dental",
+    "product_name": "DENTAL / DENCLASS",
+    "wave": "wave-00-baseline",
+    "wave_label": "Baseline",
+    "source_type": "stakeholder_roster",
+    "document_date": "2026-03-26",
+    "author": "Jaden Cole",
+    "title": "Dental Stakeholder Roster",
+    "pi": 4,
+    "sprint": 1,
+    "contains_decisions": false,
+    "contains_action_items": false,
+    "status_signal": "baseline",
+    "stakeholders": "Dr. Minji Sohl; Juan Rivera; Lowry Beckett; Benjiman Jennings",
+    "demo_effect": "Enables Ask to answer 'who are the stakeholders' and grounds the reporting chain."
+  }
+}

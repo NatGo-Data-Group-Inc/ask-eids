@@ -1,0 +1,33 @@
+Subject: Dental escalation: vendor path is now an active blocker
+From: Jaden Cole <jaden.cole@eids.mil>
+To: Benjiman Jennings <benjiman.jennings@eids.mil>
+Cc: Lowry Beckett <lowry.beckett@eids.mil>, Robin Holt <robin.holt@eids.mil>,
+ Chris Alvarez <chris.alvarez@eids.mil>
+Date: Sat, 11 Apr 2026 07:48:00 -0400
+Message-ID: <177626014919.1909.251240869675682900@eids.mil>
+X-Demo-Product: dental
+X-Demo-Wave: wave-02-escalation
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+MIME-Version: 1.0
+
+Benji,
+
+I am formally escalating the vendor dependency from risk to blocker territory.
+
+Why:
+- Elena's 4/8 note established that the sandbox is slipping.
+- We still do not have a clean contract / acquisition answer tied to the revi=
+sed path.
+- Sprint 3 planning is now being shaped by uncertainty rather than decisions.
+
+What I need:
+1. clarity on who owns the contract path,
+2. permission to show the product as at risk in this week's narrative,
+3. support for a mitigation option that uses mock services if the vendor cann=
+ot recover quickly.
+
+I can defend the current technical work. What I cannot defend is implying cer=
+tainty we do not actually have.
+
+Jaden

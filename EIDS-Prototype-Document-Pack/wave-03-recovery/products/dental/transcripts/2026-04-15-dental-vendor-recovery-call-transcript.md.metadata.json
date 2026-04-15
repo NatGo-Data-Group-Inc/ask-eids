@@ -1,0 +1,19 @@
+{
+  "metadataAttributes": {
+    "product_id": "dental",
+    "product_name": "DENTAL / DENCLASS",
+    "wave": "wave-03-recovery",
+    "wave_label": "Recovery Week",
+    "source_type": "transcript",
+    "document_date": "2026-04-15",
+    "author": "Teams Auto Transcript",
+    "title": "Dental Vendor Recovery Call Transcript",
+    "pi": 4,
+    "sprint": 2,
+    "contains_decisions": true,
+    "contains_action_items": true,
+    "status_signal": "caution",
+    "stakeholders": "Elena Markovic; Lowry Beckett; Jaden Cole",
+    "demo_effect": "Introduces recovery evidence and a revised schedule that should improve answer completeness."
+  }
+}

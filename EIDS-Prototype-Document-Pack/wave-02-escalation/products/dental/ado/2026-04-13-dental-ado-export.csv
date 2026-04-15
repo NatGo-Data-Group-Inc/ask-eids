@@ -1,0 +1,6 @@
+work_item_id,work_item_type,title,state,assigned_to,iteration_path,story_points,tags,changed_date,notes
+4521,Feature,FHIR endpoint mapping,In Progress,Dev Team B,PI4-Sprint2,8,FHIR;Integration,2026-04-13,Still the critical path item.
+4527,Task,Confirm vendor sandbox users,Blocked,Lowry Beckett,PI4-Sprint2,3,Vendor,2026-04-13,Blocked pending contract path.
+4538,User Story,Create stakeholder demo script,Deferred,Jaden Cole,PI4-Sprint3,2,Demo,2026-04-13,Cannot proceed until environment path settles.
+4541,Task,Draft integration test harness,Committed,Dev Team B,PI4-Sprint3,5,Testing,2026-04-13,Pulled forward due to stakeholder pressure.
+4544,Task,Model cost impact scenarios,Active,Jaden Cole,PI4-Sprint2,3,Reporting,2026-04-13,Added after Juan request.

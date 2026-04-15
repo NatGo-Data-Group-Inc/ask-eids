@@ -1,0 +1,19 @@
+{
+  "metadataAttributes": {
+    "product_id": "dental",
+    "product_name": "DENTAL / DENCLASS",
+    "wave": "wave-02-escalation",
+    "wave_label": "Escalation Week",
+    "source_type": "email",
+    "document_date": "2026-04-12",
+    "author": "Juan Rivera",
+    "title": "Email \u2014 Cost Impact Request",
+    "pi": 4,
+    "sprint": 2,
+    "contains_decisions": false,
+    "contains_action_items": true,
+    "status_signal": "risk",
+    "stakeholders": "Juan Rivera; Jaden Cole; Benjiman Jennings",
+    "demo_effect": "Introduces a stakeholder request that can be surfaced in Ask and reports."
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "metadataAttributes": {
+    "product_id": "dental",
+    "product_name": "DENTAL / DENCLASS",
+    "wave": "wave-00-baseline",
+    "wave_label": "Baseline",
+    "source_type": "roadmap",
+    "document_date": "2026-03-27",
+    "author": "Benjiman Jennings",
+    "title": "Dental PI 4 Roadmap and Objectives",
+    "pi": 4,
+    "sprint": 1,
+    "contains_decisions": true,
+    "contains_action_items": false,
+    "status_signal": "baseline",
+    "stakeholders": "Benjiman Jennings; Jaden Cole",
+    "demo_effect": "Sets the initial PI objectives and establishes what success should look like before disruption."
+  }
+}

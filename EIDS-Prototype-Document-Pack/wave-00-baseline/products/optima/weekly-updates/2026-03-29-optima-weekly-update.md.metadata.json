@@ -1,0 +1,19 @@
+{
+  "metadataAttributes": {
+    "product_id": "optima",
+    "product_name": "OPTIMA Care Coordination",
+    "wave": "wave-00-baseline",
+    "wave_label": "Baseline",
+    "source_type": "weekly_update",
+    "document_date": "2026-03-29",
+    "author": "Anna Kim",
+    "title": "Optima Weekly Update \u2014 March 29",
+    "pi": 4,
+    "sprint": 1,
+    "contains_decisions": false,
+    "contains_action_items": true,
+    "status_signal": "healthy",
+    "stakeholders": "Anna Kim; Sandy Pierce",
+    "demo_effect": "Shows a high-quality weekly narrative with clear accomplishments and next steps."
+  }
+}

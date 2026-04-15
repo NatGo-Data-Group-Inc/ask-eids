@@ -1,0 +1,19 @@
+{
+  "metadataAttributes": {
+    "product_id": "dental",
+    "product_name": "DENTAL / DENCLASS",
+    "wave": "wave-01-operational",
+    "wave_label": "Operational Week",
+    "source_type": "transcript",
+    "document_date": "2026-04-09",
+    "author": "Teams Auto Transcript",
+    "title": "Dental Sprint 2 Review Transcript",
+    "pi": 4,
+    "sprint": 2,
+    "contains_decisions": true,
+    "contains_action_items": true,
+    "status_signal": "risk",
+    "stakeholders": "Jaden Cole; Dr. Minji Sohl; Benjiman Jennings",
+    "demo_effect": "Provides the first high-value decision-rich transcript used by Ask and reporting."
+  }
+}

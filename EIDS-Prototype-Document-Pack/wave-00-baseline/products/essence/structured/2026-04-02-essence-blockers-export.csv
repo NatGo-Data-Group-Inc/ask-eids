@@ -1,0 +1,3 @@
+blocker_id,title,status,owner,opened_date,last_changed,related_risk,impact,unblock_plan
+B-E01,No consolidated source repository,Active,Commander Melissa Jones,2026-03-24,2026-04-02,E-001,Blocks rapid reconstruction of product history.,Gather all known artifacts into interim shared location.
+B-E02,Open design questions lack owners,Open,Virginia Howard,2026-03-31,2026-04-02,,No one can confirm the last approved operating model.,Use working session to assign owners and open questions.

@@ -1,0 +1,19 @@
+{
+  "metadataAttributes": {
+    "product_id": "dental",
+    "product_name": "DENTAL / DENCLASS",
+    "wave": "wave-03-recovery",
+    "wave_label": "Recovery Week",
+    "source_type": "weekly_update",
+    "document_date": "2026-04-16",
+    "author": "Jaden Cole",
+    "title": "Dental Weekly Update \u2014 Recovery",
+    "pi": 4,
+    "sprint": 2,
+    "contains_decisions": false,
+    "contains_action_items": true,
+    "status_signal": "caution",
+    "stakeholders": "Jaden Cole; Robin Holt; Chris Alvarez",
+    "demo_effect": "Narratively closes the loop and shows the product improving after remediation."
+  }
+}

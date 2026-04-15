@@ -1,0 +1,19 @@
+{
+  "metadataAttributes": {
+    "product_id": "optima",
+    "product_name": "OPTIMA Care Coordination",
+    "wave": "wave-00-baseline",
+    "wave_label": "Baseline",
+    "source_type": "ado_export",
+    "document_date": "2026-04-05",
+    "author": "Whitney Core Force",
+    "title": "Optima ADO Export",
+    "pi": 4,
+    "sprint": 1,
+    "contains_decisions": false,
+    "contains_action_items": false,
+    "status_signal": "healthy",
+    "stakeholders": "Whitney Core Force; Anna Kim",
+    "demo_effect": "Adds current work-item evidence to support clean report generation for Optima."
+  }
+}

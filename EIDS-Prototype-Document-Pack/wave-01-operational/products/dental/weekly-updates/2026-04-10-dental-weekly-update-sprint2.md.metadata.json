@@ -1,0 +1,19 @@
+{
+  "metadataAttributes": {
+    "product_id": "dental",
+    "product_name": "DENTAL / DENCLASS",
+    "wave": "wave-01-operational",
+    "wave_label": "Operational Week",
+    "source_type": "weekly_update",
+    "document_date": "2026-04-10",
+    "author": "Jaden Cole",
+    "title": "Dental Weekly Update \u2014 Sprint 2",
+    "pi": 4,
+    "sprint": 2,
+    "contains_decisions": false,
+    "contains_action_items": true,
+    "status_signal": "risk",
+    "stakeholders": "Jaden Cole; Robin Holt; Chris Alvarez",
+    "demo_effect": "Refreshes the narrative and captures the first clear 'at risk' posture."
+  }
+}

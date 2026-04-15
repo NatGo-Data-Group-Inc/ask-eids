@@ -1,0 +1,31 @@
+Subject: Dental mitigation confirmed: phased access + mock service path
+From: Lowry Beckett <lowry.beckett@eids.mil>
+To: Jaden Cole <jaden.cole@eids.mil>
+Cc: Benjiman Jennings <benjiman.jennings@eids.mil>,
+ Robin Holt <robin.holt@eids.mil>
+Date: Thu, 16 Apr 2026 17:02:00 -0400
+Message-ID: <177626014927.1909.9668427840833359670@eids.mil>
+X-Demo-Product: dental
+X-Demo-Wave: wave-03-recovery
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+MIME-Version: 1.0
+
+Team,
+
+Confirming today's outcome from the vendor recovery call.
+
+- Partial sandbox access for named users begins 4/18.
+- Full environment target is 4/25.
+- Vendor accepted that we will proceed with a mock-service mitigation path fo=
+r any capability not available in the partial environment.
+
+This does not make Dental healthy, but it materially improves the planning pi=
+cture compared with where we were on 4/13.
+
+I recommend:
+1. moving the primary blocker from active to partially mitigated,
+2. updating PI objective percentages,
+3. using the staged path in all leadership-facing language.
+
+Lowry

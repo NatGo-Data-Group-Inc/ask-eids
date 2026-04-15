@@ -1,0 +1,19 @@
+{
+  "metadataAttributes": {
+    "product_id": "dental",
+    "product_name": "DENTAL / DENCLASS",
+    "wave": "wave-01-operational",
+    "wave_label": "Operational Week",
+    "source_type": "email",
+    "document_date": "2026-04-08",
+    "author": "Elena Markovic",
+    "title": "Email \u2014 Vendor Sandbox Delay",
+    "pi": 4,
+    "sprint": 2,
+    "contains_decisions": false,
+    "contains_action_items": true,
+    "status_signal": "risk",
+    "stakeholders": "Elena Markovic; Lowry Beckett; Jaden Cole",
+    "demo_effect": "Introduces hard evidence of the vendor delay that will elevate risk and reduce confidence."
+  }
+}

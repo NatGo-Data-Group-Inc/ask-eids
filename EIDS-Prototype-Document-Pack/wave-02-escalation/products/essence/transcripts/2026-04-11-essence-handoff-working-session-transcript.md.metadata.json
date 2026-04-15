@@ -1,0 +1,19 @@
+{
+  "metadataAttributes": {
+    "product_id": "essence",
+    "product_name": "ESSENCE Transition Support",
+    "wave": "wave-02-escalation",
+    "wave_label": "Escalation Week",
+    "source_type": "transcript",
+    "document_date": "2026-04-11",
+    "author": "Teams Auto Transcript",
+    "title": "ESSENCE Handoff Working Session Transcript",
+    "pi": 4,
+    "sprint": 2,
+    "contains_decisions": false,
+    "contains_action_items": true,
+    "status_signal": "risk",
+    "stakeholders": "Commander Melissa Jones; Virginia Howard",
+    "demo_effect": "Adds a late-stage continuity-recovery artifact that still exposes missing knowledge."
+  }
+}

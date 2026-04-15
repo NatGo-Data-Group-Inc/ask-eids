@@ -1,0 +1,19 @@
+{
+  "metadataAttributes": {
+    "product_id": "dental",
+    "product_name": "DENTAL / DENCLASS",
+    "wave": "wave-00-baseline",
+    "wave_label": "Baseline",
+    "source_type": "transcript",
+    "document_date": "2026-04-03",
+    "author": "Teams Auto Transcript",
+    "title": "Dental Planning Sync Transcript",
+    "pi": 4,
+    "sprint": 1,
+    "contains_decisions": true,
+    "contains_action_items": true,
+    "status_signal": "baseline",
+    "stakeholders": "Jaden Cole; Lowry Beckett; Dr. Minji Sohl",
+    "demo_effect": "Adds the first conversational artifact with explicit decisions and action items."
+  }
+}

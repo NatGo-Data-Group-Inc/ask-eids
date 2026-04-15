@@ -1,0 +1,19 @@
+{
+  "metadataAttributes": {
+    "product_id": "optima",
+    "product_name": "OPTIMA Care Coordination",
+    "wave": "wave-01-operational",
+    "wave_label": "Operational Week",
+    "source_type": "decision_log",
+    "document_date": "2026-04-10",
+    "author": "Anna Kim",
+    "title": "Optima Decision Log Update",
+    "pi": 4,
+    "sprint": 2,
+    "contains_decisions": true,
+    "contains_action_items": false,
+    "status_signal": "healthy",
+    "stakeholders": "Anna Kim; Sandy Pierce",
+    "demo_effect": "Creates explicit decision lineage to contrast against weaker products."
+  }
+}

@@ -1,0 +1,5 @@
+risk_id,title,severity,status,owner,opened_date,last_changed,linked_blocker,summary,mitigation,next_decision_date
+R-014,FHIR migration dependency,High,Open,Lowry Beckett,2026-04-07,2026-04-10,B-003,Vendor confirmed sandbox delivery will slip by approximately two weeks unless phased access is approved.,Escalate to leadership and obtain revised milestone plan by 4/15.,2026-04-15
+R-016,Test coverage gap,High,Open,Jaden Cole,2026-04-09,2026-04-10,,Integration tests for the new FHIR endpoints are below the target threshold for stakeholder demo readiness.,Prioritize test harness work in Sprint 3.,2026-04-17
+R-015,Vendor contract timing,Medium,Open,Benjiman Jennings,2026-04-08,2026-04-10,B-003,"If the vendor paperwork slips, sandbox access and credential issuance will both be impacted.",Confirm legal/contract path and decision owner.,2026-04-15
+R-017,Data quality in migration samples,Low,Watch,Dev Team B,2026-04-05,2026-04-10,,Legacy samples contain inconsistent referral status codes.,Use normalized mapping table during test run.,2026-04-18

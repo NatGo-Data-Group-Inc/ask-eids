@@ -1,0 +1,19 @@
+{
+  "metadataAttributes": {
+    "product_id": "dental",
+    "product_name": "DENTAL / DENCLASS",
+    "wave": "wave-00-baseline",
+    "wave_label": "Baseline",
+    "source_type": "weekly_update",
+    "document_date": "2026-03-28",
+    "author": "Jaden Cole",
+    "title": "Dental Weekly Update \u2014 Sprint 1",
+    "pi": 4,
+    "sprint": 1,
+    "contains_decisions": false,
+    "contains_action_items": true,
+    "status_signal": "healthy",
+    "stakeholders": "Jaden Cole; Robin Holt; Chris Alvarez",
+    "demo_effect": "Introduces the first product narrative and demonstrates baseline freshness."
+  }
+}

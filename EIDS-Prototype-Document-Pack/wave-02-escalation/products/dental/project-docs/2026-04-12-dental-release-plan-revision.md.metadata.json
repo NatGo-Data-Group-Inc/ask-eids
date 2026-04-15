@@ -1,0 +1,19 @@
+{
+  "metadataAttributes": {
+    "product_id": "dental",
+    "product_name": "DENTAL / DENCLASS",
+    "wave": "wave-02-escalation",
+    "wave_label": "Escalation Week",
+    "source_type": "release_plan",
+    "document_date": "2026-04-12",
+    "author": "Jaden Cole",
+    "title": "Dental Release Plan Revision",
+    "pi": 4,
+    "sprint": 2,
+    "contains_decisions": true,
+    "contains_action_items": false,
+    "status_signal": "risk",
+    "stakeholders": "Jaden Cole; Benjiman Jennings",
+    "demo_effect": "Documents the delivery impact of the delay and how scope is reshaped around critical path work."
+  }
+}

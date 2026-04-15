@@ -1,0 +1,6 @@
+work_item_id,work_item_type,title,state,assigned_to,iteration_path,story_points,tags,changed_date,notes
+4521,Feature,FHIR endpoint mapping,In Progress,Dev Team B,PI4-Sprint2,8,FHIR;Integration,2026-04-10,Moved into active development.
+4527,Task,Confirm vendor sandbox users,Blocked,Lowry Beckett,PI4-Sprint2,3,Vendor,2026-04-10,Blocked by revised vendor delivery dates.
+4530,Bug,Legacy referral payload parsing,In Progress,Dev Team A,PI4-Sprint2,5,Parser,2026-04-10,Still active but not on critical path.
+4538,User Story,Create stakeholder demo script,Deferred,Jaden Cole,PI4-Sprint3,2,Demo,2026-04-10,Moved to Sprint 3 due to FHIR prioritization.
+4541,Task,Draft integration test harness,New,Jaden Cole,PI4-Sprint3,5,Testing,2026-04-10,Added after stakeholder coverage concern.

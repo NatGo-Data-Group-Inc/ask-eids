@@ -1,0 +1,3 @@
+blocker_id,title,status,owner,opened_date,last_changed,related_risk,impact,unblock_plan
+B-003,Vendor contract unsigned,Active,Benjiman Jennings,2026-04-10,2026-04-13,R-014,Blocks final sandbox commitment and Sprint 3 planning.,Decision required from acquisition/legal path by 4/15.
+B-004,Test environment access pending,Active,Lowry Beckett,2026-04-10,2026-04-13,R-014,Named users still cannot access the vendor environment.,Mitigation options under review in leadership sync.

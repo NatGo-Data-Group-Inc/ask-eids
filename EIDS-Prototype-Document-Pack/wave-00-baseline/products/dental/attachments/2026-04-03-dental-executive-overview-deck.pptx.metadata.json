@@ -1,0 +1,19 @@
+{
+  "metadataAttributes": {
+    "product_id": "dental",
+    "product_name": "DENTAL / DENCLASS",
+    "wave": "wave-00-baseline",
+    "wave_label": "Baseline",
+    "source_type": "slide_deck",
+    "document_date": "2026-04-03",
+    "author": "Benjiman Jennings",
+    "title": "Dental Executive Overview Deck",
+    "pi": 4,
+    "sprint": 1,
+    "contains_decisions": false,
+    "contains_action_items": false,
+    "status_signal": "baseline",
+    "stakeholders": "Benjiman Jennings; Robin Holt",
+    "demo_effect": "Adds a polished leadership-facing artifact summarizing baseline posture, scope, and dependencies."
+  }
+}

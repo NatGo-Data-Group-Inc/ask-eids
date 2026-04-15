@@ -1,0 +1,6 @@
+work_item_id,work_item_type,title,state,assigned_to,iteration_path,story_points,tags,changed_date,notes
+4521,Feature,FHIR endpoint mapping,In Progress,Dev Team B,PI4-Sprint2,8,FHIR;Integration,2026-04-16,Progress accelerated after mitigation approval.
+4527,Task,Confirm vendor sandbox users,Resolved,Lowry Beckett,PI4-Sprint2,3,Vendor,2026-04-16,Partial access confirmed for named users.
+4541,Task,Draft integration test harness,In Progress,Dev Team B,PI4-Sprint3,5,Testing,2026-04-16,Started early using mock services.
+4544,Task,Model cost impact scenarios,Closed,Jaden Cole,PI4-Sprint2,3,Reporting,2026-04-16,Estimate delivered to Juan and Benjiman.
+4548,Task,Stand up mock service path,In Progress,Dev Team A,PI4-Sprint3,5,Mitigation,2026-04-16,Created as recovery action item.

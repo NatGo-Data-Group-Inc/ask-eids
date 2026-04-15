@@ -1,0 +1,3 @@
+risk_id,title,severity,status,owner,opened_date,last_changed,linked_blocker,summary,mitigation,next_decision_date
+O-002,Customer training attendance variability,Low,Watch,Anna Kim,2026-03-28,2026-04-05,,Training attendance is slightly uneven across facilities.,Publish reminder and provide recording.,2026-04-12
+O-003,Metrics dashboard cosmetic defect,Low,Open,Dev Team C,2026-04-03,2026-04-05,,A visualization legend mislabels one low-priority category.,Fix in current sprint without delivery risk.,2026-04-11

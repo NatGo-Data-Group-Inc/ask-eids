@@ -1,0 +1,15 @@
+import path from 'node:path';
+import { expect } from '@playwright/test';
+
+export async function resetAppState(request) {
+  const response = await request.post('/api/v1/test/reset');
+  expect(response.ok()).toBeTruthy();
+}
+
+export function docPackPath(...segments) {
+  return path.resolve('EIDS-Prototype-Document-Pack', ...segments);
+}
+
+export function longText(seed) {
+  return `${seed} ${'This update is evidence-rich and intentionally long enough to satisfy the validation constraints. '.repeat(4)}`.trim();
+}

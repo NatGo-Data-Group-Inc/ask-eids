@@ -1,0 +1,4 @@
+risk_id,title,severity,status,owner,opened_date,last_changed,linked_blocker,summary,mitigation,next_decision_date
+R-011,Vendor sandbox availability,Medium,Open,Lowry Beckett,2026-03-31,2026-04-03,,Vendor still validating April cutover to the shared test environment.,Obtain written milestone dates and confirm credential process.,2026-04-09
+R-012,FHIR mapping ambiguity,Medium,Open,Jaden Cole,2026-03-28,2026-04-03,,Two referral fields still require agreement between Dental and vendor teams.,Hold mapping review on 4/3 and document final schema decisions.,2026-04-08
+R-013,Security assessment turnaround,Low,Watch,Bromley Security Team,2026-03-27,2026-04-03,,Security review depends on receipt of final endpoint inventory.,Deliver endpoint inventory by 4/7.,2026-04-10

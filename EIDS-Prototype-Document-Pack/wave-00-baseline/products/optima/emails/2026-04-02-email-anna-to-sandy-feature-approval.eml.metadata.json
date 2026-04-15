@@ -1,0 +1,19 @@
+{
+  "metadataAttributes": {
+    "product_id": "optima",
+    "product_name": "OPTIMA Care Coordination",
+    "wave": "wave-00-baseline",
+    "wave_label": "Baseline",
+    "source_type": "email",
+    "document_date": "2026-04-02",
+    "author": "Anna Kim",
+    "title": "Email \u2014 Feature Approval",
+    "pi": 4,
+    "sprint": 1,
+    "contains_decisions": true,
+    "contains_action_items": false,
+    "status_signal": "healthy",
+    "stakeholders": "Anna Kim; Sandy Pierce",
+    "demo_effect": "Provides a clean approval thread for a healthy product."
+  }
+}

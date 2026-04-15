@@ -1,0 +1,19 @@
+{
+  "metadataAttributes": {
+    "product_id": "essence",
+    "product_name": "ESSENCE Transition Support",
+    "wave": "wave-00-baseline",
+    "wave_label": "Baseline",
+    "source_type": "handoff_memo",
+    "document_date": "2026-03-23",
+    "author": "Previous Contractor Team",
+    "title": "ESSENCE Handoff Memo",
+    "pi": 4,
+    "sprint": 1,
+    "contains_decisions": false,
+    "contains_action_items": false,
+    "status_signal": "risk",
+    "stakeholders": "Commander Melissa Jones; Virginia Howard",
+    "demo_effect": "Introduces an intentionally incomplete handoff artifact to demonstrate continuity failure."
+  }
+}

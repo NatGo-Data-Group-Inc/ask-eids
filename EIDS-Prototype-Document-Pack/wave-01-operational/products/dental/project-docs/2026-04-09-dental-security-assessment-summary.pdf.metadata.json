@@ -1,0 +1,19 @@
+{
+  "metadataAttributes": {
+    "product_id": "dental",
+    "product_name": "DENTAL / DENCLASS",
+    "wave": "wave-01-operational",
+    "wave_label": "Operational Week",
+    "source_type": "security_summary",
+    "document_date": "2026-04-09",
+    "author": "Bromley Security Team",
+    "title": "Dental Security Assessment Summary",
+    "pi": 4,
+    "sprint": 2,
+    "contains_decisions": false,
+    "contains_action_items": false,
+    "status_signal": "caution",
+    "stakeholders": "Bromley Security Team; Jaden Cole",
+    "demo_effect": "Adds a PDF artifact with FHIR endpoint security context and mitigations."
+  }
+}

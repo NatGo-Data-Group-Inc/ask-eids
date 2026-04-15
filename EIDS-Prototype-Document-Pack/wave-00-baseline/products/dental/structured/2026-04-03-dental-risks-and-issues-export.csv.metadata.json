@@ -1,0 +1,19 @@
+{
+  "metadataAttributes": {
+    "product_id": "dental",
+    "product_name": "DENTAL / DENCLASS",
+    "wave": "wave-00-baseline",
+    "wave_label": "Baseline",
+    "source_type": "risk_export",
+    "document_date": "2026-04-03",
+    "author": "Jaden Cole",
+    "title": "Dental Risks and Issues Export",
+    "pi": 4,
+    "sprint": 1,
+    "contains_decisions": false,
+    "contains_action_items": false,
+    "status_signal": "caution",
+    "stakeholders": "Jaden Cole; Lowry Beckett",
+    "demo_effect": "Provides structured baseline risks with owner, severity, and mitigation fields."
+  }
+}

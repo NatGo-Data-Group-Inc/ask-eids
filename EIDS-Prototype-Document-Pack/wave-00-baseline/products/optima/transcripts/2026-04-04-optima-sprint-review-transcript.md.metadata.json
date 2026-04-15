@@ -1,0 +1,19 @@
+{
+  "metadataAttributes": {
+    "product_id": "optima",
+    "product_name": "OPTIMA Care Coordination",
+    "wave": "wave-00-baseline",
+    "wave_label": "Baseline",
+    "source_type": "transcript",
+    "document_date": "2026-04-04",
+    "author": "Teams Auto Transcript",
+    "title": "Optima Sprint Review Transcript",
+    "pi": 4,
+    "sprint": 1,
+    "contains_decisions": true,
+    "contains_action_items": true,
+    "status_signal": "healthy",
+    "stakeholders": "Anna Kim; Sandy Pierce",
+    "demo_effect": "Shows what good transcript hygiene looks like and why Optima remains confident."
+  }
+}

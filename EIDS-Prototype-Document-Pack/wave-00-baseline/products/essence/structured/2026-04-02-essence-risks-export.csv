@@ -1,0 +1,3 @@
+risk_id,title,severity,status,owner,opened_date,last_changed,linked_blocker,summary,mitigation,next_decision_date
+E-001,Incomplete contract handoff,High,Open,Commander Melissa Jones,2026-03-24,2026-04-02,B-E01,Prior contractor turnover left major product decisions undocumented.,Reconstruct context from surviving emails and working sessions.,2026-04-18
+E-002,Missing stakeholder list,Medium,Open,Virginia Howard,2026-03-29,2026-04-02,,Current distribution list may be incomplete and outdated.,Validate stakeholder roster through live discovery.,2026-04-20

@@ -1,0 +1,19 @@
+{
+  "metadataAttributes": {
+    "product_id": "dental",
+    "product_name": "DENTAL / DENCLASS",
+    "wave": "wave-03-recovery",
+    "wave_label": "Recovery Week",
+    "source_type": "email",
+    "document_date": "2026-04-16",
+    "author": "Lowry Beckett",
+    "title": "Email \u2014 Vendor Mitigation Confirmed",
+    "pi": 4,
+    "sprint": 2,
+    "contains_decisions": true,
+    "contains_action_items": true,
+    "status_signal": "caution",
+    "stakeholders": "Lowry Beckett; Jaden Cole; Benjiman Jennings",
+    "demo_effect": "Confirms mitigation steps and provides a clean citation for status improvement."
+  }
+}

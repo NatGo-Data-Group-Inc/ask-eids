@@ -1,0 +1,19 @@
+{
+  "metadataAttributes": {
+    "product_id": "dental",
+    "product_name": "DENTAL / DENCLASS",
+    "wave": "wave-02-escalation",
+    "wave_label": "Escalation Week",
+    "source_type": "blocker_export",
+    "document_date": "2026-04-13",
+    "author": "Jaden Cole",
+    "title": "Dental Blockers Export \u2014 Escalated",
+    "pi": 4,
+    "sprint": 2,
+    "contains_decisions": false,
+    "contains_action_items": false,
+    "status_signal": "risk",
+    "stakeholders": "Jaden Cole; Lowry Beckett",
+    "demo_effect": "Introduces active blockers that should populate the Data tab and lower health confidence."
+  }
+}
