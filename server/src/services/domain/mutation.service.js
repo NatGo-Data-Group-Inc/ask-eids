@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { generateBedrockText } from '../../lib/aws/bedrockText.js';
 import { getRetrievalProvider } from '../../rag/retrievalProvider.js';
-import { buildCorpusReport } from '../ingest/corpusImport.service.js';
+import { buildCorpusReport, buildUploadedCorpusEntry, deriveCorpusProductState } from '../ingest/corpusImport.service.js';
 import { HttpError } from '../common/httpError.js';
 import { normalizeTranscriptUpload } from '../ingest/normalize/transcriptNormalizer.js';
 import { extractTranscriptEntities } from '../extract/transcriptExtraction.service.js';
@@ -19,6 +19,32 @@ import {
 import { getSourceTypeDefinition, isStructuredImportType } from '../../../../shared/artifactTypes.js';
 
 const artifactUploadFailureAttempts = new Map();
+
+function sortProductsByStatusAndHealth(products = []) {
+  const rank = { risk: 0, caution: 1, healthy: 2 };
+  return [...products].sort((left, right) => {
+    const statusDiff = (rank[left.status] ?? 99) - (rank[right.status] ?? 99);
+    if (statusDiff !== 0) {
+      return statusDiff;
+    }
+    return Number(right.health?.overall || 0) - Number(left.health?.overall || 0);
+  });
+}
+
+function sameCorpusEntry(left, right) {
+  return left?.title === right?.title
+    && left?.sourceType === right?.sourceType
+    && left?.documentDate === right?.documentDate;
+}
+
+function getCorpusMetadataAttributes(metadata) {
+  if (!metadata || typeof metadata !== 'object') {
+    return null;
+  }
+  return metadata.metadataAttributes && typeof metadata.metadataAttributes === 'object'
+    ? metadata.metadataAttributes
+    : null;
+}
 
 export function resetMutationHarnessState() {
   artifactUploadFailureAttempts.clear();
@@ -1019,53 +1045,13 @@ export function createMutationService({
         const sourceDefinition = getSourceTypeDefinition(sourceType);
         const terminalStatus = extracted.warningText ? 'partial' : 'completed';
         const updatedDomains = isStructuredImportType(sourceType) ? ['sources', 'ask', 'reports', 'data'] : ['sources', 'ask', 'reports'];
+        const corpusAttributes = getCorpusMetadataAttributes(validated.metadata);
 
         await updateState((draft) => {
           const data = draft.productData[productId];
           const product = draft.products.find((item) => item.id === productId);
-          const source = data.sources.find((item) => item.id === sourceId);
-          if (source) {
-            const sourceSummary = buildSourceSummary({
-              sourceType,
-              sourceDate,
-              title,
-              author: source.author,
-              participants,
-              warningText: extracted.warningText,
-              processingStatus: terminalStatus,
-            });
-            source.meta = sourceSummary.meta;
-            source.previewText = extracted.previewText;
-            source.normalizedArtifactKey = normalizedArtifactKey;
-            source.chunkArtifacts = chunkArtifacts.map((chunk) => ({
-              chunkIndex: chunk.chunkIndex,
-              chunkKey: chunk.chunkKey,
-              metadataKey: chunk.metadataKey,
-              tokenCount: chunk.tokenCount,
-            }));
-            source.metadata = {
-              ...(source.metadata || {}),
-              ...(validated.metadata || {}),
-              ...(extracted.metadata || {}),
-            };
-            source.indexed = true;
-            source.ingestStatus = terminalStatus;
-            source.warningText = extracted.warningText;
-          }
-          data.sourceContents[sourceId] = extracted.normalizedText;
-          if (structuredRows && sourceDefinition?.dataset) {
-            data.data[sourceDefinition.dataset] = structuredRows;
-            data.lastStructuredImport = {
-              sourceId,
-              title,
-              dataset: sourceDefinition.dataset,
-              sourceType,
-              updatedAt: nowIso(),
-            };
-          }
-          product.evidenceVersion = Number(product.evidenceVersion || 1) + 1;
-          data.evidenceVersion = product.evidenceVersion;
-          data.latestEvidenceUpdate = {
+          const nextEvidenceVersion = Number(product?.evidenceVersion || data?.evidenceVersion || 1) + 1;
+          const latestEvidenceUpdate = {
             sourceId,
             title,
             sourceType,
@@ -1073,12 +1059,156 @@ export function createMutationService({
             updatedDomains,
             impactType: isStructuredImportType(sourceType) ? 'structured' : 'evidence_only',
           };
-          product.recentSignals.unshift({
-            id: `sig-${Date.now()}`,
-            dateLabel: nowDateLabel(),
-            type: sourceType,
-            title: `${title} processed`,
-          });
+
+          if (corpusAttributes) {
+            const uploadedEntry = buildUploadedCorpusEntry({
+              sourceId,
+              productId,
+              productName: corpusAttributes.product_name || product?.name || data?.productName || productId,
+              relativePath: validated.metadata?.corpusRelativePath || '',
+              format: file.originalname.split('.').pop()?.toLowerCase() || 'txt',
+              sourceType,
+              documentDate: sourceDate,
+              author: validated.author || corpusAttributes.author || draft.session.user.displayName,
+              title,
+              wave: corpusAttributes.wave || 'uploaded',
+              waveLabel: corpusAttributes.wave_label || 'Uploaded',
+              demoEffect: corpusAttributes.demo_effect || '',
+              containsDecisions: String(corpusAttributes.contains_decisions).toLowerCase() === 'true',
+              containsActionItems: String(corpusAttributes.contains_action_items).toLowerCase() === 'true',
+              statusSignal: corpusAttributes.status_signal || 'baseline',
+              metadata: {
+                ...(validated.metadata || {}),
+                ...(extracted.metadata || {}),
+                sourceFamily: getSourceTypeDefinition(sourceType)?.family || 'document',
+              },
+              rawText: extracted.normalizedText,
+            });
+            const existingEntries = Array.isArray(data.entries) ? data.entries : [];
+            const nextEntries = [
+              uploadedEntry,
+              ...existingEntries.filter((entry) => !sameCorpusEntry(entry, uploadedEntry)),
+            ];
+            const nextLatestCorpusDate = [draft.importedCorpus?.latestCorpusDate, uploadedEntry.isoDate]
+              .filter(Boolean)
+              .sort((left, right) => new Date(right) - new Date(left))[0];
+            const derived = deriveCorpusProductState({
+              productId,
+              productEntries: nextEntries,
+              latestCorpusDate: nextLatestCorpusDate,
+            });
+
+            if (!derived) {
+              throw new Error(`Unable to derive corpus state for ${productId}.`);
+            }
+
+            derived.product.evidenceVersion = nextEvidenceVersion;
+            derived.productData.evidenceVersion = nextEvidenceVersion;
+            derived.productData.latestEvidenceUpdate = latestEvidenceUpdate;
+            derived.productData.sourceContents[sourceId] = extracted.normalizedText;
+
+            if (structuredRows && sourceDefinition?.dataset) {
+              derived.productData.lastStructuredImport = {
+                sourceId,
+                title,
+                dataset: sourceDefinition.dataset,
+                sourceType,
+                updatedAt: nowIso(),
+              };
+            }
+
+            const derivedSource = derived.productData.sources.find((item) => item.id === sourceId);
+            if (derivedSource) {
+              const sourceSummary = buildSourceSummary({
+                sourceType,
+                sourceDate,
+                title,
+                author: derivedSource.author,
+                participants,
+                warningText: extracted.warningText,
+                processingStatus: terminalStatus,
+              });
+              derivedSource.meta = sourceSummary.meta;
+              derivedSource.previewText = extracted.previewText;
+              derivedSource.normalizedArtifactKey = normalizedArtifactKey;
+              derivedSource.chunkArtifacts = chunkArtifacts.map((chunk) => ({
+                chunkIndex: chunk.chunkIndex,
+                chunkKey: chunk.chunkKey,
+                metadataKey: chunk.metadataKey,
+                tokenCount: chunk.tokenCount,
+              }));
+              derivedSource.metadata = {
+                ...(derivedSource.metadata || {}),
+                ...(validated.metadata || {}),
+                ...(extracted.metadata || {}),
+              };
+              derivedSource.indexed = true;
+              derivedSource.ingestStatus = terminalStatus;
+              derivedSource.warningText = extracted.warningText;
+              derivedSource.contentType = file.mimetype || derivedSource.contentType || 'application/octet-stream';
+            }
+
+            draft.productData[productId] = derived.productData;
+            draft.products = sortProductsByStatusAndHealth(
+              draft.products.map((item) => (item.id === productId ? derived.product : item))
+            );
+            draft.importedCorpus = {
+              ...(draft.importedCorpus || {}),
+              latestCorpusDate: nextLatestCorpusDate,
+              artifactCount: Number(draft.importedCorpus?.artifactCount || 0) + 1,
+            };
+          } else {
+            const source = data.sources.find((item) => item.id === sourceId);
+            if (source) {
+              const sourceSummary = buildSourceSummary({
+                sourceType,
+                sourceDate,
+                title,
+                author: source.author,
+                participants,
+                warningText: extracted.warningText,
+                processingStatus: terminalStatus,
+              });
+              source.meta = sourceSummary.meta;
+              source.previewText = extracted.previewText;
+              source.normalizedArtifactKey = normalizedArtifactKey;
+              source.chunkArtifacts = chunkArtifacts.map((chunk) => ({
+                chunkIndex: chunk.chunkIndex,
+                chunkKey: chunk.chunkKey,
+                metadataKey: chunk.metadataKey,
+                tokenCount: chunk.tokenCount,
+              }));
+              source.metadata = {
+                ...(source.metadata || {}),
+                ...(validated.metadata || {}),
+                ...(extracted.metadata || {}),
+              };
+              source.indexed = true;
+              source.ingestStatus = terminalStatus;
+              source.warningText = extracted.warningText;
+            }
+            data.sourceContents[sourceId] = extracted.normalizedText;
+            if (structuredRows && sourceDefinition?.dataset) {
+              data.data[sourceDefinition.dataset] = structuredRows;
+              data.lastStructuredImport = {
+                sourceId,
+                title,
+                dataset: sourceDefinition.dataset,
+                sourceType,
+                updatedAt: nowIso(),
+              };
+            }
+            product.evidenceVersion = nextEvidenceVersion;
+            data.evidenceVersion = product.evidenceVersion;
+            data.latestEvidenceUpdate = latestEvidenceUpdate;
+            product.recentSignals.unshift({
+              id: `sig-${Date.now()}`,
+              dateLabel: nowDateLabel(),
+              type: sourceType,
+              title: `${title} processed`,
+            });
+          }
+
           draft.jobs[jobId] = {
             ...draft.jobs[jobId],
             status: terminalStatus,

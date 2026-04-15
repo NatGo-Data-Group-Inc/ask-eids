@@ -1,8 +1,13 @@
 import path from 'node:path';
 import { expect } from '@playwright/test';
 
-export async function resetAppState(request) {
-  const response = await request.post('/api/v1/test/reset');
+export async function resetAppState(request, options = {}) {
+  const params = new URLSearchParams();
+  if (options.corpusWave) {
+    params.set('corpusWave', options.corpusWave);
+  }
+  const suffix = params.size ? `?${params.toString()}` : '';
+  const response = await request.post(`/api/v1/test/reset${suffix}`);
   expect(response.ok()).toBeTruthy();
 }
 

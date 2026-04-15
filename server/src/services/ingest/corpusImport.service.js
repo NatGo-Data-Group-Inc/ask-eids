@@ -17,6 +17,7 @@ const fixedRolePresets = {
 };
 const binaryFallbackFormats = new Set(['pdf', 'pptx', 'xlsx']);
 const textLikeFormats = new Set(['md', 'csv', 'eml']);
+const waveOrder = ['wave-00-baseline', 'wave-01-operational', 'wave-02-escalation', 'wave-03-recovery'];
 
 function parseCsv(text) {
   const rows = [];
@@ -558,37 +559,59 @@ function sortProducts(products) {
   });
 }
 
-async function readEntry(manifestRow) {
-  const filePath = path.join(corpusRoot, manifestRow.relative_path);
-  const metadataPath = `${filePath}.metadata.json`;
-  const metadataFile = JSON.parse(await fs.readFile(metadataPath, 'utf8'));
-  const metadata = metadataFile.metadataAttributes || {};
-  const rawText = await extractRawText(filePath, manifestRow.format, manifestRow, metadata);
+function buildEntryFromSource({
+  id,
+  ingestOrder,
+  productId,
+  productName,
+  relativePath,
+  format,
+  sourceType,
+  documentDate,
+  author,
+  title,
+  wave,
+  waveLabel,
+  demoEffect,
+  containsDecisions,
+  containsActionItems,
+  statusSignal,
+  metadata = {},
+  rawText = '',
+}) {
   const frontMatter = parseFrontMatter(rawText);
   const strippedText = stripFrontMatter(rawText);
-  const weekly = manifestRow.source_type === 'weekly_update' ? parseWeeklyContent(strippedText) : { summary: '', accomplishments: '', risks: '', nextSteps: '', dataQualityNote: '', weekEnding: null };
-  const transcript = manifestRow.source_type === 'transcript' ? parseTranscriptContent(strippedText) : { attendees: [], decisions: [], actionItems: [], meetingSummary: '', timeLabel: '' };
-  const email = manifestRow.source_type === 'email' ? parseEmailContent(rawText) : { headers: {}, body: '', previewLine: '', participants: [], sentAt: null, timeLabel: '' };
-  const structuredRows = manifestRow.source_type.endsWith('_export') ? buildStructuredRows({ sourceType: manifestRow.source_type, rawText, documentDate: manifestRow.document_date }) : [];
+  const weekly = sourceType === 'weekly_update'
+    ? parseWeeklyContent(strippedText)
+    : { summary: '', accomplishments: '', risks: '', nextSteps: '', dataQualityNote: '', weekEnding: null };
+  const transcript = sourceType === 'transcript'
+    ? parseTranscriptContent(strippedText)
+    : { attendees: [], decisions: [], actionItems: [], meetingSummary: '', timeLabel: '' };
+  const email = sourceType === 'email'
+    ? parseEmailContent(rawText)
+    : { headers: {}, body: '', previewLine: '', participants: [], sentAt: null, timeLabel: '' };
+  const structuredRows = sourceType.endsWith('_export')
+    ? buildStructuredRows({ sourceType, rawText, documentDate })
+    : [];
 
   const entry = {
-    id: `src-${manifestRow.ingest_order}`,
-    ingestOrder: Number.parseInt(manifestRow.ingest_order, 10),
-    productId: manifestRow.product_id,
-    productName: manifestRow.product_name,
-    relativePath: manifestRow.relative_path,
-    format: manifestRow.format,
-    sourceType: manifestRow.source_type,
-    uiType: sourceTypeToUiType(manifestRow.source_type),
-    documentDate: manifestRow.document_date,
-    author: manifestRow.author,
-    title: manifestRow.title,
-    wave: manifestRow.wave,
-    waveLabel: manifestRow.wave_label,
-    demoEffect: manifestRow.demo_effect,
-    containsDecisions: String(manifestRow.contains_decisions).toLowerCase() === 'true',
-    containsActionItems: String(manifestRow.contains_action_items).toLowerCase() === 'true',
-    statusSignal: mapStatusSignal(manifestRow.status_signal),
+    id,
+    ingestOrder: Number.isFinite(Number(ingestOrder)) ? Number(ingestOrder) : null,
+    productId,
+    productName,
+    relativePath,
+    format,
+    sourceType,
+    uiType: sourceTypeToUiType(sourceType),
+    documentDate,
+    author,
+    title,
+    wave,
+    waveLabel,
+    demoEffect,
+    containsDecisions,
+    containsActionItems,
+    statusSignal: mapStatusSignal(statusSignal),
     metadata,
     rawText,
     strippedText,
@@ -607,7 +630,200 @@ async function readEntry(manifestRow) {
     : entry.sourceType === 'email'
       ? entry.email.participants
       : [];
+
   return entry;
+}
+
+export function deriveCorpusProductState({ productId, productEntries, latestCorpusDate }) {
+  const sortedEntries = [...productEntries].sort((left, right) => new Date(right.isoDate) - new Date(left.isoDate));
+  const latestEntry = sortedEntries[0];
+  if (!latestEntry) {
+    return null;
+  }
+
+  const productName = latestEntry.productName;
+  const latestWeeklyEntry = latestEntryByType(sortedEntries, 'weekly_update');
+  const stakeholderSource = latestEntryByType(sortedEntries, 'stakeholder_roster');
+  const stakeholders = stakeholderSource ? extractStakeholders(stakeholderSource.strippedText) : [];
+  const latestStatus = latestEntry.statusSignal;
+
+  const latestRiskEntry = latestEntryByType(sortedEntries, 'risk_export');
+  const latestBlockerEntry = latestEntryByType(sortedEntries, 'blocker_export');
+  const latestPiEntry = latestEntryByType(sortedEntries, 'pi_objectives_export');
+  const latestActionItemEntry = latestEntryByType(sortedEntries, 'action_item_export');
+
+  const data = {
+    risks: latestRiskEntry?.structuredRows ?? [],
+    blockers: latestBlockerEntry?.structuredRows ?? [],
+    pi: latestPiEntry?.structuredRows ?? [],
+    actionItems: latestActionItemEntry?.structuredRows ?? [],
+  };
+
+  const decisions = sortedEntries
+    .flatMap((entry) => {
+      if (entry.sourceType === 'transcript' && entry.transcript.decisions.length) {
+        return entry.transcript.decisions;
+      }
+      if (entry.sourceType === 'email' && entry.containsDecisions) {
+        return [entry.previewText];
+      }
+      if (['decision_memo', 'decision_log', 'release_plan', 'roadmap'].includes(entry.sourceType)) {
+        return [entry.previewText];
+      }
+      return [];
+    })
+    .filter(Boolean);
+
+  const sources = sortedEntries.map((entry) => ({
+    id: entry.id,
+    type: entry.uiType,
+    title: entry.title,
+    date: entry.documentDate,
+    meta: entry.metaText,
+    previewText: entry.previewText,
+    author: entry.author,
+    participants: entry.participants,
+    contentType: entry.format,
+    openable: true,
+  }));
+  const sourceContents = Object.fromEntries(sortedEntries.map((entry) => [entry.id, entry.strippedText || entry.rawText || entry.previewText]));
+  const weeklyUpdates = sortedEntries
+    .filter((entry) => entry.sourceType === 'weekly_update')
+    .map((entry) => ({
+      id: `wu-${entry.id}`,
+      weekEnding: entry.weekly.weekEnding || entry.documentDate,
+      summary: entry.weekly.summary,
+      accomplishments: entry.weekly.accomplishments,
+      risks: entry.weekly.risks,
+      nextSteps: entry.weekly.nextSteps,
+      authorSub: entry.author,
+    }));
+
+  const coverage = buildCoverageAndHealth(sortedEntries, productId, stakeholders, latestStatus, latestWeeklyEntry, latestCorpusDate);
+  const pm = latestWeeklyEntry?.frontMatter.pm || latestWeeklyEntry?.author || latestEntry.author;
+  const piMatch = sortedEntries.map((entry) => entry.rawText).join('\n').match(/PI\s*(\d+)/i);
+  const sprintMatch = sortedEntries.map((entry) => entry.title).join('\n').match(/Sprint\s*(\d+)/i);
+  const recentSignals = buildRecentSignals(sortedEntries);
+  const narrativeText = latestWeeklyEntry?.weekly?.summary || latestEntry.previewText;
+
+  return {
+    product: {
+      id: productId,
+      name: productName,
+      status: latestStatus,
+      statusLabel: labelForStatus(latestStatus),
+      health: {
+        overall: coverage.overall,
+        coverage: coverage.coverage,
+        freshness: coverage.freshness,
+        continuity: coverage.continuity,
+        sync: coverage.sync,
+      },
+      counts: {
+        risks: data.risks.length,
+        blockers: data.blockers.length,
+      },
+      pm,
+      line: productName,
+      pi: piMatch ? Number.parseInt(piMatch[1], 10) : 4,
+      sprint: sprintMatch ? Number.parseInt(sprintMatch[1], 10) : 1,
+      stakeholders,
+      evidenceVersion: 1,
+      lastSync: sortedEntries[0].isoDate,
+      highlights: coverage.highlights,
+      okItems: coverage.okItems,
+      biggestGap: coverage.biggestGap,
+      narrativeHtml: buildNarrative(productName, latestWeeklyEntry, latestStatus, coverage.highlights),
+      narrativeText,
+      askSuggestions: buildAskSuggestions({ data, decisions }, stakeholders),
+      recentSignals,
+    },
+    productData: {
+      evidenceVersion: 1,
+      lastStructuredImport: null,
+      latestEvidenceUpdate: null,
+      timelineCoverage: coverage.coverageStrip,
+      timelineGroups: buildTimelineGroups(sortedEntries),
+      data,
+      sources,
+      sourceContents,
+      weeklyUpdates,
+      decisions,
+      entries: sortedEntries,
+      latestStatusSignal: latestStatus,
+      productName,
+    },
+  };
+}
+
+export function buildUploadedCorpusEntry({
+  sourceId,
+  ingestOrder = null,
+  productId,
+  productName,
+  relativePath = '',
+  format,
+  sourceType,
+  documentDate,
+  author,
+  title,
+  wave,
+  waveLabel,
+  demoEffect = '',
+  containsDecisions = false,
+  containsActionItems = false,
+  statusSignal = 'baseline',
+  metadata = {},
+  rawText = '',
+}) {
+  return buildEntryFromSource({
+    id: sourceId,
+    ingestOrder,
+    productId,
+    productName,
+    relativePath,
+    format,
+    sourceType,
+    documentDate,
+    author,
+    title,
+    wave,
+    waveLabel,
+    demoEffect,
+    containsDecisions,
+    containsActionItems,
+    statusSignal,
+    metadata,
+    rawText,
+  });
+}
+
+async function readEntry(manifestRow) {
+  const filePath = path.join(corpusRoot, manifestRow.relative_path);
+  const metadataPath = `${filePath}.metadata.json`;
+  const metadataFile = JSON.parse(await fs.readFile(metadataPath, 'utf8'));
+  const metadata = metadataFile.metadataAttributes || {};
+  const rawText = await extractRawText(filePath, manifestRow.format, manifestRow, metadata);
+  return buildEntryFromSource({
+    id: `src-${manifestRow.ingest_order}`,
+    ingestOrder: Number.parseInt(manifestRow.ingest_order, 10),
+    productId: manifestRow.product_id,
+    productName: manifestRow.product_name,
+    relativePath: manifestRow.relative_path,
+    format: manifestRow.format,
+    sourceType: manifestRow.source_type,
+    documentDate: manifestRow.document_date,
+    author: manifestRow.author,
+    title: manifestRow.title,
+    wave: manifestRow.wave,
+    waveLabel: manifestRow.wave_label,
+    demoEffect: manifestRow.demo_effect,
+    containsDecisions: String(manifestRow.contains_decisions).toLowerCase() === 'true',
+    containsActionItems: String(manifestRow.contains_action_items).toLowerCase() === 'true',
+    statusSignal: manifestRow.status_signal,
+    metadata,
+    rawText,
+  });
 }
 
 function buildReportFromCorpus(state, productId) {
@@ -679,129 +895,26 @@ function buildReportFromCorpus(state, productId) {
   };
 }
 
-export async function buildInitialCorpusState() {
+export async function buildInitialCorpusState(options = {}) {
   const manifestRows = parseCsv(await fs.readFile(manifestPath, 'utf8'));
-  const entries = await Promise.all(manifestRows.map((row) => readEntry(row)));
+  const maxWaveIndex = options.maxWave ? waveOrder.indexOf(options.maxWave) : -1;
+  const filteredManifestRows = maxWaveIndex >= 0
+    ? manifestRows.filter((row) => waveOrder.indexOf(row.wave) <= maxWaveIndex)
+    : manifestRows;
+  const entries = await Promise.all(filteredManifestRows.map((row) => readEntry(row)));
   const latestCorpusDate = entries.reduce((latest, entry) => latest > entry.isoDate ? latest : entry.isoDate, entries[0]?.isoDate || new Date().toISOString());
   const products = [];
   const groupedEntries = Object.groupBy(entries, (entry) => entry.productId);
   const productData = {};
 
   for (const [productId, productEntries] of Object.entries(groupedEntries)) {
-    const sortedEntries = [...productEntries].sort((left, right) => new Date(right.isoDate) - new Date(left.isoDate));
-    const latestEntry = sortedEntries[0];
-    const productName = latestEntry.productName;
-    const latestWeeklyEntry = latestEntryByType(sortedEntries, 'weekly_update');
-    const stakeholderSource = latestEntryByType(sortedEntries, 'stakeholder_roster');
-    const stakeholders = stakeholderSource ? extractStakeholders(stakeholderSource.strippedText) : [];
-    const latestStatus = latestEntry.statusSignal;
+    const derived = deriveCorpusProductState({ productId, productEntries, latestCorpusDate });
+    if (!derived) {
+      continue;
+    }
 
-    const latestRiskEntry = latestEntryByType(sortedEntries, 'risk_export');
-    const latestBlockerEntry = latestEntryByType(sortedEntries, 'blocker_export');
-    const latestPiEntry = latestEntryByType(sortedEntries, 'pi_objectives_export');
-    const latestActionItemEntry = latestEntryByType(sortedEntries, 'action_item_export');
-
-    const data = {
-      risks: latestRiskEntry?.structuredRows ?? [],
-      blockers: latestBlockerEntry?.structuredRows ?? [],
-      pi: latestPiEntry?.structuredRows ?? [],
-      actionItems: latestActionItemEntry?.structuredRows ?? [],
-    };
-
-    const decisions = sortedEntries
-      .flatMap((entry) => {
-        if (entry.sourceType === 'transcript' && entry.transcript.decisions.length) {
-          return entry.transcript.decisions;
-        }
-        if (entry.sourceType === 'email' && entry.containsDecisions) {
-          return [entry.previewText];
-        }
-        if (['decision_memo', 'decision_log', 'release_plan', 'roadmap'].includes(entry.sourceType)) {
-          return [entry.previewText];
-        }
-        return [];
-      })
-      .filter(Boolean);
-
-    const sources = sortedEntries.map((entry) => ({
-      id: entry.id,
-      type: entry.uiType,
-      title: entry.title,
-      date: entry.documentDate,
-      meta: entry.metaText,
-      previewText: entry.previewText,
-      author: entry.author,
-      participants: entry.participants,
-      contentType: entry.format,
-      openable: true,
-    }));
-    const sourceContents = Object.fromEntries(sortedEntries.map((entry) => [entry.id, entry.strippedText || entry.rawText || entry.previewText]));
-    const weeklyUpdates = sortedEntries
-      .filter((entry) => entry.sourceType === 'weekly_update')
-      .map((entry) => ({
-        id: `wu-${entry.id}`,
-        weekEnding: entry.weekly.weekEnding || entry.documentDate,
-        summary: entry.weekly.summary,
-        accomplishments: entry.weekly.accomplishments,
-        risks: entry.weekly.risks,
-        nextSteps: entry.weekly.nextSteps,
-        authorSub: entry.author,
-      }));
-
-    const coverage = buildCoverageAndHealth(sortedEntries, productId, stakeholders, latestStatus, latestWeeklyEntry, latestCorpusDate);
-    const pm = latestWeeklyEntry?.frontMatter.pm || latestWeeklyEntry?.author || latestEntry.author;
-    const piMatch = sortedEntries.map((entry) => entry.rawText).join('\n').match(/PI\s*(\d+)/i);
-    const sprintMatch = sortedEntries.map((entry) => entry.title).join('\n').match(/Sprint\s*(\d+)/i);
-    const recentSignals = buildRecentSignals(sortedEntries);
-    const narrativeText = latestWeeklyEntry?.weekly?.summary || latestEntry.previewText;
-
-    productData[productId] = {
-      evidenceVersion: 1,
-      lastStructuredImport: null,
-      latestEvidenceUpdate: null,
-      timelineCoverage: coverage.coverageStrip,
-      timelineGroups: buildTimelineGroups(sortedEntries),
-      data,
-      sources,
-      sourceContents,
-      weeklyUpdates,
-      decisions,
-      entries: sortedEntries,
-      latestStatusSignal: latestStatus,
-      productName,
-    };
-
-    products.push({
-      id: productId,
-      name: productName,
-      status: latestStatus,
-      statusLabel: labelForStatus(latestStatus),
-      health: {
-        overall: coverage.overall,
-        coverage: coverage.coverage,
-        freshness: coverage.freshness,
-        continuity: coverage.continuity,
-        sync: coverage.sync,
-      },
-      counts: {
-        risks: data.risks.length,
-        blockers: data.blockers.length,
-      },
-      pm,
-      line: productName,
-      pi: piMatch ? Number.parseInt(piMatch[1], 10) : 4,
-      sprint: sprintMatch ? Number.parseInt(sprintMatch[1], 10) : 1,
-      stakeholders,
-      evidenceVersion: 1,
-      lastSync: sortedEntries[0].isoDate,
-      highlights: coverage.highlights,
-      okItems: coverage.okItems,
-      biggestGap: coverage.biggestGap,
-      narrativeHtml: buildNarrative(productName, latestWeeklyEntry, latestStatus, coverage.highlights),
-      narrativeText,
-      askSuggestions: buildAskSuggestions(productData[productId], stakeholders),
-      recentSignals,
-    });
+    productData[productId] = derived.productData;
+    products.push(derived.product);
   }
 
   const sortedProducts = sortProducts(products);
@@ -906,6 +1019,7 @@ export async function buildInitialCorpusState() {
       artifactCount: entries.length,
       productCount: sortedProducts.length,
       latestCorpusDate,
+      seedWave: options.maxWave || null,
     },
   };
 }

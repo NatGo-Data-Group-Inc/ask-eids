@@ -39,8 +39,9 @@ const ERROR_CODES = {
   INTERNAL_ERROR: 'INTERNAL_ERROR',
 };
 
-async function initializeCorpusRuntime() {
-  const state = await stateRepository.resetWithSeed();
+async function initializeCorpusRuntime(options = {}) {
+  const state = await buildInitialCorpusState(options);
+  await stateRepository.writeState(state);
   await resetPrototypeDuckDbStore();
   if (process.env.EIDS_SKIP_CORPUS_INDEX !== '1') {
     const provider = await getRetrievalProvider();
@@ -56,17 +57,17 @@ async function ensureRuntime() {
   await stateRepository.ensureInitialized();
 }
 
-export async function resetRuntimeData() {
+export async function resetRuntimeData(options = {}) {
   await fs.mkdir(runtimeDir, { recursive: true });
   await fs.mkdir(uploadsDir, { recursive: true });
   await fs.mkdir(exportsDir, { recursive: true });
   await fs.rm(runtimeConfig.storage.paths.runtimeFile, { force: true });
   resetMutationHarnessState();
-  await initializeCorpusRuntime();
+  await initializeCorpusRuntime(options);
 }
 
-export async function resetPrototypeState() {
-  await resetRuntimeData();
+export async function resetPrototypeState(options = {}) {
+  await resetRuntimeData(options);
 }
 
 async function readState() {
@@ -377,8 +378,8 @@ export async function buildApp({ withVite = false } = {}) {
   });
 
   if (process.env.NODE_ENV !== 'production') {
-    app.post('/api/v1/test/reset', async (_req, res) => {
-      await resetPrototypeState();
+    app.post('/api/v1/test/reset', async (req, res) => {
+      await resetPrototypeState({ maxWave: String(req.query.corpusWave || '').trim() || undefined });
       res.status(204).end();
     });
   }
