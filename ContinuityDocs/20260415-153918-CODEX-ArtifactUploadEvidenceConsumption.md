@@ -77,3 +77,30 @@
 * `npm test` passed with 47/47 tests.
 * `npm run test:e2e` passed with 28/28 tests.
 * `npm run test:e2e:headed` passed with 28/28 tests.
+
+## Entry - 2026-04-15 16:20:00 (local)
+
+**Goal**
+* Prevent generated runtime artifacts from being included in Git pushes.
+
+**Constraints/Assumptions**
+* User asked only for `.gitignore` correction, not history cleanup.
+* Existing push rejection was caused by already tracked large files under `server/data/`.
+
+**Key Decisions**
+* Broadened `.gitignore` to ignore `.playwright-mcp/` and the full `server/data/` tree because the current repo snapshot shows those paths are generated runtime/test output.
+
+**State**
+* Done: Updated `.gitignore` to ignore local Playwright MCP logs and server runtime/test data.
+* Now: Hand off the ignore change and explain remaining push implications.
+* Next: If requested, clean tracked large files from Git/index/history using an explicitly approved Git workflow.
+
+**Open Questions**
+* None.
+
+**Working Set**
+* `.gitignore`
+* `ContinuityDocs/20260415-153918-CODEX-ArtifactUploadEvidenceConsumption.md`
+
+**Notes / Outcomes**
+* This change prevents new files in those locations from being added, but does not by itself remove already tracked large blobs that caused the earlier GitHub push rejection.

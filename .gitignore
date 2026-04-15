@@ -2,6 +2,8 @@ node_modules/
 dist/
 playwright-report/
 test-results/
+.playwright-mcp/
 server/data/runtime-db.json
 server/data/uploads/
 server/data/exports/
+server/data/
