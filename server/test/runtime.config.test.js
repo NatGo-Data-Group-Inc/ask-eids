@@ -10,6 +10,19 @@ describe('runtime config', () => {
     expect(diagnostics.envSources.length).toBeGreaterThan(0);
   });
 
+  it('exposes hybrid semantic execution defaults and trust-surface feature flags', () => {
+    const config = getRuntimeConfig();
+
+    expect(config.semantic.defaultExecutionMode).toEqual(expect.any(String));
+    expect(Array.isArray(config.semantic.liveSourceFamilies)).toBe(true);
+    expect(config.semantic.liveSourceFamilies).toContain('email');
+    expect(config.semantic.staleAfterHours).toBeGreaterThan(0);
+
+    expect(config.features.enableNovaDentalLiveEmail).toEqual(expect.any(Boolean));
+    expect(config.features.enableDentalTrustSurfaces).toEqual(expect.any(Boolean));
+    expect(config.features.enableDentalSemanticServiceSplit).toEqual(expect.any(Boolean));
+  });
+
   it('enforces single-region GovCloud operation', () => {
     const config = getRuntimeConfig();
     expect(config.aws.region.startsWith('us-gov-')).toBe(true);

@@ -18,80 +18,83 @@
       - generic [ref=e21]:
         - heading "DENTAL / DENCLASS" [level=1] [ref=e22]
         - generic [ref=e23]: Caution
-        - generic [ref=e24]: extraction-first · replay
-        - generic [ref=e25]:
+        - generic [ref=e24]: live-email-trust-hardening · hybrid
+        - generic [ref=e25]: stale · live
+        - generic [ref=e26]:
           - text: "Health:"
-          - strong [ref=e26]: 86%
-      - generic [ref=e27]:
-        - button "Overview" [ref=e28] [cursor=pointer]
-        - button "Timeline" [ref=e29] [cursor=pointer]
-        - button "Data" [ref=e30] [cursor=pointer]
-        - button "Sources" [ref=e31] [cursor=pointer]
-        - button "Reports" [ref=e32] [cursor=pointer]
-      - generic [ref=e33]:
+          - strong [ref=e27]: 86%
+      - generic [ref=e28]:
+        - button "Overview" [ref=e29] [cursor=pointer]
+        - button "Timeline" [ref=e30] [cursor=pointer]
+        - button "Data" [ref=e31] [cursor=pointer]
+        - button "Sources" [ref=e32] [cursor=pointer]
+        - button "Reports" [ref=e33] [cursor=pointer]
+      - generic [ref=e34]:
         - generic [ref=e35]:
           - generic [ref=e36]:
-            - heading "Knowledge Health" [level=3] [ref=e37]
-            - generic "Knowledge health 86%" [ref=e38]:
-              - img [ref=e39]
-              - generic [ref=e42]: 86%
-          - generic [ref=e43]:
+            - generic [ref=e37]:
+              - heading "Knowledge Health" [level=3] [ref=e38]
+              - generic "Knowledge health 86%" [ref=e39]:
+                - img [ref=e40]
+                - generic [ref=e43]: 86%
             - generic [ref=e44]:
-              - generic [ref=e45]: Coverage
-              - generic [ref=e48]: 100%
-            - generic [ref=e49]:
-              - generic [ref=e50]: Freshness
-              - generic [ref=e53]: 76%
-            - generic [ref=e54]:
-              - generic [ref=e55]: Continuity
-              - generic [ref=e58]: 82%
-            - generic [ref=e59]:
-              - generic [ref=e60]: Sync
-              - generic [ref=e63]: 100%
-          - generic [ref=e64]:
-            - generic [ref=e65]: ✓ Weekly updates present
-            - generic [ref=e66]: ✓ Communication artifacts present
-            - generic [ref=e67]: ✓ Structured exports current
-            - generic [ref=e68]: ✓ ADO data available
-            - generic [ref=e69]: ⚠ Transcript coverage partial
-          - generic [ref=e70]:
-            - strong [ref=e71]: "Biggest gap:"
-            - text: Transcript coverage partial
-          - generic [ref=e72]:
-            - button "Upload Artifact" [ref=e73] [cursor=pointer]
-            - button "Update Weekly" [ref=e74] [cursor=pointer]
-        - generic [ref=e76]:
-          - heading "Current State" [level=3] [ref=e77]
-          - paragraph [ref=e78]:
+              - generic [ref=e45]:
+                - generic [ref=e46]: Coverage
+                - generic [ref=e49]: 100%
+              - generic [ref=e50]:
+                - generic [ref=e51]: Freshness
+                - generic [ref=e54]: 76%
+              - generic [ref=e55]:
+                - generic [ref=e56]: Continuity
+                - generic [ref=e59]: 82%
+              - generic [ref=e60]:
+                - generic [ref=e61]: Sync
+                - generic [ref=e64]: 100%
+            - generic [ref=e65]:
+              - generic [ref=e66]: ✓ Weekly updates present
+              - generic [ref=e67]: ✓ Communication artifacts present
+              - generic [ref=e68]: ✓ Structured exports current
+              - generic [ref=e69]: ✓ ADO data available
+              - generic [ref=e70]: ⚠ Transcript coverage partial
+            - generic [ref=e71]:
+              - strong [ref=e72]: "Biggest gap:"
+              - text: Transcript coverage partial
+            - generic [ref=e73]:
+              - button "Upload Artifact" [ref=e74] [cursor=pointer]
+              - button "Update Weekly" [ref=e75] [cursor=pointer]
+          - generic [ref=e76]: The latest published product understanding is getting stale.
+        - generic [ref=e78]:
+          - heading "Current State" [level=3] [ref=e79]
+          - paragraph [ref=e80]:
             - text: DENTAL / DENCLASS is
-            - strong [ref=e79]: in managed caution
+            - strong [ref=e81]: in managed caution
             - text: . Dental completed Sprint 1 planning and clarified the first set of FHIR mapping decisions. The overall posture is still manageable, but the product is moving from healthy to caution because the vendor sandbox dependency is now affecting schedule confidence and demo planning.
-          - generic [ref=e80]: Recent Signals
-          - generic [ref=e81]:
-            - button "4/3 weekly Dental Weekly Update — Sprint 1 Closeout" [ref=e82] [cursor=pointer]:
-              - generic [ref=e83]: 4/3
-              - generic [ref=e84]: weekly
-              - generic [ref=e85]: Dental Weekly Update — Sprint 1 Closeout
-            - button "4/3 risk Dental Risks and Issues Export" [ref=e86] [cursor=pointer]:
-              - generic [ref=e87]: 4/3
-              - generic [ref=e88]: risk
-              - generic [ref=e89]: Dental Risks and Issues Export
-            - button "4/3 blocker Dental Blockers Export" [ref=e90] [cursor=pointer]:
-              - generic [ref=e91]: 4/3
-              - generic [ref=e92]: blocker
-              - generic [ref=e93]: Dental Blockers Export
-            - button "4/3 document Dental PI Objectives Export" [ref=e94] [cursor=pointer]:
-              - generic [ref=e95]: 4/3
-              - generic [ref=e96]: document
-              - generic [ref=e97]: Dental PI Objectives Export
-          - button "View full timeline →" [ref=e98] [cursor=pointer]
-        - generic [ref=e100]:
-          - heading "Ask About DENTAL" [level=3] [ref=e101]
-          - generic [ref=e102]:
-            - textbox "Ask a question…" [ref=e103]
-            - button "Ask" [disabled] [ref=e104]
-          - generic [ref=e105]:
-            - button "What decisions were made recently?" [ref=e106] [cursor=pointer]
-            - button "Summarize open risks and blockers" [ref=e107] [cursor=pointer]
-            - button "Who are the stakeholders?" [ref=e108] [cursor=pointer]
-            - button "What changed most recently?" [ref=e109] [cursor=pointer]
+          - generic [ref=e82]: Recent Signals
+          - generic [ref=e83]:
+            - button "4/3 weekly Dental Weekly Update — Sprint 1 Closeout" [ref=e84] [cursor=pointer]:
+              - generic [ref=e85]: 4/3
+              - generic [ref=e86]: weekly
+              - generic [ref=e87]: Dental Weekly Update — Sprint 1 Closeout
+            - button "4/3 risk Dental Risks and Issues Export" [ref=e88] [cursor=pointer]:
+              - generic [ref=e89]: 4/3
+              - generic [ref=e90]: risk
+              - generic [ref=e91]: Dental Risks and Issues Export
+            - button "4/3 blocker Dental Blockers Export" [ref=e92] [cursor=pointer]:
+              - generic [ref=e93]: 4/3
+              - generic [ref=e94]: blocker
+              - generic [ref=e95]: Dental Blockers Export
+            - button "4/3 document Dental PI Objectives Export" [ref=e96] [cursor=pointer]:
+              - generic [ref=e97]: 4/3
+              - generic [ref=e98]: document
+              - generic [ref=e99]: Dental PI Objectives Export
+          - button "View full timeline →" [ref=e100] [cursor=pointer]
+        - generic [ref=e102]:
+          - heading "Ask About DENTAL" [level=3] [ref=e103]
+          - generic [ref=e104]:
+            - textbox "Ask a question…" [ref=e105]
+            - button "Ask" [disabled] [ref=e106]
+          - generic [ref=e107]:
+            - button "What decisions were made recently?" [ref=e108] [cursor=pointer]
+            - button "Summarize open risks and blockers" [ref=e109] [cursor=pointer]
+            - button "Who are the stakeholders?" [ref=e110] [cursor=pointer]
+            - button "What changed most recently?" [ref=e111] [cursor=pointer]

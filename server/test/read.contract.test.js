@@ -36,6 +36,10 @@ describe('read contracts', () => {
       aggregateStatus: expect.any(String),
       aggregateVersion: expect.any(Number),
       featureMode: expect.any(String),
+      freshnessStatus: expect.any(String),
+      usesLastKnownGood: expect.any(Boolean),
+      message: expect.any(String),
+      reasonCodes: expect.any(Array),
     });
     expect(response.body.overview.askSuggestions[0]).toContain('What decisions');
   });
@@ -51,6 +55,9 @@ describe('read contracts', () => {
     expect(response.status).toBe(200);
     expect(response.body.source.summary).toEqual(expect.any(String));
     expect(Array.isArray(response.body.source.citations)).toBe(true);
+    expect(response.body.source.citationMode).toEqual(expect.any(String));
+    expect(response.body.source.executionMode).toEqual(expect.any(String));
+    expect(response.body.source.extractionStatus).toEqual(expect.any(String));
     expect(response.body.source.confidence).toEqual(expect.any(String));
     expect(Array.isArray(response.body.source.warnings)).toBe(true);
   });
@@ -73,6 +80,7 @@ describe('read contracts', () => {
       mode: 'wave-00',
       executionMode: 'replay',
       featureMode: 'extraction-first',
+      sourceFamilyModes: expect.any(Object),
     });
     expect(response.body.seededSources).toBeGreaterThan(0);
   });

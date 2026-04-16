@@ -42,6 +42,11 @@ export function getRuntimeConfig() {
   const embedModelId = envString('BEDROCK_EMBED_MODEL_ID', DEFAULT_EMBED_MODEL).trim() || DEFAULT_EMBED_MODEL;
   const embedDims = envInt('EMBEDDING_DIMS', 512);
   const executionModeDefault = isTest ? 'replay' : 'live';
+  const semanticDefaultExecutionMode = envString('EIDS_SEMANTIC_EXECUTION_MODE_DEFAULT', executionModeDefault).trim() || executionModeDefault;
+  const semanticLiveSourceFamilies = envString('EIDS_SEMANTIC_LIVE_SOURCE_FAMILIES', 'email')
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
   const artifactStoreMode = envString('EIDS_ARTIFACT_STORE_MODE', isTest ? 'filesystem' : '').trim()
     || ((isProduction && rawBucket && normalizedBucket && exportBucket) ? 's3' : 'filesystem');
   const sharedCredentialsProject = envString('EIDS_SHARED_CREDENTIALS_PROJECT', DEFAULT_SHARED_PROJECT).trim() || DEFAULT_SHARED_PROJECT;
@@ -62,6 +67,7 @@ export function getRuntimeConfig() {
       useFips: envBool('AWS_USE_FIPS_ENDPOINT', region.startsWith('us-gov-')),
     },
     bedrock: {
+      enabled: bedrockEnabled,
       region,
       textModelId,
       embedModelId,
@@ -74,12 +80,18 @@ export function getRuntimeConfig() {
     semantic: {
       extractionExecutionMode: envString('EIDS_EXTRACTION_EXECUTION_MODE', executionModeDefault).trim() || executionModeDefault,
       aggregationExecutionMode: envString('EIDS_AGGREGATION_EXECUTION_MODE', executionModeDefault).trim() || executionModeDefault,
+      defaultExecutionMode: semanticDefaultExecutionMode,
+      liveSourceFamilies: semanticLiveSourceFamilies,
       promptRegistryVersion: envString('EIDS_PROMPT_REGISTRY_VERSION', 'local-dev').trim() || 'local-dev',
       evalCacheDir: envString('EIDS_EVAL_CACHE_DIR', path.join(getRuntimePaths().runtimeDir, 'eval-cache')).trim() || path.join(getRuntimePaths().runtimeDir, 'eval-cache'),
+      staleAfterHours: envInt('EIDS_SEMANTIC_STALE_AFTER_HOURS', 24),
     },
     features: {
       enableNovaDentalExtraction: envBool('ENABLE_NOVA_DENTAL_EXTRACTION', true),
       enableNovaDentalAggregation: envBool('ENABLE_NOVA_DENTAL_AGGREGATION', true),
+      enableNovaDentalLiveEmail: envBool('ENABLE_NOVA_DENTAL_LIVE_EMAIL', false),
+      enableDentalTrustSurfaces: envBool('ENABLE_DENTAL_TRUST_SURFACES', false),
+      enableDentalSemanticServiceSplit: envBool('ENABLE_DENTAL_SEMANTIC_SERVICE_SPLIT', false),
       enableExtractionReplayMode: envBool('ENABLE_EXTRACTION_REPLAY_MODE', isTest),
     },
     textract: {

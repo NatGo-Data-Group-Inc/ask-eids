@@ -20,6 +20,11 @@ describe('ask contracts', () => {
     expect(response.body.coverage.isPartial).toBe(true);
     expect(response.body.coverage.warnings.length).toBeGreaterThan(0);
     expect(response.body.sources[0].sourceId).toBeTruthy();
+    expect(response.body.semanticState).toMatchObject({
+      freshnessStatus: expect.any(String),
+      usesLastKnownGood: expect.any(Boolean),
+      message: expect.any(String),
+    });
   });
 
   it('returns insufficient evidence for unsupported questions', async () => {

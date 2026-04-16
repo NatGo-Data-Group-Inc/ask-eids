@@ -2,6 +2,9 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import mammoth from 'mammoth';
+import { getSourceFamily } from '../../../../shared/artifactTypes.js';
+import { buildSourceFamilyModes } from '../semantic/executionPolicy.service.js';
+import { computeSemanticTrustState } from '../semantic/semanticFreshness.service.js';
 
 const corpusRoot = path.resolve('EIDS-Prototype-Document-Pack');
 const manifestPath = path.join(corpusRoot, '00-operator-guide', 'MASTER-MANIFEST.csv');
@@ -731,6 +734,25 @@ function buildPromptRun({ scope, targetId, promptVersion, modelId, executionMode
   };
 }
 
+function inferCitationMode(citations = [], sourceType = '') {
+  if (!Array.isArray(citations) || !citations.length) {
+    return 'fallback';
+  }
+  const exactLike = citations.every((citation) => citation?.mode === 'exact'
+    || (citation?.kind === 'line_range' && ['email', 'transcript', 'weekly_update'].includes(sourceType)));
+  return exactLike ? 'exact' : 'fallback';
+}
+
+function stableHash(value) {
+  const text = JSON.stringify(value);
+  let hash = 0;
+  for (let index = 0; index < text.length; index += 1) {
+    hash = ((hash << 5) - hash) + text.charCodeAt(index);
+    hash |= 0;
+  }
+  return `h${Math.abs(hash)}`;
+}
+
 export function attachSemanticStateToRuntimeState(
   state,
   {
@@ -738,16 +760,24 @@ export function attachSemanticStateToRuntimeState(
     executionMode = (process.env.VITEST || process.env.NODE_ENV === 'test') ? 'replay' : 'live',
     promptVersion = process.env.EIDS_PROMPT_REGISTRY_VERSION || 'local-dev',
     modelId = process.env.BEDROCK_TEXT_MODEL_ID || 'amazon.nova-pro-v1:0',
+    liveSourceFamilies = ['email'],
+    staleAfterHours = 24,
   } = {}
 ) {
   state.sourceExtractions = [];
   state.productAggregates = [];
   state.promptRuns = [];
+  const sourceFamilyModes = buildSourceFamilyModes({
+    executionMode,
+    liveSourceFamilies,
+  });
   state.semanticConfig = {
     featureMode,
     executionMode,
+    sourceFamilyModes,
     promptVersion,
     modelId,
+    staleAfterHours,
   };
 
   for (const product of state.products || []) {
@@ -756,35 +786,55 @@ export function attachSemanticStateToRuntimeState(
       continue;
     }
 
-    const extractionFirstEnabled = product.id === 'dental' && featureMode === 'extraction-first';
+    const extractionFirstEnabled = product.id === 'dental' && ['extraction-first', 'live-email-trust-hardening', 'service-split'].includes(featureMode);
     const aggregateVersion = Number(product.evidenceVersion || productData.evidenceVersion || 1);
-    product.semanticState = {
-      executionMode,
-      aggregateStatus: extractionFirstEnabled ? 'published' : 'legacy',
-      aggregateVersion,
-      featureMode: extractionFirstEnabled ? 'extraction-first' : 'legacy',
-      aggregateId: extractionFirstEnabled ? `agg-${product.id}-${aggregateVersion}` : null,
-    };
-    productData.semanticState = product.semanticState;
-
     if (!extractionFirstEnabled) {
+      const legacyTrust = computeSemanticTrustState({
+        executionMode: 'replay',
+        lastPublishedAt: product.lastSync,
+        latestAttemptAt: product.lastSync,
+        runtimeConfig: { semantic: { staleAfterHours } },
+      });
+      product.semanticState = {
+        executionMode: 'replay',
+        policyMode: executionMode,
+        sourceFamilyModes,
+        aggregateStatus: 'legacy',
+        aggregateVersion,
+        featureMode: 'legacy',
+        aggregateId: null,
+        ...legacyTrust,
+      };
+      productData.semanticState = product.semanticState;
       continue;
     }
 
+    const effectiveExecutionMode = executionMode === 'hybrid'
+      ? sourceFamilyModes.email
+      : executionMode;
+    const aggregateId = `agg-${product.id}-${aggregateVersion}`;
     const sourceExtractions = (productData.entries?.length
       ? productData.entries.map((entry) => {
         const extraction = buildSourceExtractionPayloadFromEntry(entry);
         const source = productData.sources.find((item) => item.id === entry.id);
+        const sourceFamily = getSourceFamily(entry.sourceType === 'weekly_update' ? 'weekly_update' : entry.uiType || entry.sourceType);
+        const executionModeEffective = sourceFamilyModes[sourceFamily] || effectiveExecutionMode;
+        const citationMode = inferCitationMode(extraction.citations, entry.sourceType);
+        const promptRunId = `source_extraction-${entry.id}`;
         if (source) {
           source.summary = extraction.summary;
           source.citations = extraction.citations;
           source.confidence = extraction.confidence;
           source.warnings = extraction.warnings;
+          source.citationMode = citationMode;
+          source.executionMode = executionModeEffective;
+          source.extractionStatus = 'completed';
         }
         return {
           sourceId: entry.id,
           productId: entry.productId,
           sourceType: entry.sourceType,
+          sourceFamily,
           schemaVersion: '1.0',
           promptFamily: `source-${entry.sourceType}`,
           promptVersion,
@@ -793,6 +843,14 @@ export function attachSemanticStateToRuntimeState(
           payload: extraction,
           validationStatus: 'valid',
           confidence: extraction.confidence,
+          executionModeEffective,
+          citationMode,
+          citationPayloadJson: extraction.citations,
+          providerRequestId: null,
+          normalizationVersion: 'seed-v1',
+          lineCount: String(entry.strippedText || entry.rawText || '').split(/\r?\n/).filter(Boolean).length,
+          warningCodes: [],
+          promptRunId,
           createdAt: entry.isoDate,
         };
       })
@@ -802,14 +860,22 @@ export function attachSemanticStateToRuntimeState(
           source,
           sourceContent: productData.sourceContents?.[source.id] || '',
         });
+        const sourceFamily = getSourceFamily(source.type);
+        const executionModeEffective = sourceFamilyModes[sourceFamily] || effectiveExecutionMode;
+        const citationMode = inferCitationMode(extraction.citations, source.type);
+        const promptRunId = `source_extraction-${source.id}`;
         source.summary = extraction.summary;
         source.citations = extraction.citations;
         source.confidence = extraction.confidence;
         source.warnings = extraction.warnings;
+        source.citationMode = citationMode;
+        source.executionMode = executionModeEffective;
+        source.extractionStatus = source.ingestStatus || 'completed';
         return {
           sourceId: source.id,
           productId: product.id,
           sourceType: source.type,
+          sourceFamily,
           schemaVersion: '1.0',
           promptFamily: `source-${source.type}`,
           promptVersion,
@@ -818,6 +884,14 @@ export function attachSemanticStateToRuntimeState(
           payload: extraction,
           validationStatus: source.ingestStatus === 'failed' ? 'failed' : 'valid',
           confidence: extraction.confidence,
+          executionModeEffective,
+          citationMode,
+          citationPayloadJson: extraction.citations,
+          providerRequestId: null,
+          normalizationVersion: 'seed-v1',
+          lineCount: String(productData.sourceContents?.[source.id] || source.previewText || '').split(/\r?\n/).filter(Boolean).length,
+          warningCodes: source.warningText ? ['SOURCE_WARNING'] : [],
+          promptRunId,
           createdAt: `${source.date}T12:00:00.000Z`,
         };
       }));
@@ -828,13 +902,33 @@ export function attachSemanticStateToRuntimeState(
       targetId: item.sourceId,
       promptVersion: item.promptVersion,
       modelId: item.modelId,
-      executionMode,
+      executionMode: item.executionModeEffective,
       status: item.validationStatus === 'failed' ? 'failed' : 'succeeded',
+    })).map((item, index) => ({
+      ...item,
+      runId: sourceExtractions[index].promptRunId,
+      provider: sourceExtractions[index].executionModeEffective === 'live' ? 'bedrock' : 'replay',
+      providerRequestId: sourceExtractions[index].providerRequestId,
+      sourceFamily: sourceExtractions[index].sourceFamily,
+      inputHash: sourceExtractions[index].normalizedHash,
+      outputHash: stableHash(sourceExtractions[index].payload),
+      replayKey: sourceExtractions[index].executionModeEffective === 'replay'
+        ? `${promptVersion}:${sourceExtractions[index].sourceId}`
+        : null,
+      citationMode: sourceExtractions[index].citationMode,
     })));
 
     const aggregatePayload = buildAggregatePayload({ product, productData });
+    const aggregatePromptRunId = `aggregation-${product.id}`;
+    const aggregateTrust = computeSemanticTrustState({
+      executionMode: effectiveExecutionMode,
+      lastPublishedAt: product.lastSync || new Date().toISOString(),
+      latestAttemptAt: product.lastSync || new Date().toISOString(),
+      runtimeConfig: { semantic: { staleAfterHours } },
+      surface: 'product',
+    });
     state.productAggregates.push({
-      aggregateId: `agg-${product.id}-${aggregateVersion}`,
+      aggregateId,
       productId: product.id,
       schemaVersion: '1.0',
       promptVersion,
@@ -843,19 +937,46 @@ export function attachSemanticStateToRuntimeState(
       aggregateInputHash: `${product.id}:${aggregateVersion}`,
       payload: aggregatePayload,
       published: true,
-      publishedAt: new Date().toISOString(),
+      publishedAt: product.lastSync || new Date().toISOString(),
       supersededAt: null,
       supersededBy: null,
-      lastKnownGoodAggregateId: `agg-${product.id}-${aggregateVersion}`,
-      createdAt: new Date().toISOString(),
+      lastKnownGoodAggregateId: aggregateId,
+      freshnessStatus: aggregateTrust.freshnessStatus,
+      freshnessReasonJson: aggregateTrust.reasonCodes,
+      derivedFromLiveSources: sourceExtractions.some((item) => item.executionModeEffective === 'live'),
+      latestSourceRunAt: sourceExtractions[0]?.createdAt || product.lastSync || new Date().toISOString(),
+      publishedFromRunId: aggregatePromptRunId,
+      createdAt: product.lastSync || new Date().toISOString(),
     });
-    state.promptRuns.push(buildPromptRun({
+    state.promptRuns.push({
+      ...buildPromptRun({
       scope: 'aggregation',
       targetId: product.id,
       promptVersion,
       modelId,
-      executionMode,
-    }));
+      executionMode: effectiveExecutionMode,
+    }),
+      runId: aggregatePromptRunId,
+      provider: effectiveExecutionMode === 'live' ? 'bedrock' : 'replay',
+      providerRequestId: null,
+      sourceFamily: 'aggregate',
+      inputHash: `${product.id}:${aggregateVersion}`,
+      outputHash: stableHash(aggregatePayload),
+      replayKey: effectiveExecutionMode === 'replay' ? `${promptVersion}:${product.id}:aggregate` : null,
+      citationMode: 'mixed',
+    });
+
+    product.semanticState = {
+      executionMode: effectiveExecutionMode,
+      policyMode: executionMode,
+      sourceFamilyModes,
+      aggregateStatus: 'published',
+      aggregateVersion,
+        featureMode,
+      aggregateId,
+      ...aggregateTrust,
+    };
+    productData.semanticState = product.semanticState;
   }
 
   return state;

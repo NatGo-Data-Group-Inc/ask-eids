@@ -151,6 +151,7 @@ async function replaceStateRows(db, state) {
     await runSql(db, 'INSERT INTO state_meta (key, value_json) VALUES (?, ?)', ['role_presets', JSON.stringify(state.rolePresets ?? {})]);
     await runSql(db, 'INSERT INTO state_meta (key, value_json) VALUES (?, ?)', ['product_role_scopes', JSON.stringify(state.productRoleScopes ?? {})]);
     await runSql(db, 'INSERT INTO state_meta (key, value_json) VALUES (?, ?)', ['imported_corpus', JSON.stringify(state.importedCorpus ?? {})]);
+    await runSql(db, 'INSERT INTO state_meta (key, value_json) VALUES (?, ?)', ['semantic_config', JSON.stringify(state.semanticConfig ?? {})]);
 
     for (const [index, product] of (state.products ?? []).entries()) {
       await runSql(
@@ -284,6 +285,7 @@ async function readStateRows(db) {
     auditEvents: auditRows.map((row) => parseJson(row.payload_json, {})),
     nextIds: Object.fromEntries(nextIdRows.map((row) => [row.key, Number(row.value)])),
     importedCorpus: meta.imported_corpus ?? {},
+    semanticConfig: meta.semantic_config ?? {},
   };
 }
 

@@ -5,6 +5,7 @@ import { retrieveStructuredEvidence } from '../rag/structuredRetrieval.service.j
 import { buildEvidencePack } from '../rag/evidencePack.service.js';
 import { generateAskAnswer } from '../rag/generation.service.js';
 import { validateAskGeneration } from '../rag/validation.service.js';
+import { buildSemanticTrustMessage } from '../semantic/semanticFreshness.service.js';
 
 function formatSourceMeta(metadata) {
   const parts = [];
@@ -212,6 +213,17 @@ export function createAskService({ errorCodes, runtimeConfig, readModel }) {
       coverage: {
         isPartial: status === 'partial',
         warnings,
+      },
+      semanticState: {
+        freshnessStatus: product.semanticState?.freshnessStatus || 'fresh',
+        usesLastKnownGood: Boolean(product.semanticState?.usesLastKnownGood),
+        message: buildSemanticTrustMessage({
+          executionMode: product.semanticState?.executionMode || 'replay',
+          freshnessStatus: product.semanticState?.freshnessStatus || 'fresh',
+          usesLastKnownGood: Boolean(product.semanticState?.usesLastKnownGood),
+          reasonCodes: product.semanticState?.reasonCodes || [],
+          surface: 'ask',
+        }),
       },
       sources,
       trace: {

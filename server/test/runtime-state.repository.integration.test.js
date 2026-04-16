@@ -88,11 +88,15 @@ describe('runtime state repository', () => {
     expect(Array.isArray(state.sourceExtractions)).toBe(true);
     expect(state.sourceExtractions.length).toBeGreaterThan(0);
     expect(state.sourceExtractions.some((item) => item.productId === 'dental')).toBe(true);
+    expect(state.sourceExtractions.some((item) => item.executionModeEffective)).toBe(true);
+    expect(state.sourceExtractions.some((item) => item.citationMode)).toBe(true);
 
     expect(Array.isArray(state.productAggregates)).toBe(true);
     expect(state.productAggregates.some((item) => item.productId === 'dental' && item.published === true)).toBe(true);
+    expect(state.productAggregates.some((item) => item.freshnessStatus)).toBe(true);
 
     expect(Array.isArray(state.promptRuns)).toBe(true);
     expect(state.promptRuns.some((item) => item.targetId === 'dental')).toBe(true);
+    expect(state.promptRuns.some((item) => item.provider)).toBe(true);
   });
 });

@@ -12,6 +12,7 @@ import { HttpError } from './services/common/httpError.js';
 import { createReadModelService } from './services/domain/readModel.service.js';
 import { createAskService } from './services/domain/ask.service.js';
 import { createMutationService, resetMutationHarnessState } from './services/domain/mutation.service.js';
+import { buildSemanticTrustMessage } from './services/semantic/semanticFreshness.service.js';
 
 const runtimeConfig = getRuntimeConfig();
 const runtimeDir = runtimeConfig.storage.paths.runtimeDir;
@@ -298,6 +299,17 @@ export async function buildApp({ withVite = false } = {}) {
     }
     res.json({
       ...report,
+      semanticState: {
+        freshnessStatus: product?.semanticState?.freshnessStatus || 'fresh',
+        usesLastKnownGood: Boolean(product?.semanticState?.usesLastKnownGood),
+        message: buildSemanticTrustMessage({
+          executionMode: product?.semanticState?.executionMode || 'replay',
+          freshnessStatus: product?.semanticState?.freshnessStatus || 'fresh',
+          usesLastKnownGood: Boolean(product?.semanticState?.usesLastKnownGood),
+          reasonCodes: product?.semanticState?.reasonCodes || [],
+          surface: 'report',
+        }),
+      },
       requiresRegeneration: Number(report.evidenceVersion || 0) < Number(product?.evidenceVersion || 0),
       regenerateNotice: Number(report.evidenceVersion || 0) < Number(product?.evidenceVersion || 0)
         ? 'New evidence is available. Regenerate to include it.'
@@ -409,6 +421,7 @@ export async function buildApp({ withVite = false } = {}) {
         mode: requestedMode,
         executionMode,
         featureMode,
+        sourceFamilyModes: persistedState?.semanticConfig?.sourceFamilyModes || state?.semanticConfig?.sourceFamilyModes || {},
         seededSources: persistedState?.productData?.[productId]?.sources?.length ?? state?.productData?.[productId]?.sources?.length ?? 0,
       });
     });

@@ -58,6 +58,8 @@ export async function uploadNovaArtifact(page, {
   const descriptor = await resolveFixtureDescriptor(fixtureKey);
   const targetUrl = `/products/dental?tab=overview${testCase ? `&testCase=${encodeURIComponent(testCase)}` : ''}`;
   await page.goto(targetUrl);
+  await expect(page.getByTestId('product-page')).toBeVisible();
+  await expect(page.getByTestId('upload-artifact-button')).toBeVisible();
   await page.getByTestId('upload-artifact-button').click();
   await page.getByTestId('artifact-file-input').setInputFiles(descriptor.filePath);
   const sourceTypeSelect = page.getByTestId('artifact-source-type-select');
@@ -87,6 +89,8 @@ export async function uploadNovaArtifact(page, {
 
   if (testCase === 'forcedInvalidExtraction') {
     await expect(page.getByTestId('artifact-processing-error')).toBeVisible({ timeout: 20000 });
+  } else if (testCase === 'publicationFailure') {
+    await expect(page.getByTestId('artifact-processing-warning')).toBeVisible({ timeout: 20000 });
   } else {
     await expect(page.getByTestId('artifact-processing-complete')).toBeVisible({ timeout: 20000 });
   }

@@ -9,6 +9,16 @@ import { buildChunkArtifacts } from '../rag/chunking.service.js';
 import { buildMailboxSyncDelta } from '../connectors/mailboxConnector.service.js';
 import { buildAdoSyncDelta } from '../connectors/adoConnector.service.js';
 import { runAdoMcpEnrichment } from '../connectors/adoMcpAdapter.service.js';
+import { resolveSemanticExecutionPolicy } from '../semantic/executionPolicy.service.js';
+import { runEmailSemanticIngest } from '../semantic/semanticIngestOrchestrator.service.js';
+import {
+  appendProductAggregateAttempt,
+  buildEmailSemanticState,
+  ensureSemanticCollections,
+  replaceProductAggregate,
+  upsertPromptRun,
+  upsertSourceExtraction,
+} from '../semantic/semanticPublication.service.js';
 import {
   buildSourceSummary,
   buildTestSourceId,
@@ -178,10 +188,19 @@ export function createMutationService({
 
   function syncSemanticState(draft) {
     return attachSemanticStateToRuntimeState(draft, {
-      featureMode: runtimeConfig?.features?.enableNovaDentalExtraction ? 'extraction-first' : 'legacy',
-      executionMode: runtimeConfig?.semantic?.extractionExecutionMode || 'replay',
-      promptVersion: runtimeConfig?.semantic?.promptRegistryVersion || 'local-dev',
-      modelId: runtimeConfig?.bedrock?.textModelId || 'amazon.nova-pro-v1:0',
+      featureMode: draft.semanticConfig?.featureMode || (runtimeConfig?.features?.enableNovaDentalExtraction ? 'extraction-first' : 'legacy'),
+      executionMode: draft.semanticConfig?.executionMode || runtimeConfig?.semantic?.extractionExecutionMode || 'replay',
+      promptVersion: draft.semanticConfig?.promptVersion || runtimeConfig?.semantic?.promptRegistryVersion || 'local-dev',
+      modelId: draft.semanticConfig?.modelId || runtimeConfig?.bedrock?.textModelId || 'amazon.nova-pro-v1:0',
+      liveSourceFamilies: Object.entries(draft.semanticConfig?.sourceFamilyModes || {})
+        .filter(([, mode]) => mode === 'live')
+        .map(([family]) => family)
+        .filter(Boolean).length
+        ? Object.entries(draft.semanticConfig?.sourceFamilyModes || {})
+          .filter(([, mode]) => mode === 'live')
+          .map(([family]) => family)
+        : (runtimeConfig?.semantic?.liveSourceFamilies || ['email']),
+      staleAfterHours: draft.semanticConfig?.staleAfterHours || runtimeConfig?.semantic?.staleAfterHours || 24,
     });
   }
 
@@ -925,6 +944,18 @@ export function createMutationService({
     const sourceType = validated.sourceType;
     const rawArtifactKey = artifactKeyForSource(productId, sourceId, file.originalname);
     const normalizedArtifactKey = artifactKeyForSource(productId, sourceId, 'normalized.txt');
+    const semanticFeatureMode = state.semanticConfig?.featureMode || 'extraction-first';
+    const useSemanticEmailPath = productId === 'dental'
+      && sourceType === 'email'
+      && ['live-email-trust-hardening', 'service-split'].includes(semanticFeatureMode);
+    const effectiveExecutionDecision = useSemanticEmailPath
+      ? resolveSemanticExecutionPolicy({
+        productId,
+        sourceType,
+        runtimeConfig,
+        stateSemanticConfig: state.semanticConfig,
+      })
+      : null;
     await artifactStore.writeBufferArtifact({
       bucketType: 'raw',
       key: rawArtifactKey,
@@ -943,6 +974,7 @@ export function createMutationService({
         status: 'queued',
         stage: 'queued',
         sourceType,
+        executionMode: effectiveExecutionDecision?.executionMode || null,
         createdAt: jobCreatedAt,
         updatedAt: jobCreatedAt,
         result: {
@@ -1004,7 +1036,7 @@ export function createMutationService({
           draft.jobs[jobId] = {
             ...draft.jobs[jobId],
             status: 'running',
-            stage: 'extracting',
+            stage: useSemanticEmailPath ? 'normalizing' : 'extracting',
             updatedAt: nowIso(),
           };
           const source = draft.productData[productId].sources.find((item) => item.id === sourceId);
@@ -1022,6 +1054,367 @@ export function createMutationService({
           }
           return draft;
         });
+
+        if (useSemanticEmailPath) {
+          const executionDecision = effectiveExecutionDecision || resolveSemanticExecutionPolicy({
+            productId,
+            sourceType,
+            runtimeConfig,
+            stateSemanticConfig: state.semanticConfig,
+          });
+          await updateState((draft) => {
+            draft.jobs[jobId] = {
+              ...draft.jobs[jobId],
+              stage: executionDecision.executionMode === 'live' ? 'live_extraction' : 'replay_extraction',
+              executionMode: executionDecision.executionMode,
+              updatedAt: nowIso(),
+            };
+            return draft;
+          });
+          const {
+            normalized,
+            chunkArtifacts,
+            extraction,
+            promptRun,
+            citationProjection,
+            warningText,
+            warnings,
+            updatedDomains,
+            latestAttemptAt,
+          } = await runEmailSemanticIngest({
+            artifactStore,
+            normalizedArtifactKey,
+            file,
+            sourceType,
+            sourceId,
+            productId,
+            title,
+            sourceDate,
+            author: validated.author || state.session.user.displayName,
+            participants,
+            executionDecision,
+            runtimeConfig,
+            testCase: options.testCase || '',
+            indexEvidence: indexTranscriptEvidence,
+          });
+
+          if (options.testCase === 'publicationFailure') {
+            await updateState((draft) => {
+              ensureSemanticCollections(draft);
+              const data = draft.productData[productId];
+              const product = draft.products.find((item) => item.id === productId);
+              const source = data.sources.find((item) => item.id === sourceId);
+              const activeAggregate = draft.productAggregates.find((item) => item.productId === productId && item.published)
+                || draft.productAggregates.find((item) => item.productId === productId)
+                || null;
+              const activeAggregateId = activeAggregate?.aggregateId || product?.semanticState?.aggregateId || `agg-${productId}-${Number(product?.evidenceVersion || data?.evidenceVersion || 1)}`;
+              const aggregateVersion = Number(product?.evidenceVersion || data?.evidenceVersion || 1);
+
+              if (source) {
+                const sourceSummary = buildSourceSummary({
+                  sourceType,
+                  sourceDate,
+                  title,
+                  author: source.author,
+                  participants: normalized.participants.length ? normalized.participants : participants,
+                  warningText,
+                  processingStatus: 'completed',
+                });
+                source.meta = sourceSummary.meta;
+                source.previewText = normalized.previewText;
+                source.normalizedArtifactKey = normalizedArtifactKey;
+                source.chunkArtifacts = chunkArtifacts.map((chunk) => ({
+                  chunkIndex: chunk.chunkIndex,
+                  chunkKey: chunk.chunkKey,
+                  metadataKey: chunk.metadataKey,
+                  tokenCount: chunk.tokenCount,
+                }));
+                source.metadata = {
+                  ...(source.metadata || {}),
+                  ...(validated.metadata || {}),
+                  ...normalized.normalizationMeta,
+                  sourceFamily: executionDecision.sourceFamily,
+                  normalizationVersion: normalized.normalizationVersion,
+                  lineCount: normalized.lineCount,
+                  providerRequestId: promptRun.providerRequestId,
+                };
+                source.indexed = true;
+                source.ingestStatus = 'completed';
+                source.extractionStatus = 'completed';
+                source.warningText = warningText;
+                source.summary = extraction.summary;
+                source.citations = citationProjection.citations;
+                source.citationMode = citationProjection.citationMode;
+                source.executionMode = executionDecision.executionMode;
+                source.confidence = extraction.confidence;
+                source.warnings = warnings;
+              }
+
+              data.sourceContents[sourceId] = normalized.normalizedText;
+              data.latestEvidenceUpdate = {
+                sourceId,
+                title,
+                sourceType,
+                message: 'This source was stored, but product understanding was not refreshed. Last known good state remains active.',
+                updatedDomains,
+                impactType: 'evidence_only',
+              };
+              upsertSourceExtraction(draft, {
+                sourceId,
+                productId,
+                sourceType,
+                sourceFamily: executionDecision.sourceFamily,
+                schemaVersion: '1.0',
+                promptFamily: `source-${sourceType}`,
+                promptVersion: executionDecision.promptVersion,
+                modelId: promptRun.modelId,
+                normalizedHash: promptRun.inputHash,
+                payload: {
+                  ...extraction,
+                  decisions: citationProjection.decisions,
+                  citations: citationProjection.citations,
+                },
+                validationStatus: 'valid',
+                confidence: extraction.confidence,
+                executionModeEffective: executionDecision.executionMode,
+                citationMode: citationProjection.citationMode,
+                citationPayloadJson: citationProjection.citations,
+                providerRequestId: promptRun.providerRequestId,
+                normalizationVersion: normalized.normalizationVersion,
+                lineCount: normalized.lineCount,
+                warningCodes: ['publication_failed', ...citationProjection.warningCodes],
+                promptRunId: promptRun.runId,
+                createdAt: latestAttemptAt,
+              });
+              upsertPromptRun(draft, {
+                ...promptRun,
+                targetId: sourceId,
+                citationMode: citationProjection.citationMode,
+              });
+              const semanticState = buildEmailSemanticState({
+                draft,
+                runtimeConfig,
+                executionMode: executionDecision.executionMode,
+                freshnessStatus: 'degraded',
+                usesLastKnownGood: true,
+                reasonCodes: ['publication_failed', 'using_last_known_good', ...citationProjection.warningCodes],
+                aggregateId: activeAggregateId,
+                aggregateVersion,
+                latestAttemptAt,
+                lastPublishedAt: activeAggregate?.publishedAt || product?.semanticState?.lastPublishedAt || product?.lastSync || latestAttemptAt,
+              });
+              product.semanticState = semanticState;
+              data.semanticState = semanticState;
+              appendProductAggregateAttempt(draft, {
+                aggregateId: `agg-${productId}-attempt-${Date.now()}`,
+                productId,
+                schemaVersion: '1.0',
+                promptVersion: executionDecision.promptVersion,
+                modelId: promptRun.modelId,
+                sourceSetHash: `${productId}:${sourceId}:publication-failed`,
+                aggregateInputHash: `${productId}:${aggregateVersion}:publication-failed`,
+                payload: {
+                  productId,
+                  sourceId,
+                  summary: extraction.summary,
+                },
+                published: false,
+                publishedAt: null,
+                supersededAt: null,
+                supersededBy: null,
+                lastKnownGoodAggregateId: activeAggregateId,
+                freshnessStatus: 'degraded',
+                freshnessReasonJson: semanticState.reasonCodes,
+                derivedFromLiveSources: executionDecision.executionMode === 'live',
+                latestSourceRunAt: latestAttemptAt,
+                publishedFromRunId: promptRun.runId,
+                createdAt: latestAttemptAt,
+              });
+              draft.jobs[jobId] = {
+                ...draft.jobs[jobId],
+                status: 'partial',
+                stage: 'publication_failed',
+                executionMode: executionDecision.executionMode,
+                warnings: ['publication_failed', ...citationProjection.warningCodes],
+                message: semanticState.message,
+                updatedAt: latestAttemptAt,
+                result: {
+                  sourceId,
+                  title,
+                  updatedDomains,
+                },
+              };
+              return draft;
+            });
+            return;
+          }
+
+          await updateState((draft) => {
+            ensureSemanticCollections(draft);
+            const data = draft.productData[productId];
+            const product = draft.products.find((item) => item.id === productId);
+            const source = data.sources.find((item) => item.id === sourceId);
+            const nextEvidenceVersion = Number(product?.evidenceVersion || data?.evidenceVersion || 1) + 1;
+            const aggregateId = `agg-${productId}-${nextEvidenceVersion}`;
+            const lastPublishedAt = latestAttemptAt;
+
+            if (source) {
+              const sourceSummary = buildSourceSummary({
+                sourceType,
+                sourceDate,
+                title,
+                author: source.author,
+                participants: normalized.participants.length ? normalized.participants : participants,
+                warningText,
+                processingStatus: 'completed',
+              });
+              source.meta = sourceSummary.meta;
+              source.previewText = normalized.previewText;
+              source.normalizedArtifactKey = normalizedArtifactKey;
+              source.chunkArtifacts = chunkArtifacts.map((chunk) => ({
+                chunkIndex: chunk.chunkIndex,
+                chunkKey: chunk.chunkKey,
+                metadataKey: chunk.metadataKey,
+                tokenCount: chunk.tokenCount,
+              }));
+              source.metadata = {
+                ...(source.metadata || {}),
+                ...(validated.metadata || {}),
+                ...normalized.normalizationMeta,
+                sourceFamily: executionDecision.sourceFamily,
+                normalizationVersion: normalized.normalizationVersion,
+                lineCount: normalized.lineCount,
+                providerRequestId: promptRun.providerRequestId,
+              };
+              source.indexed = true;
+              source.ingestStatus = 'completed';
+              source.extractionStatus = 'completed';
+              source.warningText = warningText;
+              source.summary = extraction.summary;
+              source.citations = citationProjection.citations;
+              source.citationMode = citationProjection.citationMode;
+              source.executionMode = executionDecision.executionMode;
+              source.confidence = extraction.confidence;
+              source.warnings = warnings;
+            }
+
+            data.sourceContents[sourceId] = normalized.normalizedText;
+            product.evidenceVersion = nextEvidenceVersion;
+            data.evidenceVersion = nextEvidenceVersion;
+            data.latestEvidenceUpdate = {
+              sourceId,
+              title,
+              sourceType,
+              message: executionDecision.executionMode === 'live'
+                ? 'Live AI extraction completed. New evidence is now available across Sources, Ask, and reports.'
+                : 'AI extraction completed in replay mode. New evidence is now available across Sources, Ask, and reports.',
+              updatedDomains,
+              impactType: 'evidence_only',
+            };
+            product.recentSignals.unshift({
+              id: `sig-${Date.now()}`,
+              dateLabel: nowDateLabel(),
+              type: sourceType,
+              title: `${title} processed`,
+            });
+            upsertSourceExtraction(draft, {
+              sourceId,
+              productId,
+              sourceType,
+              sourceFamily: executionDecision.sourceFamily,
+              schemaVersion: '1.0',
+              promptFamily: `source-${sourceType}`,
+              promptVersion: executionDecision.promptVersion,
+              modelId: promptRun.modelId,
+              normalizedHash: promptRun.inputHash,
+              payload: {
+                ...extraction,
+                decisions: citationProjection.decisions,
+                citations: citationProjection.citations,
+              },
+              validationStatus: 'valid',
+              confidence: extraction.confidence,
+              executionModeEffective: executionDecision.executionMode,
+              citationMode: citationProjection.citationMode,
+              citationPayloadJson: citationProjection.citations,
+              providerRequestId: promptRun.providerRequestId,
+              normalizationVersion: normalized.normalizationVersion,
+              lineCount: normalized.lineCount,
+              warningCodes: citationProjection.warningCodes,
+              promptRunId: promptRun.runId,
+              createdAt: latestAttemptAt,
+            });
+            upsertPromptRun(draft, {
+              ...promptRun,
+              targetId: sourceId,
+              citationMode: citationProjection.citationMode,
+            });
+            const semanticState = buildEmailSemanticState({
+              draft,
+              runtimeConfig,
+              executionMode: executionDecision.executionMode,
+              freshnessStatus: 'fresh',
+              usesLastKnownGood: false,
+              reasonCodes: citationProjection.warningCodes,
+              aggregateId,
+              aggregateVersion: nextEvidenceVersion,
+              latestAttemptAt,
+              lastPublishedAt,
+            });
+            product.semanticState = semanticState;
+            data.semanticState = semanticState;
+            replaceProductAggregate(draft, {
+              aggregateId,
+              productId,
+              schemaVersion: '1.0',
+              promptVersion: executionDecision.promptVersion,
+              modelId: promptRun.modelId,
+              sourceSetHash: `${productId}:${sourceId}:${nextEvidenceVersion}`,
+              aggregateInputHash: `${productId}:${nextEvidenceVersion}`,
+              payload: {
+                productId,
+                status: product.status,
+                statusLabel: product.statusLabel,
+                health: product.health,
+                narrative: {
+                  summary: product.narrativeText || '',
+                  evidenceGaps: product.biggestGap ? [product.biggestGap] : [],
+                },
+                recentSignals: product.recentSignals || [],
+                data: data.data || {},
+                reports: {
+                  executiveSummaryInput: product.narrativeText || '',
+                },
+              },
+              published: true,
+              publishedAt: lastPublishedAt,
+              supersededAt: null,
+              supersededBy: null,
+              lastKnownGoodAggregateId: aggregateId,
+              freshnessStatus: semanticState.freshnessStatus,
+              freshnessReasonJson: semanticState.reasonCodes,
+              derivedFromLiveSources: executionDecision.executionMode === 'live',
+              latestSourceRunAt: latestAttemptAt,
+              publishedFromRunId: promptRun.runId,
+              createdAt: latestAttemptAt,
+            });
+            draft.jobs[jobId] = {
+              ...draft.jobs[jobId],
+              status: 'completed',
+              stage: 'completed',
+              executionMode: executionDecision.executionMode,
+              warnings: citationProjection.warningCodes,
+              updatedAt: latestAttemptAt,
+              result: {
+                sourceId,
+                title,
+                updatedDomains,
+              },
+            };
+            return draft;
+          });
+          return;
+        }
 
         const extracted = extractArtifactContent({ file, sourceType, testCase: options.testCase || '' });
         await artifactStore.writeTextArtifact({
@@ -1334,6 +1727,7 @@ export function createMutationService({
       sourceId,
       status: 'queued',
       title,
+      effectiveExecutionMode: effectiveExecutionDecision?.executionMode || null,
       updatedDomains: isStructuredImportType(sourceType) ? ['sources', 'ask', 'reports', 'data'] : ['sources', 'ask', 'reports'],
     };
   }

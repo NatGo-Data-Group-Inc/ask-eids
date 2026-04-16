@@ -193,10 +193,18 @@ export function createReadModelService({ errorCodes }) {
         statusLabel: product.statusLabel,
         semanticState: {
           executionMode: product.semanticState?.executionMode || state.semanticConfig?.executionMode || 'replay',
+          policyMode: product.semanticState?.policyMode || state.semanticConfig?.executionMode || 'replay',
+          sourceFamilyModes: product.semanticState?.sourceFamilyModes || state.semanticConfig?.sourceFamilyModes || {},
           aggregateStatus: product.semanticState?.aggregateStatus || 'legacy',
           aggregateVersion: Number(product.semanticState?.aggregateVersion || product.evidenceVersion || productData?.evidenceVersion || 1),
           featureMode: product.semanticState?.featureMode || 'legacy',
           aggregateId: product.semanticState?.aggregateId || null,
+          freshnessStatus: product.semanticState?.freshnessStatus || 'fresh',
+          usesLastKnownGood: Boolean(product.semanticState?.usesLastKnownGood),
+          message: product.semanticState?.message || 'AI extraction completed in replay mode. New evidence is now available across Sources, Ask, and reports.',
+          lastPublishedAt: product.semanticState?.lastPublishedAt || null,
+          latestAttemptAt: product.semanticState?.latestAttemptAt || null,
+          reasonCodes: Array.isArray(product.semanticState?.reasonCodes) ? product.semanticState.reasonCodes : [],
         },
         meta: {
           pi: product.pi,
@@ -235,6 +243,7 @@ export function createReadModelService({ errorCodes }) {
             sourceId: latestIngestJob.result?.sourceId || null,
             title: latestSource?.title || latestIngestJob.title || latestIngestJob.result?.title || 'Uploaded artifact',
             sourceType: latestSource?.type || latestIngestJob.sourceType || null,
+            executionMode: latestIngestJob.executionMode || latestSource?.executionMode || product.semanticState?.executionMode || 'replay',
             warningText: latestSource?.warningText || latestIngestJob.message || null,
             updatedDomains: latestIngestJob.result?.updatedDomains || [],
           }
@@ -285,6 +294,9 @@ export function createReadModelService({ errorCodes }) {
         filterKey: getFilterKeyForSourceType(source.type),
         typeLabel: getSourceTypeLabel(source.type),
         processingStatus: source.ingestStatus || 'completed',
+        extractionStatus: source.extractionStatus || source.ingestStatus || 'completed',
+        executionMode: source.executionMode || state.products.find((item) => item.id === productId)?.semanticState?.executionMode || 'replay',
+        citationMode: source.citationMode || 'fallback',
       })),
     };
   }
@@ -315,6 +327,9 @@ export function createReadModelService({ errorCodes }) {
           : source.warningText
             ? [source.warningText]
             : [],
+        citationMode: source.citationMode || 'fallback',
+        executionMode: source.executionMode || state.products.find((item) => item.id === productId)?.semanticState?.executionMode || 'replay',
+        extractionStatus: source.extractionStatus || source.ingestStatus || 'completed',
         processingStatus: source.ingestStatus || 'completed',
         warningText: source.warningText || null,
         typeLabel: getSourceTypeLabel(source.type),

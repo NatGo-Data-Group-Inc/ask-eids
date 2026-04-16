@@ -276,6 +276,24 @@ function formatStatusClass(status) {
   return status === 'at-risk' ? 'at-risk' : status;
 }
 
+function isSemanticStateDegraded(semanticState) {
+  return Boolean(semanticState?.usesLastKnownGood) || ['degraded', 'stale'].includes(semanticState?.freshnessStatus);
+}
+
+function formatSemanticFreshnessLabel(semanticState) {
+  if (!semanticState) {
+    return '';
+  }
+  const parts = [];
+  if (semanticState.freshnessStatus) {
+    parts.push(semanticState.freshnessStatus);
+  }
+  if (semanticState.executionMode) {
+    parts.push(semanticState.executionMode);
+  }
+  return parts.join(' · ');
+}
+
 function extractApiErrorCode(error) {
   return error?.error?.code || null;
 }
@@ -557,7 +575,23 @@ function ProductPage() {
         <span className="product-status-badge" data-testid="product-status-badge" style={{ background: product.status === 'risk' ? 'var(--red-100)' : product.status === 'caution' ? 'var(--amber-100)' : 'var(--green-100)', color: product.status === 'risk' ? 'var(--red-700)' : product.status === 'caution' ? 'var(--amber-700)' : 'var(--green-700)' }}>{product.statusLabel}</span>
         {product.semanticState ? (
           <span className="product-semantic-badge" data-testid="extraction-state-badge" style={{ background: 'var(--blue-50)', color: 'var(--blue-700)', borderRadius: 999, padding: '0.35rem 0.7rem', fontSize: '.78rem', fontWeight: 600 }}>
-            {`${product.semanticState.featureMode} · ${product.semanticState.executionMode}`}
+            {`${product.semanticState.featureMode} · ${product.semanticState.policyMode || product.semanticState.executionMode}`}
+          </span>
+        ) : null}
+        {product.semanticState ? (
+          <span
+            className="product-semantic-badge"
+            data-testid="semantic-freshness-badge"
+            style={{
+              background: isSemanticStateDegraded(product.semanticState) ? 'var(--amber-100)' : 'var(--green-100)',
+              color: isSemanticStateDegraded(product.semanticState) ? 'var(--amber-700)' : 'var(--green-700)',
+              borderRadius: 999,
+              padding: '0.35rem 0.7rem',
+              fontSize: '.78rem',
+              fontWeight: 600,
+            }}
+          >
+            {formatSemanticFreshnessLabel(product.semanticState)}
           </span>
         ) : null}
         <span style={{ fontSize: '.82rem', color: 'var(--text-500)' }}>Health: <strong style={{ color: product.healthColor }}>{health.overall}%</strong></span>
@@ -691,6 +725,11 @@ function OverviewView({ productId, product, permissions, health, overview, roleP
             {permissions.canUpdateWeekly ? <button className="kh-action-btn" data-testid="update-weekly-button" onClick={() => setShowWeeklyModal(true)}>Update Weekly</button> : null}
           </div>
         </div>
+        {isSemanticStateDegraded(product.semanticState) ? (
+          <div className="inline-warning-panel" data-testid="semantic-degraded-banner">
+            {product.semanticState.message}
+          </div>
+        ) : null}
         {overview.latestEvidenceUpdate ? <EvidenceUpdatedBanner update={overview.latestEvidenceUpdate} /> : null}
       </div>
       <div>
@@ -758,6 +797,11 @@ function OverviewView({ productId, product, permissions, health, overview, roleP
 function AskAnswer({ answer, onOpenSource }) {
   return (
     <div className="ask-answer visible" data-testid="ask-answer">
+      {isSemanticStateDegraded(answer.semanticState) ? (
+        <div className="inline-warning-panel" data-testid="ask-degraded-banner">
+          {answer.semanticState.message}
+        </div>
+      ) : null}
       <div className="ask-answer-text" dangerouslySetInnerHTML={{ __html: answer.answerHtml }}></div>
       {answer.coverage.isPartial ? <div className="evidence-gap-warn" data-testid="ask-evidence-gap-warning">{answer.coverage.warnings[0]}</div> : null}
       <div className="evidence-section">
@@ -1004,8 +1048,14 @@ function SourcesView({ productId, rolePreset, searchParams, setParam }) {
             <div className="ddp-field"><strong>Author:</strong> {sourceDetailQuery.data.source.author}</div>
             {sourceDetailQuery.data.source.warningText ? <div className="inline-warning-panel" data-testid="source-parser-warning">{sourceDetailQuery.data.source.warningText}</div> : null}
             <div className="ddp-field" data-testid="source-detail-summary"><strong>Summary:</strong> {sourceDetailQuery.data.source.summary}</div>
+            <div className="ddp-field" data-testid="source-detail-citation-mode"><strong>Citation mode:</strong> {sourceDetailQuery.data.source.citationMode}</div>
             {sourceDetailQuery.data.source.warnings?.length ? <div className="inline-warning-panel" data-testid="source-detail-warnings">{sourceDetailQuery.data.source.warnings.join(' ')}</div> : null}
             <div className="ddp-field" data-testid="source-detail-citations"><strong>Citations:</strong> {sourceDetailQuery.data.source.citations?.length ? sourceDetailQuery.data.source.citations.map((citation) => citation.label || citation.kind).join(' · ') : 'No citations available'}</div>
+            {sourceDetailQuery.data.source.citationMode !== 'exact' ? (
+              <div className="inline-warning-panel">
+                Exact coordinates were unavailable for this source. Showing the best available reference.
+              </div>
+            ) : null}
             <div className="ddp-field" data-testid="source-preview-content"><strong>Preview:</strong> {sourceDetailQuery.data.source.previewText}</div>
             <div className="drawer-actions">
               {sourceDetailQuery.data.source.binary
@@ -1197,6 +1247,11 @@ function ReportsView({ productId, product, permissions, rolePreset, searchParams
 
   return (
     <div data-testid="reports-view">
+      {report.semanticState?.message ? (
+        <div className="inline-warning-panel" data-testid="report-semantic-state-banner">
+          {report.semanticState.message}
+        </div>
+      ) : null}
       {report.requiresRegeneration ? (
         <div className="inline-warning-panel" data-testid="report-regenerate-notice">
           {report.regenerateNotice}
@@ -1304,7 +1359,10 @@ function ArtifactIngestStatusPanel({ ingest, onViewSources, onDismiss }) {
     <div className={`artifact-status-panel ${ingest.status}`} data-testid={testId}>
       <div>
         <div className="asp-title">Artifact Processing</div>
-        <div className="asp-copy">{ingest.title} · {statusLabel}</div>
+        <div className="asp-copy">
+          {ingest.title} · {statusLabel}
+          {ingest.executionMode ? ` · ${ingest.executionMode}` : ''}
+        </div>
         {ingest.warningText ? <div className="asp-warning">{ingest.warningText}</div> : null}
       </div>
       <div className="asp-actions">

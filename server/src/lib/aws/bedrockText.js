@@ -46,6 +46,7 @@ export async function generateBedrockText({
   const text = readTextFromContent(response?.output?.message?.content || []);
   onMeta?.({
     provider: 'bedrock',
+    requestId: response?.$metadata?.requestId || null,
     modelId: resolvedModelId,
     region: config.aws.region,
     stopReason: response?.stopReason || null,
