@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pyarrow.parquet as pq
 
+from data_gen.capabilities import list_capabilities, load_capability
 from data_gen.sandbox_overlay import apply_overlay
 from data_gen.synthetic_cur import (
     SERVICE_PROFILE_BY_NAME,
@@ -71,11 +72,13 @@ def test_run_writes_phase1_bundle(tmp_path: Path) -> None:
     parquet_path = Path(result["parquet"])
     json_path = Path(result["json"])
     validation_path = Path(result["validation"])
+    capability_manifest_path = Path(result["capability_manifest"])
 
     assert csv_path.exists()
     assert parquet_path.exists()
     assert json_path.exists()
     assert validation_path.exists()
+    assert capability_manifest_path.exists()
     assert (tmp_path / "pmo_executive_summary.md").exists()
     assert (tmp_path / "cost_anomaly_report.md").exists()
     assert (tmp_path / "feasibility_findings.md").exists()
@@ -86,8 +89,23 @@ def test_run_writes_phase1_bundle(tmp_path: Path) -> None:
     json_rows = json.loads(json_path.read_text(encoding="utf-8"))
     parquet_rows = pq.read_table(parquet_path).to_pylist()
     validation = json.loads(validation_path.read_text(encoding="utf-8"))
+    capability_manifest = json.loads(capability_manifest_path.read_text(encoding="utf-8"))
 
     assert len(csv_rows) == 25
     assert len(json_rows) == 25
     assert len(parquet_rows) == 25
     assert all(validation.values())
+    assert capability_manifest["selected_capability"]["capability_id"] == "cost_cur"
+    assert "emr_logs" in {
+        capability["capability_id"] for capability in capability_manifest["available_capabilities"]
+    }
+
+
+def test_capability_registry_lists_cost_and_emr_log_prompt_packs() -> None:
+    capabilities = list_capabilities()
+    capability_ids = {spec.capability_id for spec in capabilities}
+
+    assert {"cost_cur", "emr_logs"} <= capability_ids
+
+    emr_logs = load_capability("emr_logs")
+    assert emr_logs.input_type == "emr_logs"

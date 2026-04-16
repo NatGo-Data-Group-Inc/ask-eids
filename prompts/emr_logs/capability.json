@@ -1,0 +1,16 @@
+{
+  "capability_id": "emr_logs",
+  "title": "EMR Log Analysis",
+  "description": "Ask EIDS capability scaffold for analyzing EMR operational logs and correlating job failures with enclave impact.",
+  "input_type": "emr_logs",
+  "prompt_files": [
+    "overview.md",
+    "analyst_prompts.md",
+    "triage_response_contract.md"
+  ],
+  "output_artifacts": [
+    "emr_log_findings.md",
+    "emr_log_summary.json"
+  ],
+  "bedrock_flow_name": "ask-eids-emr-log-analysis-flow"
+}

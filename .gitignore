@@ -4,3 +4,7 @@ __pycache__/
 .pytest_cache/
 .codex
 tmp_git_meta/
+input/**
+!input/
+!input/emr_triage/
+!input/emr_triage/README.md

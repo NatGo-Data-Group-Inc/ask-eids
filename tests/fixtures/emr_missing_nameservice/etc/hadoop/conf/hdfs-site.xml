@@ -1,0 +1,6 @@
+<configuration>
+  <property>
+    <name>dfs.namenode.name.dir</name>
+    <value>/mnt/nn</value>
+  </property>
+</configuration>

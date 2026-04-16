@@ -1,0 +1,6 @@
+<configuration>
+  <property>
+    <name>fs.defaultFS</name>
+    <value>hdfs://ns1</value>
+  </property>
+</configuration>

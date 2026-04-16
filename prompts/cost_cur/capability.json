@@ -1,0 +1,22 @@
+{
+  "capability_id": "cost_cur",
+  "title": "CUR Cost Analysis",
+  "description": "Phase 1 Ask EIDS capability for synthetic AWS Cost and Usage Report anomaly analysis.",
+  "input_type": "synthetic_cur",
+  "prompt_files": [
+    "overview.md",
+    "analyst_prompts.md"
+  ],
+  "output_artifacts": [
+    "synthetic_cur.parquet",
+    "synthetic_cur.csv",
+    "synthetic_cur.json",
+    "sample_validation.json",
+    "pmo_executive_summary.md",
+    "cost_anomaly_report.md",
+    "feasibility_findings.md",
+    "bedrock_flow_stub.json",
+    "capability_manifest.json"
+  ],
+  "bedrock_flow_name": "ask-eids-phase1-cost-anomaly-flow"
+}

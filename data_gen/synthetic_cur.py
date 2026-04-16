@@ -15,6 +15,7 @@ from typing import Iterable
 import pyarrow as pa
 import pyarrow.parquet as pq
 
+from data_gen.capabilities import CapabilitySpec, list_capabilities, load_capability
 from data_gen.sandbox_overlay import apply_overlay, load_overlay
 
 
@@ -92,6 +93,11 @@ SCENARIO_LIBRARY = {
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--capability",
+        default="cost_cur",
+        help="Capability folder under prompts/ to use for reporting and orchestration metadata",
+    )
     parser.add_argument("--rows", type=int, default=250, help="Number of synthetic CUR rows")
     parser.add_argument("--seed", type=int, default=42, help="Random seed for reproducibility")
     parser.add_argument(
@@ -107,6 +113,14 @@ def build_parser() -> argparse.ArgumentParser:
         help="Optional overlay CSV or JSON to merge by resource_id",
     )
     return parser
+
+
+def ensure_cur_compatible(capability: CapabilitySpec) -> None:
+    if capability.input_type != "synthetic_cur":
+        raise ValueError(
+            f"Capability '{capability.capability_id}' expects input_type "
+            f"'{capability.input_type}', but data_gen.synthetic_cur only emits 'synthetic_cur'."
+        )
 
 
 def random_resource_id(service: str, index: int) -> str:
@@ -253,15 +267,21 @@ def write_parquet(rows: Iterable[dict], destination: Path) -> None:
     pq.write_table(table, destination)
 
 
-def emit_bedrock_flow_stub(destination: Path) -> None:
+def emit_bedrock_flow_stub(destination: Path, capability: CapabilitySpec) -> None:
     flow = {
-        "name": "ask-eids-phase1-cost-anomaly-flow",
-        "description": "Phase 1 orchestration-only Bedrock scaffold for synthetic CUR validation",
+        "name": capability.bedrock_flow_name,
+        "description": capability.description,
+        "capability_id": capability.capability_id,
         "nodes": [
             {"id": "ingest-cur", "type": "lambda", "purpose": "Load parquet and optional sandbox overlays"},
-            {"id": "reason-anomalies", "type": "prompt", "purpose": "Invoke Ask EIDS-promoted anomaly narrative prompt"},
+            {
+                "id": "reason-anomalies",
+                "type": "prompt",
+                "purpose": f"Invoke Ask EIDS prompt pack from prompts/{capability.capability_id}",
+            },
             {"id": "publish-report", "type": "lambda", "purpose": "Write markdown and JSON artifacts for PMO review"},
         ],
+        "prompt_files": list(capability.prompt_files),
         "handoff_contract": {
             "ask_eids_role": "Reasoning over curated cost findings and generating narratives",
             "bedrock_role": "Prompt lifecycle, orchestration, and governed execution",
@@ -270,7 +290,12 @@ def emit_bedrock_flow_stub(destination: Path) -> None:
     destination.write_text(json.dumps(flow, indent=2), encoding="utf-8")
 
 
-def emit_markdown_reports(rows: list[dict], validation: dict[str, bool], destination_dir: Path) -> None:
+def emit_markdown_reports(
+    rows: list[dict],
+    validation: dict[str, bool],
+    destination_dir: Path,
+    capability: CapabilitySpec,
+) -> None:
     scenario_counts = Counter(row["scenario"] for row in rows)
     service_costs: dict[str, float] = {}
     for row in rows:
@@ -285,6 +310,7 @@ def emit_markdown_reports(rows: list[dict], validation: dict[str, bool], destina
             "",
             "## Phase 1 Status",
             "- Synthetic CUR-shaped dataset generated and exported as parquet, CSV, and JSON.",
+            f"- Active Ask EIDS capability: {capability.title} ({capability.capability_id}).",
             "- GovCloud service mix included: EC2, S3, EMR, Redshift, Glue, Lambda, Bedrock.",
             "- Sample I/O validation passed for the seeded EMR anomaly row.",
             "",
@@ -334,10 +360,11 @@ def emit_markdown_reports(rows: list[dict], validation: dict[str, bool], destina
             "## Risks",
             "- Parquet writing depends on pyarrow in the target runtime.",
             "- Synthetic anomaly realism will need deeper tuning before executive trust scales beyond feasibility review.",
+            "- Additional capabilities such as EMR log analysis still need their own data adapters and validation fixtures.",
             "",
             "## Evidence",
             "- Seeded row matches SAMPLE_IO expectations.",
-            "- Output bundle includes parquet, CSV, JSON, Bedrock flow scaffold, and markdown summaries.",
+            f"- Output bundle includes parquet, CSV, JSON, a capability manifest, the {capability.capability_id} Bedrock flow scaffold, and markdown summaries.",
         ]
     )
 
@@ -346,8 +373,24 @@ def emit_markdown_reports(rows: list[dict], validation: dict[str, bool], destina
     (destination_dir / "feasibility_findings.md").write_text(findings_summary, encoding="utf-8")
 
 
-def run(output_dir: Path, row_count: int, seed: int, overlay_path: Path | None = None) -> dict:
+def emit_capability_manifest(destination: Path, selected: CapabilitySpec) -> None:
+    payload = {
+        "selected_capability": selected.to_dict(),
+        "available_capabilities": [spec.to_dict() for spec in list_capabilities()],
+    }
+    destination.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+
+def run(
+    output_dir: Path,
+    row_count: int,
+    seed: int,
+    overlay_path: Path | None = None,
+    capability_id: str = "cost_cur",
+) -> dict:
     output_dir.mkdir(parents=True, exist_ok=True)
+    capability = load_capability(capability_id)
+    ensure_cur_compatible(capability)
     rows = generate_rows(row_count=row_count, seed=seed)
     if overlay_path:
         rows = apply_overlay(rows, load_overlay(overlay_path))
@@ -361,21 +404,25 @@ def run(output_dir: Path, row_count: int, seed: int, overlay_path: Path | None =
     json_path = output_dir / "synthetic_cur.json"
     validation_path = output_dir / "sample_validation.json"
     bedrock_path = output_dir / "bedrock_flow_stub.json"
+    capability_path = output_dir / "capability_manifest.json"
 
     write_csv(rows, csv_path)
     write_parquet(rows, parquet_path)
     write_json(rows, json_path)
     validation_path.write_text(json.dumps(validation, indent=2), encoding="utf-8")
-    emit_bedrock_flow_stub(bedrock_path)
-    emit_markdown_reports(rows, validation, output_dir)
+    emit_bedrock_flow_stub(bedrock_path, capability)
+    emit_capability_manifest(capability_path, capability)
+    emit_markdown_reports(rows, validation, output_dir, capability)
 
     return {
+        "capability": capability.capability_id,
         "rows": len(rows),
         "csv": str(csv_path),
         "parquet": str(parquet_path),
         "json": str(json_path),
         "validation": str(validation_path),
         "bedrock_flow": str(bedrock_path),
+        "capability_manifest": str(capability_path),
     }
 
 
@@ -387,6 +434,7 @@ def main() -> None:
         row_count=args.rows,
         seed=args.seed,
         overlay_path=args.overlay,
+        capability_id=args.capability,
     )
     print(json.dumps(result, indent=2))
 

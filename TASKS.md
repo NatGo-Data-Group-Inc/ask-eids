@@ -19,6 +19,7 @@
 - [ ] Golden prompt baseline loader
 - [ ] Markdown narrative emitter
 - [ ] Output comparison snapshots
+- [ ] EMR master-node artifact analyzer and triage bundle emitter
 
 ## Phase 4 — Bedrock Production Path
 - [ ] Prompt Management asset scaffolds

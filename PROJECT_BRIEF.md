@@ -8,6 +8,7 @@ Build a 2-week feasibility prototype for Ask EIDS that validates AI-assisted enc
 - Synthetic CUR-shaped data generator
 - Sandbox-derived cost/utilization overlays
 - AskSage / Ask EIDS prompt validation harness
+- Capability-specific prompt folders for multiple enclave analyses
 - Technical debt to cost correlation scenarios
 - PMO-ready markdown reporting outputs
 - Amazon Bedrock flow scaffolding
@@ -31,6 +32,7 @@ Build a 2-week feasibility prototype for Ask EIDS that validates AI-assisted enc
 - Synthetic CUR parquet generator
 - Scenario library for cost anomalies
 - Ask EIDS prompt pack
+- Extensible capability registry so CUR and EMR-log analysis can coexist
 - Bedrock flow JSON scaffolds
 - PMO executive report template
 - Feasibility findings markdown bundle

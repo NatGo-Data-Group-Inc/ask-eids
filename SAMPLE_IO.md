@@ -1,5 +1,7 @@
 # Sample Inputs and Outputs
 
+Capability: `cost_cur`
+
 ## Input Example
 Synthetic CUR row:
 {
