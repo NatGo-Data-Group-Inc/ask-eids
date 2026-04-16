@@ -73,7 +73,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--model",
-        default="gpt-4o",
+        default="gpt-4.1",
         help="AskSage model to use for the final triage prompt.",
     )
     parser.add_argument(
@@ -114,7 +114,7 @@ def run_submission(
     scratch_dir: Path | None = None,
     capability_id: str = "emr_logs",
     mode: str = "asksage",
-    model: str = "gpt-4o",
+    model: str = "gpt-4.1",
     email: str | None = None,
     api_key: str | None = None,
     system_prompt: str = "",
