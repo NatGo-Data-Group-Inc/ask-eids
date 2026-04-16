@@ -1,0 +1,97 @@
+- generic [ref=e2]:
+  - navigation [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]: EIDS
+      - generic [ref=e6]: Product Knowledge Hub
+    - textbox "Search products, decisions, emails, docs…" [ref=e8]
+    - generic [ref=e9]:
+      - generic [ref=e10]: BJ
+      - generic [ref=e11]: B. Jennings
+  - main [ref=e12]:
+    - generic [ref=e13]:
+      - generic [ref=e14]:
+        - button "← Portfolio" [ref=e16] [cursor=pointer]
+        - generic [ref=e17]:
+          - generic [ref=e18]: PI 4 · Sprint 1
+          - generic [ref=e19]: "PM: Jaden Cole"
+          - generic [ref=e20]: "Last sync: 4/3/2026, 8:00:00 AM"
+      - generic [ref=e21]:
+        - heading "DENTAL / DENCLASS" [level=1] [ref=e22]
+        - generic [ref=e23]: Caution
+        - generic [ref=e24]: extraction-first · replay
+        - generic [ref=e25]:
+          - text: "Health:"
+          - strong [ref=e26]: 86%
+      - generic [ref=e27]:
+        - button "Overview" [ref=e28] [cursor=pointer]
+        - button "Timeline" [ref=e29] [cursor=pointer]
+        - button "Data" [ref=e30] [cursor=pointer]
+        - button "Sources" [ref=e31] [cursor=pointer]
+        - button "Reports" [ref=e32] [cursor=pointer]
+      - generic [ref=e33]:
+        - generic [ref=e35]:
+          - generic [ref=e36]:
+            - heading "Knowledge Health" [level=3] [ref=e37]
+            - generic "Knowledge health 86%" [ref=e38]:
+              - img [ref=e39]
+              - generic [ref=e42]: 86%
+          - generic [ref=e43]:
+            - generic [ref=e44]:
+              - generic [ref=e45]: Coverage
+              - generic [ref=e48]: 100%
+            - generic [ref=e49]:
+              - generic [ref=e50]: Freshness
+              - generic [ref=e53]: 76%
+            - generic [ref=e54]:
+              - generic [ref=e55]: Continuity
+              - generic [ref=e58]: 82%
+            - generic [ref=e59]:
+              - generic [ref=e60]: Sync
+              - generic [ref=e63]: 100%
+          - generic [ref=e64]:
+            - generic [ref=e65]: ✓ Weekly updates present
+            - generic [ref=e66]: ✓ Communication artifacts present
+            - generic [ref=e67]: ✓ Structured exports current
+            - generic [ref=e68]: ✓ ADO data available
+            - generic [ref=e69]: ⚠ Transcript coverage partial
+          - generic [ref=e70]:
+            - strong [ref=e71]: "Biggest gap:"
+            - text: Transcript coverage partial
+          - generic [ref=e72]:
+            - button "Upload Artifact" [ref=e73] [cursor=pointer]
+            - button "Update Weekly" [ref=e74] [cursor=pointer]
+        - generic [ref=e76]:
+          - heading "Current State" [level=3] [ref=e77]
+          - paragraph [ref=e78]:
+            - text: DENTAL / DENCLASS is
+            - strong [ref=e79]: in managed caution
+            - text: . Dental completed Sprint 1 planning and clarified the first set of FHIR mapping decisions. The overall posture is still manageable, but the product is moving from healthy to caution because the vendor sandbox dependency is now affecting schedule confidence and demo planning.
+          - generic [ref=e80]: Recent Signals
+          - generic [ref=e81]:
+            - button "4/3 weekly Dental Weekly Update — Sprint 1 Closeout" [ref=e82] [cursor=pointer]:
+              - generic [ref=e83]: 4/3
+              - generic [ref=e84]: weekly
+              - generic [ref=e85]: Dental Weekly Update — Sprint 1 Closeout
+            - button "4/3 risk Dental Risks and Issues Export" [ref=e86] [cursor=pointer]:
+              - generic [ref=e87]: 4/3
+              - generic [ref=e88]: risk
+              - generic [ref=e89]: Dental Risks and Issues Export
+            - button "4/3 blocker Dental Blockers Export" [ref=e90] [cursor=pointer]:
+              - generic [ref=e91]: 4/3
+              - generic [ref=e92]: blocker
+              - generic [ref=e93]: Dental Blockers Export
+            - button "4/3 document Dental PI Objectives Export" [ref=e94] [cursor=pointer]:
+              - generic [ref=e95]: 4/3
+              - generic [ref=e96]: document
+              - generic [ref=e97]: Dental PI Objectives Export
+          - button "View full timeline →" [ref=e98] [cursor=pointer]
+        - generic [ref=e100]:
+          - heading "Ask About DENTAL" [level=3] [ref=e101]
+          - generic [ref=e102]:
+            - textbox "Ask a question…" [ref=e103]
+            - button "Ask" [disabled] [ref=e104]
+          - generic [ref=e105]:
+            - button "What decisions were made recently?" [ref=e106] [cursor=pointer]
+            - button "Summarize open risks and blockers" [ref=e107] [cursor=pointer]
+            - button "Who are the stakeholders?" [ref=e108] [cursor=pointer]
+            - button "What changed most recently?" [ref=e109] [cursor=pointer]

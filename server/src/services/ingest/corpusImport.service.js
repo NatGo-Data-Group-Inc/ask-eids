@@ -105,6 +105,10 @@ function escapeHtml(value) {
     .replaceAll("'", '&#39;');
 }
 
+function stripHtml(value) {
+  return String(value || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
 function decodeQuotedPrintable(text) {
   return String(text || '')
     .replace(/=\r?\n/g, '')
@@ -281,6 +285,42 @@ function sourceTypeToTimelineType(sourceType) {
     return 'decision';
   }
   return 'document';
+}
+
+function citationKindForSourceType(sourceType) {
+  if (sourceType === 'slide_deck') {
+    return 'slide';
+  }
+  if (['risk_export', 'blocker_export', 'pi_objectives_export', 'action_item_export', 'ado_export', 'spreadsheet_attachment'].includes(sourceType)) {
+    return 'row_range';
+  }
+  if (sourceType === 'email' || sourceType === 'transcript' || sourceType === 'weekly_update') {
+    return 'line_range';
+  }
+  return 'page_section';
+}
+
+function buildSourceCitations({ sourceType, content = '', structuredRows = [], metadata = {} }) {
+  if (Array.isArray(metadata?.citations) && metadata.citations.length) {
+    return metadata.citations;
+  }
+
+  const kind = citationKindForSourceType(sourceType);
+  if (kind === 'slide') {
+    return [{ kind: 'slide', slideNumber: 1, label: 'Slide 1' }];
+  }
+
+  if (kind === 'row_range') {
+    const end = Math.max(1, Math.min(structuredRows.length || 1, 3));
+    return [{ kind: 'row_range', sheetName: 'Sheet1', startRow: 1, endRow: end, label: `Rows 1-${end}` }];
+  }
+
+  if (kind === 'line_range') {
+    const end = Math.max(1, Math.min(String(content || '').split(/\r?\n/).filter(Boolean).length || 1, 4));
+    return [{ kind: 'line_range', start: 1, end, label: `Lines 1-${end}` }];
+  }
+
+  return [{ kind: 'page_section', page: 1, section: 'Preview', label: 'Page 1' }];
 }
 
 function severityClass(value) {
@@ -546,6 +586,279 @@ function buildRecentSignals(entries) {
       type: sourceTypeToTimelineType(entry.sourceType),
       title: entry.title,
     }));
+}
+
+function buildSourceExtractionPayloadFromEntry(entry) {
+  const decisions = [];
+  const actionItems = [];
+  const stakeholders = [...(entry.participants || [])];
+  const warnings = [];
+  const risks = [];
+  const blockers = [];
+
+  if (entry.sourceType === 'transcript') {
+    decisions.push(...(entry.transcript.decisions || []));
+    actionItems.push(...(entry.transcript.actionItems || []));
+  }
+
+  if (entry.sourceType === 'email' && entry.containsDecisions && entry.previewText) {
+    decisions.push(entry.previewText);
+  }
+
+  if (['decision_memo', 'decision_log', 'release_plan', 'roadmap'].includes(entry.sourceType) && entry.previewText) {
+    decisions.push(entry.previewText);
+  }
+
+  if (entry.sourceType === 'risk_export') {
+    risks.push(...(entry.structuredRows || []).map((row) => ({
+      id: row.id,
+      title: row.title,
+      severity: row.severity,
+      status: row.status,
+    })));
+  }
+
+  if (entry.sourceType === 'blocker_export') {
+    blockers.push(...(entry.structuredRows || []).map((row) => ({
+      id: row.id,
+      title: row.title,
+      severity: row.severity,
+      status: row.status,
+    })));
+  }
+
+  return {
+    sourceId: entry.id,
+    productId: entry.productId,
+    sourceType: entry.sourceType,
+    summary: entry.previewText || entry.title,
+    decisions,
+    actionItems,
+    stakeholders,
+    risks,
+    blockers,
+    signals: [
+      {
+        label: entry.title,
+        type: sourceTypeToTimelineType(entry.sourceType),
+        date: entry.isoDate,
+      },
+    ],
+    warnings,
+    confidence: warnings.length ? 'medium' : 'high',
+    citations: buildSourceCitations({
+      sourceType: entry.sourceType,
+      content: entry.strippedText || entry.rawText || entry.previewText,
+      structuredRows: entry.structuredRows,
+      metadata: entry.metadata,
+    }),
+  };
+}
+
+function buildSourceExtractionPayloadFromRuntimeSource({ productId, source, sourceContent = '' }) {
+  const extracted = source.extracted || {};
+  const warnings = source.warningText ? [source.warningText] : [];
+  const structuredRows = Array.isArray(source.structuredRows) ? source.structuredRows : [];
+  const risks = source.type === 'risk_export'
+    ? structuredRows.map((row) => ({ id: row.id, title: row.title, severity: row.severity, status: row.status }))
+    : [];
+  const blockers = source.type === 'blocker_export'
+    ? structuredRows.map((row) => ({ id: row.id, title: row.title, severity: row.severity, status: row.status }))
+    : [];
+
+  return {
+    sourceId: source.id,
+    productId,
+    sourceType: source.type,
+    summary: source.summary || source.previewText || source.title,
+    decisions: [...(extracted.decisions || [])],
+    actionItems: [...(extracted.actionItems || [])],
+    stakeholders: [...(extracted.stakeholders || source.participants || [])],
+    risks,
+    blockers,
+    signals: [
+      {
+        label: source.title,
+        type: sourceTypeToTimelineType(source.type),
+        date: `${source.date}T12:00:00.000Z`,
+      },
+    ],
+    warnings,
+    confidence: source.confidence || (source.ingestStatus === 'partial' ? 'medium' : source.ingestStatus === 'failed' ? 'low' : 'high'),
+    citations: Array.isArray(source.citations) && source.citations.length
+      ? source.citations
+      : buildSourceCitations({
+        sourceType: source.type,
+        content: sourceContent || source.previewText,
+        structuredRows,
+        metadata: source.metadata,
+      }),
+  };
+}
+
+function buildAggregatePayload({ product, productData }) {
+  return {
+    productId: product.id,
+    status: product.status,
+    statusLabel: product.statusLabel,
+    health: product.health,
+    narrative: {
+      summary: product.narrativeText || stripHtml(product.narrativeHtml),
+      evidenceGaps: product.biggestGap ? [product.biggestGap] : [],
+    },
+    timeline: productData.timelineGroups || [],
+    recentSignals: product.recentSignals || [],
+    data: productData.data || {},
+    reports: {
+      executiveSummaryInput: product.narrativeText || stripHtml(product.narrativeHtml),
+    },
+  };
+}
+
+function buildPromptRun({ scope, targetId, promptVersion, modelId, executionMode, status = 'succeeded' }) {
+  return {
+    runId: `${scope}-${targetId}`,
+    scope,
+    targetId,
+    mode: executionMode,
+    modelId,
+    promptVersion,
+    latencyMs: 0,
+    status,
+    errorJson: null,
+    rawPayloadRef: null,
+    createdAt: new Date().toISOString(),
+  };
+}
+
+export function attachSemanticStateToRuntimeState(
+  state,
+  {
+    featureMode = 'extraction-first',
+    executionMode = (process.env.VITEST || process.env.NODE_ENV === 'test') ? 'replay' : 'live',
+    promptVersion = process.env.EIDS_PROMPT_REGISTRY_VERSION || 'local-dev',
+    modelId = process.env.BEDROCK_TEXT_MODEL_ID || 'amazon.nova-pro-v1:0',
+  } = {}
+) {
+  state.sourceExtractions = [];
+  state.productAggregates = [];
+  state.promptRuns = [];
+  state.semanticConfig = {
+    featureMode,
+    executionMode,
+    promptVersion,
+    modelId,
+  };
+
+  for (const product of state.products || []) {
+    const productData = state.productData?.[product.id];
+    if (!productData) {
+      continue;
+    }
+
+    const extractionFirstEnabled = product.id === 'dental' && featureMode === 'extraction-first';
+    const aggregateVersion = Number(product.evidenceVersion || productData.evidenceVersion || 1);
+    product.semanticState = {
+      executionMode,
+      aggregateStatus: extractionFirstEnabled ? 'published' : 'legacy',
+      aggregateVersion,
+      featureMode: extractionFirstEnabled ? 'extraction-first' : 'legacy',
+      aggregateId: extractionFirstEnabled ? `agg-${product.id}-${aggregateVersion}` : null,
+    };
+    productData.semanticState = product.semanticState;
+
+    if (!extractionFirstEnabled) {
+      continue;
+    }
+
+    const sourceExtractions = (productData.entries?.length
+      ? productData.entries.map((entry) => {
+        const extraction = buildSourceExtractionPayloadFromEntry(entry);
+        const source = productData.sources.find((item) => item.id === entry.id);
+        if (source) {
+          source.summary = extraction.summary;
+          source.citations = extraction.citations;
+          source.confidence = extraction.confidence;
+          source.warnings = extraction.warnings;
+        }
+        return {
+          sourceId: entry.id,
+          productId: entry.productId,
+          sourceType: entry.sourceType,
+          schemaVersion: '1.0',
+          promptFamily: `source-${entry.sourceType}`,
+          promptVersion,
+          modelId,
+          normalizedHash: `${entry.id}:${entry.documentDate}`,
+          payload: extraction,
+          validationStatus: 'valid',
+          confidence: extraction.confidence,
+          createdAt: entry.isoDate,
+        };
+      })
+      : (productData.sources || []).map((source) => {
+        const extraction = buildSourceExtractionPayloadFromRuntimeSource({
+          productId: product.id,
+          source,
+          sourceContent: productData.sourceContents?.[source.id] || '',
+        });
+        source.summary = extraction.summary;
+        source.citations = extraction.citations;
+        source.confidence = extraction.confidence;
+        source.warnings = extraction.warnings;
+        return {
+          sourceId: source.id,
+          productId: product.id,
+          sourceType: source.type,
+          schemaVersion: '1.0',
+          promptFamily: `source-${source.type}`,
+          promptVersion,
+          modelId,
+          normalizedHash: `${source.id}:${source.date}`,
+          payload: extraction,
+          validationStatus: source.ingestStatus === 'failed' ? 'failed' : 'valid',
+          confidence: extraction.confidence,
+          createdAt: `${source.date}T12:00:00.000Z`,
+        };
+      }));
+
+    state.sourceExtractions.push(...sourceExtractions);
+    state.promptRuns.push(...sourceExtractions.map((item) => buildPromptRun({
+      scope: 'source_extraction',
+      targetId: item.sourceId,
+      promptVersion: item.promptVersion,
+      modelId: item.modelId,
+      executionMode,
+      status: item.validationStatus === 'failed' ? 'failed' : 'succeeded',
+    })));
+
+    const aggregatePayload = buildAggregatePayload({ product, productData });
+    state.productAggregates.push({
+      aggregateId: `agg-${product.id}-${aggregateVersion}`,
+      productId: product.id,
+      schemaVersion: '1.0',
+      promptVersion,
+      modelId,
+      sourceSetHash: `${product.id}:${sourceExtractions.length}:${aggregateVersion}`,
+      aggregateInputHash: `${product.id}:${aggregateVersion}`,
+      payload: aggregatePayload,
+      published: true,
+      publishedAt: new Date().toISOString(),
+      supersededAt: null,
+      supersededBy: null,
+      lastKnownGoodAggregateId: `agg-${product.id}-${aggregateVersion}`,
+      createdAt: new Date().toISOString(),
+    });
+    state.promptRuns.push(buildPromptRun({
+      scope: 'aggregation',
+      targetId: product.id,
+      promptVersion,
+      modelId,
+      executionMode,
+    }));
+  }
+
+  return state;
 }
 
 function sortProducts(products) {
@@ -919,7 +1232,7 @@ export async function buildInitialCorpusState(options = {}) {
 
   const sortedProducts = sortProducts(products);
   const dentalProduct = sortedProducts.find((product) => product.id === 'dental');
-  return {
+  const state = {
     session: { user: fixedSessionUser },
     rolePresets: fixedRolePresets,
     productRoleScopes: {
@@ -1022,6 +1335,12 @@ export async function buildInitialCorpusState(options = {}) {
       seedWave: options.maxWave || null,
     },
   };
+
+  return attachSemanticStateToRuntimeState(state, {
+    featureMode: options.featureMode || 'extraction-first',
+    executionMode: options.executionMode || ((process.env.VITEST || process.env.NODE_ENV === 'test') ? 'replay' : 'live'),
+    promptVersion: options.promptVersion || process.env.EIDS_PROMPT_REGISTRY_VERSION || 'seed-v1',
+  });
 }
 
 export function buildCorpusReport(state, productId) {

@@ -81,4 +81,18 @@ describe('runtime state repository', () => {
     expect(section.body).toBe(editedBody);
     expect(section.bodyGenerated).not.toBe(section.bodyCurrent);
   });
+
+  it('persists Dental extraction records, aggregate snapshots, and prompt runs in durable state', async () => {
+    const state = await readRuntimeStateForTests();
+
+    expect(Array.isArray(state.sourceExtractions)).toBe(true);
+    expect(state.sourceExtractions.length).toBeGreaterThan(0);
+    expect(state.sourceExtractions.some((item) => item.productId === 'dental')).toBe(true);
+
+    expect(Array.isArray(state.productAggregates)).toBe(true);
+    expect(state.productAggregates.some((item) => item.productId === 'dental' && item.published === true)).toBe(true);
+
+    expect(Array.isArray(state.promptRuns)).toBe(true);
+    expect(state.promptRuns.some((item) => item.targetId === 'dental')).toBe(true);
+  });
 });

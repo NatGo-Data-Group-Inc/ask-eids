@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { generateBedrockText } from '../../lib/aws/bedrockText.js';
 import { getRetrievalProvider } from '../../rag/retrievalProvider.js';
-import { buildCorpusReport, buildUploadedCorpusEntry, deriveCorpusProductState } from '../ingest/corpusImport.service.js';
+import { attachSemanticStateToRuntimeState, buildCorpusReport, buildUploadedCorpusEntry, deriveCorpusProductState } from '../ingest/corpusImport.service.js';
 import { HttpError } from '../common/httpError.js';
 import { normalizeTranscriptUpload } from '../ingest/normalize/transcriptNormalizer.js';
 import { extractTranscriptEntities } from '../extract/transcriptExtraction.service.js';
@@ -175,6 +175,15 @@ export function createMutationService({
   runtimeConfig,
 }) {
   let jobPumpRunning = false;
+
+  function syncSemanticState(draft) {
+    return attachSemanticStateToRuntimeState(draft, {
+      featureMode: runtimeConfig?.features?.enableNovaDentalExtraction ? 'extraction-first' : 'legacy',
+      executionMode: runtimeConfig?.semantic?.extractionExecutionMode || 'replay',
+      promptVersion: runtimeConfig?.semantic?.promptRegistryVersion || 'local-dev',
+      modelId: runtimeConfig?.bedrock?.textModelId || 'amazon.nova-pro-v1:0',
+    });
+  }
 
   async function markJobCompleted(jobId, result, postMutate) {
     await updateState((draft) => {
@@ -708,6 +717,10 @@ export function createMutationService({
         indexed: false,
         chunkArtifacts: [],
         extracted: { decisions: [], actionItems: [], stakeholders: attendees },
+        summary: 'Transcript upload queued.',
+        citations: [],
+        confidence: 'low',
+        warnings: [],
         metadata: {},
         openable: true,
       });
@@ -824,6 +837,16 @@ export function createMutationService({
             source.extracted = extraction;
             source.indexed = true;
             source.ingestStatus = extractionFailed ? 'partial' : 'completed';
+            source.summary = normalized.normalizedPreview;
+            source.citations = [{
+              kind: 'line_range',
+              start: 1,
+              end: Math.max(1, Math.min(normalized.normalizedText.split(/\r?\n/).filter(Boolean).length, 4)),
+              label: `Lines 1-${Math.max(1, Math.min(normalized.normalizedText.split(/\r?\n/).filter(Boolean).length, 4))}`,
+            }];
+            source.confidence = extractionFailed ? 'medium' : 'high';
+            source.warnings = extractionFailed ? ['We could not validate AI extraction for this source. Your previous product state is still active.'] : [];
+            source.warningText = extractionFailed ? 'We could not validate AI extraction for this source. Your previous product state is still active.' : null;
           }
           data.sourceContents[sourceId] = normalized.normalizedText;
           product.health.coverage = Math.min(100, product.health.coverage + 4);
@@ -837,7 +860,7 @@ export function createMutationService({
             status: extractionFailed ? 'partial' : 'completed',
             result: { sourceId },
           };
-          return draft;
+          return syncSemanticState(draft);
         });
       } catch (error) {
         await updateState((draft) => {
@@ -845,6 +868,9 @@ export function createMutationService({
           if (source) {
             source.ingestStatus = 'failed';
             source.indexed = false;
+            source.confidence = 'low';
+            source.warnings = ['We could not validate AI extraction for this source. Your previous product state is still active.'];
+            source.warningText = 'We could not validate AI extraction for this source. Your previous product state is still active.';
           }
           draft.jobs[jobId] = {
             jobId,
@@ -855,7 +881,7 @@ export function createMutationService({
             message: error.message,
             retryable: true,
           };
-          return draft;
+          return syncSemanticState(draft);
         });
       }
     }, 700);
@@ -950,6 +976,10 @@ export function createMutationService({
         ingestStatus: 'queued',
         indexed: false,
         chunkArtifacts: [],
+        summary: 'Artifact queued for processing.',
+        citations: [],
+        confidence: 'low',
+        warnings: [],
         metadata: {
           ...validated.metadata,
           sourceFamily: getSourceTypeDefinition(sourceType)?.family || 'document',
@@ -1000,6 +1030,12 @@ export function createMutationService({
           content: extracted.normalizedText,
           contentType: 'text/plain; charset=utf-8',
         });
+
+        if (options.testCase === 'forcedInvalidExtraction') {
+          const injected = new Error('Injected extraction schema failure.');
+          injected.code = 'EXTRACTION_INVALID';
+          throw injected;
+        }
 
         const chunkArtifacts = buildChunkArtifacts({
           productId,
@@ -1146,6 +1182,25 @@ export function createMutationService({
               derivedSource.ingestStatus = terminalStatus;
               derivedSource.warningText = extracted.warningText;
               derivedSource.contentType = file.mimetype || derivedSource.contentType || 'application/octet-stream';
+              derivedSource.summary = extracted.previewText;
+              derivedSource.citations = [{
+                kind: sourceType === 'slide_deck'
+                  ? 'slide'
+                  : getSourceTypeDefinition(sourceType)?.structured
+                    ? 'row_range'
+                    : sourceType === 'email' || sourceType === 'transcript'
+                      ? 'line_range'
+                      : 'page_section',
+                ...(sourceType === 'slide_deck'
+                  ? { slideNumber: 1, label: 'Slide 1' }
+                  : getSourceTypeDefinition(sourceType)?.structured
+                    ? { sheetName: 'Sheet1', startRow: 1, endRow: Math.max(1, Math.min(structuredRows?.length || 1, 3)), label: `Rows 1-${Math.max(1, Math.min(structuredRows?.length || 1, 3))}` }
+                    : sourceType === 'email' || sourceType === 'transcript'
+                      ? { start: 1, end: Math.max(1, Math.min(extracted.normalizedText.split(/\r?\n/).filter(Boolean).length, 4)), label: `Lines 1-${Math.max(1, Math.min(extracted.normalizedText.split(/\r?\n/).filter(Boolean).length, 4))}` }
+                      : { page: 1, section: 'Preview', label: 'Page 1' }),
+              }];
+              derivedSource.confidence = terminalStatus === 'partial' ? 'medium' : 'high';
+              derivedSource.warnings = extracted.warningText ? [extracted.warningText] : [];
             }
 
             draft.productData[productId] = derived.productData;
@@ -1186,6 +1241,25 @@ export function createMutationService({
               source.indexed = true;
               source.ingestStatus = terminalStatus;
               source.warningText = extracted.warningText;
+              source.summary = extracted.previewText;
+              source.citations = [{
+                kind: sourceType === 'slide_deck'
+                  ? 'slide'
+                  : getSourceTypeDefinition(sourceType)?.structured
+                    ? 'row_range'
+                    : sourceType === 'email' || sourceType === 'transcript'
+                      ? 'line_range'
+                      : 'page_section',
+                ...(sourceType === 'slide_deck'
+                  ? { slideNumber: 1, label: 'Slide 1' }
+                  : getSourceTypeDefinition(sourceType)?.structured
+                    ? { sheetName: 'Sheet1', startRow: 1, endRow: Math.max(1, Math.min(structuredRows?.length || 1, 3)), label: `Rows 1-${Math.max(1, Math.min(structuredRows?.length || 1, 3))}` }
+                    : sourceType === 'email' || sourceType === 'transcript'
+                      ? { start: 1, end: Math.max(1, Math.min(extracted.normalizedText.split(/\r?\n/).filter(Boolean).length, 4)), label: `Lines 1-${Math.max(1, Math.min(extracted.normalizedText.split(/\r?\n/).filter(Boolean).length, 4))}` }
+                      : { page: 1, section: 'Preview', label: 'Page 1' }),
+              }];
+              source.confidence = terminalStatus === 'partial' ? 'medium' : 'high';
+              source.warnings = extracted.warningText ? [extracted.warningText] : [];
             }
             data.sourceContents[sourceId] = extracted.normalizedText;
             if (structuredRows && sourceDefinition?.dataset) {
@@ -1220,7 +1294,7 @@ export function createMutationService({
               updatedDomains,
             },
           };
-          return draft;
+          return syncSemanticState(draft);
         });
       } catch (error) {
         await updateState((draft) => {
@@ -1228,7 +1302,7 @@ export function createMutationService({
           if (source) {
             source.ingestStatus = 'failed';
             source.indexed = false;
-            source.warningText = 'We couldn’t process this artifact right now. Your entries are still here. Review the error and try again.';
+            source.warningText = 'We could not validate AI extraction for this source. Your previous product state is still active.';
             source.meta = buildSourceSummary({
               sourceType,
               sourceDate,
@@ -1238,6 +1312,8 @@ export function createMutationService({
               warningText: source.warningText,
               processingStatus: 'failed',
             }).meta;
+            source.confidence = 'low';
+            source.warnings = [source.warningText];
           }
           draft.jobs[jobId] = {
             ...draft.jobs[jobId],
@@ -1248,7 +1324,7 @@ export function createMutationService({
             retryable: true,
             updatedAt: nowIso(),
           };
-          return draft;
+          return syncSemanticState(draft);
         });
       }
     }, 400);
@@ -1308,7 +1384,7 @@ export function createMutationService({
         targetId: weeklyUpdateId,
         payload: { weekEnding: payload.weekEnding, sourceId },
       });
-      return draft;
+      return syncSemanticState(draft);
     });
     return { weeklyUpdateId, status: 'published' };
   }

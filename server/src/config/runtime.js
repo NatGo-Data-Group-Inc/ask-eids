@@ -41,6 +41,7 @@ export function getRuntimeConfig() {
   const textModelId = envString('BEDROCK_GEN_MODEL_ID', envString('BEDROCK_TEXT_MODEL_ID', DEFAULT_TEXT_MODEL)).trim() || DEFAULT_TEXT_MODEL;
   const embedModelId = envString('BEDROCK_EMBED_MODEL_ID', DEFAULT_EMBED_MODEL).trim() || DEFAULT_EMBED_MODEL;
   const embedDims = envInt('EMBEDDING_DIMS', 512);
+  const executionModeDefault = isTest ? 'replay' : 'live';
   const artifactStoreMode = envString('EIDS_ARTIFACT_STORE_MODE', isTest ? 'filesystem' : '').trim()
     || ((isProduction && rawBucket && normalizedBucket && exportBucket) ? 's3' : 'filesystem');
   const sharedCredentialsProject = envString('EIDS_SHARED_CREDENTIALS_PROJECT', DEFAULT_SHARED_PROJECT).trim() || DEFAULT_SHARED_PROJECT;
@@ -69,6 +70,17 @@ export function getRuntimeConfig() {
         .split(',')
         .map((item) => item.trim())
         .filter(Boolean),
+    },
+    semantic: {
+      extractionExecutionMode: envString('EIDS_EXTRACTION_EXECUTION_MODE', executionModeDefault).trim() || executionModeDefault,
+      aggregationExecutionMode: envString('EIDS_AGGREGATION_EXECUTION_MODE', executionModeDefault).trim() || executionModeDefault,
+      promptRegistryVersion: envString('EIDS_PROMPT_REGISTRY_VERSION', 'local-dev').trim() || 'local-dev',
+      evalCacheDir: envString('EIDS_EVAL_CACHE_DIR', path.join(getRuntimePaths().runtimeDir, 'eval-cache')).trim() || path.join(getRuntimePaths().runtimeDir, 'eval-cache'),
+    },
+    features: {
+      enableNovaDentalExtraction: envBool('ENABLE_NOVA_DENTAL_EXTRACTION', true),
+      enableNovaDentalAggregation: envBool('ENABLE_NOVA_DENTAL_AGGREGATION', true),
+      enableExtractionReplayMode: envBool('ENABLE_EXTRACTION_REPLAY_MODE', isTest),
     },
     textract: {
       enabled: envBool('DOCS_TEXTRACT_ENABLED', true),

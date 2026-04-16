@@ -81,6 +81,24 @@ async function ensureSchema(db) {
       payload_json TEXT NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS state_source_extractions (
+      source_id VARCHAR PRIMARY KEY,
+      product_id VARCHAR,
+      payload_json TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS state_product_aggregates (
+      aggregate_id VARCHAR PRIMARY KEY,
+      product_id VARCHAR,
+      payload_json TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS state_prompt_runs (
+      run_id VARCHAR PRIMARY KEY,
+      sort_order BIGINT NOT NULL,
+      payload_json TEXT NOT NULL
+    );
+
     CREATE TABLE IF NOT EXISTS state_connector_profiles (
       connector_profile_id VARCHAR PRIMARY KEY,
       payload_json TEXT NOT NULL
@@ -120,6 +138,9 @@ async function replaceStateRows(db, state) {
     await execSql(db, 'DELETE FROM state_product_data');
     await execSql(db, 'DELETE FROM state_reports');
     await execSql(db, 'DELETE FROM state_jobs');
+    await execSql(db, 'DELETE FROM state_source_extractions');
+    await execSql(db, 'DELETE FROM state_product_aggregates');
+    await execSql(db, 'DELETE FROM state_prompt_runs');
     await execSql(db, 'DELETE FROM state_connector_profiles');
     await execSql(db, 'DELETE FROM state_sync_runs');
     await execSql(db, 'DELETE FROM state_telemetry');
@@ -157,6 +178,31 @@ async function replaceStateRows(db, state) {
 
     for (const [jobId, job] of Object.entries(state.jobs ?? {})) {
       await runSql(db, 'INSERT INTO state_jobs (job_id, payload_json) VALUES (?, ?)', [jobId, JSON.stringify(job)]);
+    }
+
+    for (const extraction of (state.sourceExtractions ?? [])) {
+      await runSql(
+        db,
+        'INSERT INTO state_source_extractions (source_id, product_id, payload_json) VALUES (?, ?, ?)',
+        [extraction.sourceId, extraction.productId ?? null, JSON.stringify(extraction)]
+      );
+    }
+
+    for (const aggregate of (state.productAggregates ?? [])) {
+      await runSql(
+        db,
+        'INSERT INTO state_product_aggregates (aggregate_id, product_id, payload_json) VALUES (?, ?, ?)',
+        [aggregate.aggregateId, aggregate.productId ?? null, JSON.stringify(aggregate)]
+      );
+    }
+
+    for (const [index, run] of (state.promptRuns ?? []).entries()) {
+      const runId = run?.runId || `run-${index}`;
+      await runSql(
+        db,
+        'INSERT INTO state_prompt_runs (run_id, sort_order, payload_json) VALUES (?, ?, ?)',
+        [runId, index, JSON.stringify(run)]
+      );
     }
 
     for (const [profileId, profile] of Object.entries(state.connectorProfiles ?? {})) {
@@ -210,6 +256,9 @@ async function readStateRows(db) {
   const productDataRows = await allSql(db, 'SELECT product_id, payload_json FROM state_product_data');
   const reportRows = await allSql(db, 'SELECT report_id, payload_json FROM state_reports');
   const jobRows = await allSql(db, 'SELECT job_id, payload_json FROM state_jobs');
+  const sourceExtractionRows = await allSql(db, 'SELECT payload_json FROM state_source_extractions ORDER BY product_id ASC, source_id ASC');
+  const productAggregateRows = await allSql(db, 'SELECT payload_json FROM state_product_aggregates ORDER BY product_id ASC, aggregate_id ASC');
+  const promptRunRows = await allSql(db, 'SELECT payload_json FROM state_prompt_runs ORDER BY sort_order ASC');
   const connectorProfileRows = await allSql(db, 'SELECT connector_profile_id, payload_json FROM state_connector_profiles');
   const syncRunRows = await allSql(db, 'SELECT payload_json FROM state_sync_runs ORDER BY sort_order ASC');
   const telemetryRows = await allSql(db, 'SELECT payload_json FROM state_telemetry ORDER BY sort_order ASC');
@@ -226,6 +275,9 @@ async function readStateRows(db) {
     productData: Object.fromEntries(productDataRows.map((row) => [row.product_id, parseJson(row.payload_json, {})])),
     reports: Object.fromEntries(reportRows.map((row) => [row.report_id, parseJson(row.payload_json, {})])),
     jobs: Object.fromEntries(jobRows.map((row) => [row.job_id, parseJson(row.payload_json, {})])),
+    sourceExtractions: sourceExtractionRows.map((row) => parseJson(row.payload_json, {})).filter(Boolean),
+    productAggregates: productAggregateRows.map((row) => parseJson(row.payload_json, {})).filter(Boolean),
+    promptRuns: promptRunRows.map((row) => parseJson(row.payload_json, {})).filter(Boolean),
     connectorProfiles: Object.fromEntries(connectorProfileRows.map((row) => [row.connector_profile_id, parseJson(row.payload_json, {})])),
     syncRuns: syncRunRows.map((row) => parseJson(row.payload_json, {})).filter(Boolean),
     telemetryEvents: telemetryRows.map((row) => parseJson(row.payload_json, {})),

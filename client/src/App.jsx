@@ -554,7 +554,12 @@ function ProductPage() {
       </div>
       <div className="product-title-row">
         <h1>{product.name}</h1>
-        <span className="product-status-badge" style={{ background: product.status === 'risk' ? 'var(--red-100)' : product.status === 'caution' ? 'var(--amber-100)' : 'var(--green-100)', color: product.status === 'risk' ? 'var(--red-700)' : product.status === 'caution' ? 'var(--amber-700)' : 'var(--green-700)' }}>{product.statusLabel}</span>
+        <span className="product-status-badge" data-testid="product-status-badge" style={{ background: product.status === 'risk' ? 'var(--red-100)' : product.status === 'caution' ? 'var(--amber-100)' : 'var(--green-100)', color: product.status === 'risk' ? 'var(--red-700)' : product.status === 'caution' ? 'var(--amber-700)' : 'var(--green-700)' }}>{product.statusLabel}</span>
+        {product.semanticState ? (
+          <span className="product-semantic-badge" data-testid="extraction-state-badge" style={{ background: 'var(--blue-50)', color: 'var(--blue-700)', borderRadius: 999, padding: '0.35rem 0.7rem', fontSize: '.78rem', fontWeight: 600 }}>
+            {`${product.semanticState.featureMode} · ${product.semanticState.executionMode}`}
+          </span>
+        ) : null}
         <span style={{ fontSize: '.82rem', color: 'var(--text-500)' }}>Health: <strong style={{ color: product.healthColor }}>{health.overall}%</strong></span>
       </div>
       <div className="product-tabs">
@@ -691,7 +696,7 @@ function OverviewView({ productId, product, permissions, health, overview, roleP
       <div>
         <div className="current-state-card">
           <h3 style={{ marginBottom: 12 }}>Current State</h3>
-          <p className="state-narrative" dangerouslySetInnerHTML={{ __html: overview.narrativeHtml }}></p>
+          <p className="state-narrative" data-testid="overview-current-state" dangerouslySetInnerHTML={{ __html: overview.narrativeHtml }}></p>
           <div className="label" style={{ marginBottom: 10 }}>Recent Signals</div>
           <div className="signals-list">
             {overview.recentSignals.map((signal) => (
@@ -998,6 +1003,9 @@ function SourcesView({ productId, rolePreset, searchParams, setParam }) {
             <div className="ddp-field"><strong>Date:</strong> {new Date(sourceDetailQuery.data.source.sourceDate).toLocaleString()}</div>
             <div className="ddp-field"><strong>Author:</strong> {sourceDetailQuery.data.source.author}</div>
             {sourceDetailQuery.data.source.warningText ? <div className="inline-warning-panel" data-testid="source-parser-warning">{sourceDetailQuery.data.source.warningText}</div> : null}
+            <div className="ddp-field" data-testid="source-detail-summary"><strong>Summary:</strong> {sourceDetailQuery.data.source.summary}</div>
+            {sourceDetailQuery.data.source.warnings?.length ? <div className="inline-warning-panel" data-testid="source-detail-warnings">{sourceDetailQuery.data.source.warnings.join(' ')}</div> : null}
+            <div className="ddp-field" data-testid="source-detail-citations"><strong>Citations:</strong> {sourceDetailQuery.data.source.citations?.length ? sourceDetailQuery.data.source.citations.map((citation) => citation.label || citation.kind).join(' · ') : 'No citations available'}</div>
             <div className="ddp-field" data-testid="source-preview-content"><strong>Preview:</strong> {sourceDetailQuery.data.source.previewText}</div>
             <div className="drawer-actions">
               {sourceDetailQuery.data.source.binary
@@ -1289,7 +1297,7 @@ function ArtifactIngestStatusPanel({ ingest, onViewSources, onDismiss }) {
     : ingest.status === 'partial'
       ? 'artifact-processing-warning'
       : ingest.status === 'failed'
-        ? 'artifact-processing-failed'
+        ? 'artifact-processing-error'
         : 'artifact-processing-status';
 
   return (

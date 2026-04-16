@@ -63,7 +63,7 @@ export async function resetRuntimeData(options = {}) {
   await fs.mkdir(exportsDir, { recursive: true });
   await fs.rm(runtimeConfig.storage.paths.runtimeFile, { force: true });
   resetMutationHarnessState();
-  await initializeCorpusRuntime(options);
+  return initializeCorpusRuntime(options);
 }
 
 export async function resetPrototypeState(options = {}) {
@@ -147,6 +147,19 @@ function errorHandler(error, _req, res, _next) {
       requestId: 'req-local',
     },
   });
+}
+
+function normalizeResetWave(mode) {
+  if (!mode) {
+    return undefined;
+  }
+  const mapping = {
+    'wave-00': 'wave-00-baseline',
+    'wave-01': 'wave-01-operational',
+    'wave-02': 'wave-02-escalation',
+    'wave-03': 'wave-03-recovery',
+  };
+  return mapping[mode] || mode;
 }
 
 export async function buildApp({ withVite = false } = {}) {
@@ -379,8 +392,25 @@ export async function buildApp({ withVite = false } = {}) {
 
   if (process.env.NODE_ENV !== 'production') {
     app.post('/api/v1/test/reset', async (req, res) => {
-      await resetPrototypeState({ maxWave: String(req.query.corpusWave || '').trim() || undefined });
-      res.status(204).end();
+      const requestedMode = String(req.body?.mode || req.query.corpusWave || '').trim() || 'wave-00';
+      const executionMode = String(req.body?.executionMode || runtimeConfig.semantic.extractionExecutionMode || 'replay').trim() || 'replay';
+      const featureMode = String(req.body?.featureMode || 'extraction-first').trim() || 'extraction-first';
+      const productId = String(req.body?.productId || 'dental').trim() || 'dental';
+      const maxWave = normalizeResetWave(requestedMode);
+      const state = await resetPrototypeState({
+        maxWave,
+        executionMode,
+        featureMode,
+      });
+      const persistedState = await readState();
+      res.json({
+        status: 'ok',
+        productId,
+        mode: requestedMode,
+        executionMode,
+        featureMode,
+        seededSources: persistedState?.productData?.[productId]?.sources?.length ?? state?.productData?.[productId]?.sources?.length ?? 0,
+      });
     });
   }
 

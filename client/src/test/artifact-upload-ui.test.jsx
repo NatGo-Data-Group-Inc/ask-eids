@@ -42,7 +42,14 @@ describe('artifact upload UI integration', () => {
       }
       if (url.includes('/api/v1/products/dental')) {
         return Response.json({
-          product: { id: 'dental', name: 'DENTAL / DENCLASS', status: 'risk', statusLabel: 'At Risk', meta: { pi: 4, sprint: 2, pm: 'Jaden', lastSync: '2026-04-15T12:00:00.000Z' } },
+          product: {
+            id: 'dental',
+            name: 'DENTAL / DENCLASS',
+            status: 'risk',
+            statusLabel: 'At Risk',
+            semanticState: { executionMode: 'replay', aggregateStatus: 'published', aggregateVersion: 3, featureMode: 'extraction-first' },
+            meta: { pi: 4, sprint: 2, pm: 'Jaden', lastSync: '2026-04-15T12:00:00.000Z' },
+          },
           permissions: { canUploadArtifact: !url.includes('asRole=read'), canUpdateWeekly: false, canEditReport: true, canExportReport: true },
           health: { overall: 82, coverage: 80, freshness: 90, continuity: 78, sync: 92, okItems: [], gapItems: [], biggestGap: null },
           overview: { narrativeHtml: 'Current state', recentSignals: [], askSuggestions: [], pendingIngestCount: 0 },
@@ -54,6 +61,8 @@ describe('artifact upload UI integration', () => {
 
     const firstRender = renderApp('/products/dental?tab=overview');
     expect(await screen.findByTestId('upload-artifact-button')).toBeVisible();
+    expect(screen.getByTestId('extraction-state-badge')).toHaveTextContent('extraction-first');
+    expect(screen.getByTestId('overview-current-state')).toBeVisible();
     firstRender.unmount();
 
     renderApp('/products/dental?tab=overview&asRole=read');
@@ -64,7 +73,14 @@ describe('artifact upload UI integration', () => {
 
   it('keeps modal open and preserves values when upload fails retryably', async () => {
     const productPayload = {
-      product: { id: 'dental', name: 'DENTAL / DENCLASS', status: 'risk', statusLabel: 'At Risk', meta: { pi: 4, sprint: 2, pm: 'Jaden', lastSync: '2026-04-15T12:00:00.000Z' } },
+      product: {
+        id: 'dental',
+        name: 'DENTAL / DENCLASS',
+        status: 'risk',
+        statusLabel: 'At Risk',
+        semanticState: { executionMode: 'replay', aggregateStatus: 'published', aggregateVersion: 3, featureMode: 'extraction-first' },
+        meta: { pi: 4, sprint: 2, pm: 'Jaden', lastSync: '2026-04-15T12:00:00.000Z' },
+      },
       permissions: { canUploadArtifact: true, canUpdateWeekly: false, canEditReport: true, canExportReport: true },
       health: { overall: 82, coverage: 80, freshness: 90, continuity: 78, sync: 92, okItems: [], gapItems: [], biggestGap: null },
       overview: { narrativeHtml: 'Current state', recentSignals: [], askSuggestions: [], pendingIngestCount: 0 },

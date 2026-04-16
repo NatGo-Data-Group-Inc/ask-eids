@@ -191,6 +191,13 @@ export function createReadModelService({ errorCodes }) {
         name: product.name,
         status: product.status,
         statusLabel: product.statusLabel,
+        semanticState: {
+          executionMode: product.semanticState?.executionMode || state.semanticConfig?.executionMode || 'replay',
+          aggregateStatus: product.semanticState?.aggregateStatus || 'legacy',
+          aggregateVersion: Number(product.semanticState?.aggregateVersion || product.evidenceVersion || productData?.evidenceVersion || 1),
+          featureMode: product.semanticState?.featureMode || 'legacy',
+          aggregateId: product.semanticState?.aggregateId || null,
+        },
         meta: {
           pi: product.pi,
           sprint: product.sprint,
@@ -300,6 +307,14 @@ export function createReadModelService({ errorCodes }) {
           contentType: source.contentType,
         },
         previewText: source.previewText,
+        summary: source.summary || source.previewText || source.title,
+        citations: Array.isArray(source.citations) ? source.citations : [],
+        confidence: source.confidence || (source.ingestStatus === 'partial' ? 'medium' : source.ingestStatus === 'failed' ? 'low' : 'high'),
+        warnings: Array.isArray(source.warnings)
+          ? source.warnings
+          : source.warningText
+            ? [source.warningText]
+            : [],
         processingStatus: source.ingestStatus || 'completed',
         warningText: source.warningText || null,
         typeLabel: getSourceTypeLabel(source.type),
