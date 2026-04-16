@@ -113,6 +113,33 @@ python -m emr_triage.analyze_artifacts \
   --scratch-dir input/emr_triage/_scratch
 ```
 
+## One-Step Enclave Submission
+
+If the enclave already has `asksageclient`, credentials, CA bundle, and network access configured, you can run the full EMR workflow in one command:
+
+```bash
+python -m asksage_harness.emr_triage_submit
+```
+
+That command:
+
+1. selects the newest bundle under `input/emr_triage/`
+2. runs the EMR artifact analyzer
+3. loads `emr_prompt_brief.txt`
+4. submits the generated prompt to AskSage
+5. writes the AskSage response beside the analysis outputs
+
+Additional outputs:
+
+- `asksage_response.json`
+- `asksage_response.md`
+
+For offline validation without real AskSage access, use:
+
+```bash
+python -m asksage_harness.emr_triage_submit --mode local
+```
+
 ## Run Tests
 
 ```bash

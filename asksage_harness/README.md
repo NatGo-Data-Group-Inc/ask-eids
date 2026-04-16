@@ -17,6 +17,7 @@ Per ADR 001, no orchestration logic belongs here. Bedrock-owned flow and lifecyc
 - `--packet-format auto` is the default and resolves to `json` for `--mode local` and `markdown` for `--mode asksage`
 - `--print-payload-stats` emits payload size and preview metadata for each prompt to help isolate AskSage failure modes
 - `python -m asksage_harness.replay compare --baseline-dir ... --candidate-dir ...` compares two snapshot runs and writes `comparison.md` plus `comparison.json`
+- `python -m asksage_harness.emr_triage_submit` runs EMR artifact analysis and then submits the generated prompt brief to AskSage in one step
 
 ## Mode Semantics
 
@@ -26,3 +27,21 @@ Per ADR 001, no orchestration logic belongs here. Bedrock-owned flow and lifecyc
 - `--mode asksage` is the operational reasoning baseline and should be used for real model evaluation
 - AskSage mode now defaults to markdown payloads because JSON packet mode previously triggered internal AskSage errors in enclave testing
 - JSON packet mode remains available as an explicit debug option
+
+## EMR One-Step Flow
+
+Use this when the enclave has a staged EMR triage bundle under `input/emr_triage/` and AskSage connectivity is available:
+
+```bash
+python -m asksage_harness.emr_triage_submit
+```
+
+Outputs are written beside the bundle analysis directory and include:
+
+- `emr_log_summary.json`
+- `emr_log_findings.md`
+- `emr_prompt_brief.txt`
+- `asksage_response.json`
+- `asksage_response.md`
+
+Use `--mode local` to validate the wrapper without real AskSage access.
