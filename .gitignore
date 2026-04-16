@@ -8,3 +8,5 @@ input/**
 !input/
 !input/emr_triage/
 !input/emr_triage/README.md
+!input/cloudwatch_logs/
+!input/cloudwatch_logs/README.md

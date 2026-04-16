@@ -1,0 +1,17 @@
+{
+  "capability_id": "cloudwatch_logs",
+  "title": "CloudWatch Log Analysis",
+  "description": "Capability scaffold for analyzing CloudWatch log exports with dataset-specific triage prompts and fact extraction.",
+  "input_type": "cloudwatch_logs",
+  "prompt_files": [
+    "overview.md",
+    "analyst_prompts.md",
+    "triage_response_contract.md"
+  ],
+  "output_artifacts": [
+    "cloudwatch_log_summary.json",
+    "cloudwatch_log_findings.md",
+    "cloudwatch_prompt_brief.txt"
+  ],
+  "bedrock_flow_name": "ask-eids-cloudwatch-log-analysis-flow"
+}

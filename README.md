@@ -121,6 +121,12 @@ If the enclave already has `asksageclient`, credentials, CA bundle, and network 
 python -m asksage_harness.emr_triage_submit
 ```
 
+The shared capability-aware wrapper is also available:
+
+```bash
+python -m asksage_harness.capability_submit --capability emr_logs
+```
+
 That command:
 
 1. selects the newest bundle under `input/emr_triage/`
@@ -139,6 +145,22 @@ For offline validation without real AskSage access, use:
 ```bash
 python -m asksage_harness.emr_triage_submit --mode local
 ```
+
+## Capability Architecture
+
+Artifact-driven capabilities are now structured around a shared pattern:
+
+- capability-specific analyzer and fact extractor
+- capability-specific prompt brief builder
+- capability-specific response contract under `prompts/<capability_id>/`
+- shared AskSage submission wrapper under `asksage_harness/capability_submit.py`
+
+This keeps the framework reusable while still allowing dataset-specific prompting for EMR logs, CloudWatch logs, and future enclave datasets.
+
+The current concrete capability handlers are:
+
+- `emr_logs`: implemented analyzer and prompt-brief builder for EMR master-node triage bundles
+- `cloudwatch_logs`: scaffold handler and prompt pack ready for dataset-specific CloudWatch extraction logic
 
 ## Run Tests
 

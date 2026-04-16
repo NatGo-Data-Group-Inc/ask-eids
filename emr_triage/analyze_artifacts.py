@@ -60,6 +60,7 @@ class AnalysisResult:
     symptoms: list[Finding]
     noise: list[Finding]
     configs: dict[str, str]
+    control_plane_facts: dict[str, object]
     commands: list[str]
     needs_datanode_artifacts: bool
     datanode_artifacts: list[str]
@@ -75,6 +76,7 @@ class AnalysisResult:
             "symptoms": [item.to_dict() for item in self.symptoms],
             "noise": [item.to_dict() for item in self.noise],
             "configs": self.configs,
+            "control_plane_facts": self.control_plane_facts,
             "commands": self.commands,
             "needs_datanode_artifacts": self.needs_datanode_artifacts,
             "datanode_artifacts": self.datanode_artifacts,
@@ -201,6 +203,14 @@ def parse_command_capture_value(path: Path) -> str:
     return body[-1]
 
 
+def parse_command_capture_body(path: Path) -> list[str]:
+    return [
+        line.strip()
+        for line in path.read_text(encoding="utf-8", errors="replace").splitlines()
+        if line.strip() and not line.startswith("### ")
+    ]
+
+
 def sanitize_archive_part(part: str) -> str:
     invalid_chars = '<>:"\\|?*'
     sanitized = "".join("_" if ch in invalid_chars else ch for ch in part)
@@ -254,6 +264,77 @@ def collect_configs(root: Path) -> dict[str, str]:
             if value:
                 configs["fs.defaultFS"] = value
     return configs
+
+
+def collect_control_plane_facts(root: Path, configs: dict[str, str]) -> dict[str, object]:
+    facts: dict[str, object] = {
+        "fs_defaultfs": configs.get("fs.defaultFS", ""),
+        "dfs_nameservices": configs.get("dfs.nameservices", ""),
+        "ha_namenodes_keys_present": sorted(
+            key for key in configs if key.startswith("dfs.ha.namenodes.")
+        ),
+        "rpc_address_keys_present": sorted(
+            key for key in configs if key.startswith("dfs.namenode.rpc-address.")
+        ),
+        "failover_proxy_provider_keys_present": sorted(
+            key for key in configs if key.startswith("dfs.client.failover.proxy.provider.")
+        ),
+        "ha_service_states": [],
+        "nn_rpc_connectivity": [],
+        "collector_noise_files": [],
+    }
+
+    for path in root.rglob("*"):
+        if not path.is_file():
+            continue
+
+        if path.name == "22_ha_all_state.txt":
+            for line in parse_command_capture_body(path):
+                state_match = re.match(r"^(?P<target>\S+)\s+(?P<state>active|standby)\s*$", line, flags=re.IGNORECASE)
+                failed_match = re.match(r"^(?P<target>\S+)\s+Failed to connect:\s+(?P<detail>.+)$", line)
+                if state_match:
+                    facts["ha_service_states"].append(
+                        {
+                            "target": state_match.group("target"),
+                            "state": state_match.group("state").lower(),
+                        }
+                    )
+                elif failed_match:
+                    facts["ha_service_states"].append(
+                        {
+                            "target": failed_match.group("target"),
+                            "state": "failed_to_connect",
+                            "detail": failed_match.group("detail"),
+                        }
+                    )
+
+        elif path.name == "41_nn_rpc_connectivity.txt":
+            current_target = ""
+            for raw_line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+                line = raw_line.strip()
+                if line.startswith("=== ") and line.endswith(" ==="):
+                    current_target = line[4:-4].strip()
+                    continue
+                if not current_target:
+                    continue
+                if "Connected to " in line:
+                    facts["nn_rpc_connectivity"].append(
+                        {"target": current_target, "status": "connected", "detail": line}
+                    )
+                elif "Could not resolve hostname" in line or current_target.startswith("### "):
+                    facts["collector_noise_files"].append(path.name)
+                elif "Connection refused" in line or "timed out" in line or "failed" in line.lower():
+                    facts["nn_rpc_connectivity"].append(
+                        {"target": current_target, "status": "failed", "detail": line}
+                    )
+
+        elif path.name in {"21_namenodes.txt", "41_nn_rpc_connectivity.txt"}:
+            body = "\n".join(parse_command_capture_body(path))
+            if "Did not expect argument:" in body or 'Could not resolve hostname "### COMMAND' in body:
+                facts["collector_noise_files"].append(path.name)
+
+    facts["collector_noise_files"] = sorted(set(facts["collector_noise_files"]))
+    return facts
 
 
 def find_lines(path: Path, patterns: list[re.Pattern[str]], limit: int = 6) -> list[Evidence]:
@@ -659,6 +740,7 @@ def analyze(root: Path, capability_id: str = "emr_logs") -> AnalysisResult:
         )
 
     configs = collect_configs(root)
+    control_plane_facts = collect_control_plane_facts(root, configs)
     findings = build_findings(root, configs)
     primary_fault = pick_primary_fault(findings)
     root_causes = [item for item in findings if item.classification == "root_cause"]
@@ -675,6 +757,7 @@ def analyze(root: Path, capability_id: str = "emr_logs") -> AnalysisResult:
         symptoms=sorted(symptoms, key=lambda item: item.score, reverse=True),
         noise=sorted(noise, key=lambda item: item.score, reverse=True),
         configs=configs,
+        control_plane_facts=control_plane_facts,
         commands=recommended_commands(primary_fault, configs),
         needs_datanode_artifacts=needs_datanode_artifacts,
         datanode_artifacts=datanode_artifacts,
@@ -793,10 +876,104 @@ def write_outputs(result: AnalysisResult, output_dir: Path) -> dict[str, str]:
     json_path.write_text(json.dumps(result.to_dict(), indent=2), encoding="utf-8")
     markdown = render_markdown(result)
     report_path.write_text(markdown, encoding="utf-8")
+    config_complete = bool(
+        result.control_plane_facts.get("fs_defaultfs")
+        and result.control_plane_facts.get("dfs_nameservices")
+        and result.control_plane_facts.get("ha_namenodes_keys_present")
+        and result.control_plane_facts.get("rpc_address_keys_present")
+        and result.control_plane_facts.get("failover_proxy_provider_keys_present")
+    )
+    active_count = sum(
+        1 for item in result.control_plane_facts.get("ha_service_states", []) if item.get("state") == "active"
+    )
+    standby_count = sum(
+        1 for item in result.control_plane_facts.get("ha_service_states", []) if item.get("state") == "standby"
+    )
+    failed_state_count = sum(
+        1
+        for item in result.control_plane_facts.get("ha_service_states", [])
+        if item.get("state") == "failed_to_connect"
+    )
+    connected_rpc_count = sum(
+        1
+        for item in result.control_plane_facts.get("nn_rpc_connectivity", [])
+        if item.get("status") == "connected"
+    )
+    failed_rpc_count = sum(
+        1
+        for item in result.control_plane_facts.get("nn_rpc_connectivity", [])
+        if item.get("status") == "failed"
+    )
+
+    control_plane_lines = [
+        "Control-plane facts extracted from the artifact bundle:",
+        f"- fs.defaultFS: {result.control_plane_facts.get('fs_defaultfs') or 'not found'}",
+        f"- dfs.nameservices: {result.control_plane_facts.get('dfs_nameservices') or 'not found'}",
+        "- HA namenode keys present: "
+        + (
+            ", ".join(result.control_plane_facts.get("ha_namenodes_keys_present", []))
+            or "none found"
+        ),
+        "- HA RPC address keys present: "
+        + (
+            ", ".join(result.control_plane_facts.get("rpc_address_keys_present", []))
+            or "none found"
+        ),
+        "- Failover proxy provider keys present: "
+        + (
+            ", ".join(result.control_plane_facts.get("failover_proxy_provider_keys_present", []))
+            or "none found"
+        ),
+        "- Derived config status: " + ("HA config present" if config_complete else "HA config incomplete or missing"),
+        f"- Derived HA state counts: active={active_count}, standby={standby_count}, failed_to_connect={failed_state_count}",
+        f"- Derived RPC connectivity counts: connected={connected_rpc_count}, failed={failed_rpc_count}",
+    ]
+    ha_states = result.control_plane_facts.get("ha_service_states", [])
+    if ha_states:
+        control_plane_lines.append("- HA service states:")
+        control_plane_lines.extend(
+            f"  - {item['target']}: {item['state']}" + (f" | {item['detail']}" if item.get("detail") else "")
+            for item in ha_states
+        )
+    else:
+        control_plane_lines.append("- HA service states: not found")
+
+    rpc_connectivity = result.control_plane_facts.get("nn_rpc_connectivity", [])
+    if rpc_connectivity:
+        control_plane_lines.append("- NameNode RPC connectivity checks:")
+        control_plane_lines.extend(
+            f"  - {item['target']}: {item['status']}" + (f" | {item['detail']}" if item.get("detail") else "")
+            for item in rpc_connectivity
+        )
+    else:
+        control_plane_lines.append("- NameNode RPC connectivity checks: not found")
+
+    noise_files = result.control_plane_facts.get("collector_noise_files", [])
+    control_plane_lines.append(
+        "- Collector noise files: " + (", ".join(noise_files) if noise_files else "none observed")
+    )
     prompt_brief_path.write_text(
         "\n".join(
             [
+                "You are acting as an EMR or Hadoop cluster triage analyst inside an approved enclave workflow.",
                 "Use the attached EMR master-node artifact summary to answer in the required A-F format.",
+                "Be decisive and identify the most likely primary fault first.",
+                "Weight direct control-plane evidence above pattern-match files.",
+                "Prioritize these files when they exist: 22_ha_all_state.txt, 30_fs_default.txt, 20_nameservices.txt, 31_hdfs_site_extract.txt, 32_core_site_extract.txt, 41_nn_rpc_connectivity.txt, 10_ports.txt, and the 70_journal_* service logs.",
+                "Treat 82_spark_failure_patterns.txt and similar application-level pattern files as secondary unless the control-plane evidence is missing.",
+                "Explicitly state whether fs.defaultFS is correctly set to hdfs://<nameservice> or incorrectly set to a direct host:port endpoint.",
+                "Explicitly state whether dfs.nameservices and the HA RPC entries are present before calling this a configuration problem.",
+                "You must classify HA config as either 'present' or 'missing or incomplete' before giving the diagnosis.",
+                "If fs.defaultFS uses hdfs://<nameservice>, dfs.nameservices is present, HA namenode keys are present, HA RPC address keys are present, and failover proxy provider keys are present, do not call the issue a configuration problem unless you identify a specific missing or contradictory setting.",
+                "If the config facts are complete, prefer terms like runtime HA-state problem, failover problem, unhealthy quorum member, or client-routing-to-standby symptom.",
+                "If exactly one NameNode is active, one or more are standby, and another fails to connect or times out, treat that as degraded runtime HA evidence, not proof of missing HA config.",
+                "Distinguish between a client hitting a standby NameNode, an actual HA misconfiguration, a degraded or partially unhealthy NameNode quorum, and collector-script noise.",
+                "If malformed collector output appears, call it noise and do not let it drive the diagnosis.",
+                "Do not rely on a single StandbyException if stronger HA-state or config evidence contradicts it.",
+                "In section A, use one of these labels when appropriate: 'HA config present; runtime HA-state or failover problem', 'HA config missing or incomplete', 'NameNode service startup problem', 'network or connectivity problem', or 'storage or resource exhaustion problem'.",
+                "In section B, cite 22_ha_all_state.txt before any Spark symptom file whenever 22_ha_all_state.txt exists.",
+                "",
+                *control_plane_lines,
                 "",
                 markdown,
             ]

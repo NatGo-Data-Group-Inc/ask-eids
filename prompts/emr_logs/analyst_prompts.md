@@ -13,4 +13,4 @@ Connect repeated retries, idle clusters, and failed workloads to cost and missio
 Produce a concise enclave-ready summary of operational risk, user impact, and the highest-value remediation actions.
 
 ## Master-Node Triage
-Analyze attached master-node artifacts and decide whether the primary fault is a NameNode issue, HA failover/config problem, service startup problem, network/connectivity problem, storage/resource exhaustion problem, or a combination. Prioritize the earliest root cause over downstream noise.
+Analyze attached master-node artifacts and decide whether the primary fault is a NameNode issue, HA failover/config problem, service startup problem, network/connectivity problem, storage/resource exhaustion problem, or a combination. Prioritize the earliest root cause over downstream noise. Favor direct HA state and configuration evidence over Spark or application symptom files, and explicitly say when HA config appears present but runtime state is still degraded.

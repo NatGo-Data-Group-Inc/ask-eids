@@ -18,6 +18,7 @@ Per ADR 001, no orchestration logic belongs here. Bedrock-owned flow and lifecyc
 - `--print-payload-stats` emits payload size and preview metadata for each prompt to help isolate AskSage failure modes
 - `python -m asksage_harness.replay compare --baseline-dir ... --candidate-dir ...` compares two snapshot runs and writes `comparison.md` plus `comparison.json`
 - `python -m asksage_harness.emr_triage_submit` runs EMR artifact analysis and then submits the generated prompt brief to AskSage in one step
+- `python -m asksage_harness.capability_submit --capability <id>` is the shared submission wrapper for capability-specific artifact analyzers
 
 ## Mode Semantics
 
@@ -35,6 +36,20 @@ Use this when the enclave has a staged EMR triage bundle under `input/emr_triage
 ```bash
 python -m asksage_harness.emr_triage_submit
 ```
+
+The equivalent shared-wrapper form is:
+
+```bash
+python -m asksage_harness.capability_submit --capability emr_logs
+```
+
+The same wrapper now supports a CloudWatch scaffold capability:
+
+```bash
+python -m asksage_harness.capability_submit --capability cloudwatch_logs --mode local
+```
+
+That scaffold is intentionally non-operational until a CloudWatch-specific analyzer is implemented.
 
 Outputs are written beside the bundle analysis directory and include:
 
