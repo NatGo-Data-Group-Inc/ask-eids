@@ -1,0 +1,72 @@
+{
+  "ingestId": "ingest-35",
+  "promptVersion": "phase4-pdf-sanity-v2",
+  "region": "us-east-1",
+  "modelId": "amazon.nova-pro-v1:0",
+  "timestamp": "2026-04-17T11:29:15.279Z",
+  "rawText": "{\n  \"summary\": \"Initial security posture for the Dental FHIR integration path as of Sprint 2 review.\",\n  \"decisions\": [\n    {\n      \"label\": \"freeze endpoint inventory\",\n      \"confidence\": \"medium\",\n      \"anchorText\": \"Freeze the endpoint inventory for formal review.\"\n    },\n    {\n      \"label\": \"document compensating controls\",\n      \"confidence\": \"medium\",\n      \"anchorText\": \"Document compensating controls for any path validated with mock services.\"\n    },\n    {\n      \"label\": \"update assessment\",\n      \"confidence\": \"medium\",\n      \"anchorText\": \"Update the assessment after the next leadership sync if the environment path changes.\"\n    }\n  ],\n  \"warnings\": [\n    \"Endpoint inventory is materially complete but not yet final.\",\n    \"Authentication model is understood at a high level, but sandbox evidence is incomplete.\",\n    \"The biggest non-security risk affecting security confidence is environment instability, not a discovered control failure.\",\n    \"Named-user credential timing remains uncertain.\",\n    \"Integration evidence is below the threshold expected for strong readiness claims.\",\n    \"One legacy referral-history field still needs final handling guidance.\"\n  ],\n  \"confidence\": \"medium\"\n}",
+  "parsed": {
+    "summary": "Initial security posture for the Dental FHIR integration path as of Sprint 2 review.",
+    "decisions": [
+      {
+        "label": "freeze endpoint inventory",
+        "confidence": "medium",
+        "anchorText": "Freeze the endpoint inventory for formal review."
+      },
+      {
+        "label": "document compensating controls",
+        "confidence": "medium",
+        "anchorText": "Document compensating controls for any path validated with mock services."
+      },
+      {
+        "label": "update assessment",
+        "confidence": "medium",
+        "anchorText": "Update the assessment after the next leadership sync if the environment path changes."
+      }
+    ],
+    "warnings": [
+      "Endpoint inventory is materially complete but not yet final.",
+      "Authentication model is understood at a high level, but sandbox evidence is incomplete.",
+      "The biggest non-security risk affecting security confidence is environment instability, not a discovered control failure.",
+      "Named-user credential timing remains uncertain.",
+      "Integration evidence is below the threshold expected for strong readiness claims.",
+      "One legacy referral-history field still needs final handling guidance."
+    ],
+    "confidence": "medium"
+  },
+  "extraction": {
+    "summary": "Initial security posture for the Dental FHIR integration path as of Sprint 2 review.",
+    "decisions": [
+      {
+        "label": "freeze endpoint inventory",
+        "confidence": "medium",
+        "anchorText": "Freeze the endpoint inventory for formal review."
+      },
+      {
+        "label": "document compensating controls",
+        "confidence": "medium",
+        "anchorText": "Document compensating controls for any path validated with mock services."
+      },
+      {
+        "label": "update assessment",
+        "confidence": "medium",
+        "anchorText": "Update the assessment after the next leadership sync if the environment path changes."
+      }
+    ],
+    "warnings": [
+      "Endpoint inventory is materially complete but not yet final.",
+      "Authentication model is understood at a high level, but sandbox evidence is incomplete.",
+      "The biggest non-security risk affecting security confidence is environment instability, not a discovered control failure.",
+      "Named-user credential timing remains uncertain.",
+      "Integration evidence is below the threshold expected for strong readiness claims.",
+      "One legacy referral-history field still needs final handling guidance."
+    ],
+    "confidence": "medium",
+    "sourceId": "eval-ingest-35",
+    "productId": "dental",
+    "sourceType": "security_summary"
+  },
+  "schemaErrors": null,
+  "error": null,
+  "passed": true
+}

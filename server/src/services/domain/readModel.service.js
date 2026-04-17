@@ -185,6 +185,23 @@ export function createReadModelService({ errorCodes }) {
     const latestSource = latestIngestJob?.result?.sourceId
       ? productData?.sources?.find((item) => item.id === latestIngestJob.result.sourceId)
       : null;
+
+    // Phase 4 WS-E: surface the latest published LLM aggregate's rationale (drivers + riskFactors
+    // + anchorSourceIds) so the UI can render a "Why this status?" popover on the badge.
+    const publishedAggregate = (state.productAggregates || [])
+      .find((agg) => agg.productId === productId && agg.published && agg.payload?.synthesisSource === 'nova-pro-live');
+    const aggregateRationale = publishedAggregate
+      ? {
+        aggregateId: publishedAggregate.aggregateId,
+        publishedAt: publishedAggregate.publishedAt || publishedAggregate.createdAt || null,
+        summary: publishedAggregate.payload?.summary || null,
+        confidence: publishedAggregate.payload?.confidence || null,
+        drivers: Array.isArray(publishedAggregate.payload?.drivers) ? publishedAggregate.payload.drivers : [],
+        riskFactors: Array.isArray(publishedAggregate.payload?.riskFactors) ? publishedAggregate.payload.riskFactors : [],
+        synthesisSource: publishedAggregate.payload?.synthesisSource || null,
+      }
+      : null;
+
     return {
       product: {
         id: product.id,
@@ -213,6 +230,7 @@ export function createReadModelService({ errorCodes }) {
           pm: product.pm,
           lastSync: product.lastSync,
         },
+        aggregateRationale,
       },
       permissions: {
         canUploadArtifact: permissions.canUploadArtifact ?? permissions.canUploadTranscript,

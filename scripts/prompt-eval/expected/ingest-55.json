@@ -1,0 +1,22 @@
+{
+  "_meta": {
+    "ingestOrder": 55,
+    "manifestPath": "EIDS-Prototype-Document-Pack/wave-03-recovery/products/dental/attachments/2026-04-16-dental-leadership-readout-deck.pptx",
+    "productId": "dental",
+    "productName": "DENTAL / DENCLASS",
+    "sourceType": "slide_deck",
+    "sourceFamily": "slide_deck",
+    "wave": "wave-03-recovery",
+    "documentDate": "2026-04-16",
+    "title": "Dental Leadership Readout Deck",
+    "author": "Benjiman Jennings"
+  },
+  "expectedExtraction": {
+    "_comment": "WS-A verification fixture — .pptx decoded via adm-zip + <a:t> text extraction. Content is a leadership readout summarizing risk-to-recovery progression."
+  },
+  "assertions": {
+    "schemaValid": true,
+    "summary": { "minLength": 40, "substringPatterns": ["recovery|leadership|mitigation|risk|posture|readout"] },
+    "topLevelConfidence": ["low", "medium", "high"]
+  }
+}

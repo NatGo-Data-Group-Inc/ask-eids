@@ -1,0 +1,22 @@
+{
+  "_meta": {
+    "ingestOrder": 35,
+    "manifestPath": "EIDS-Prototype-Document-Pack/wave-01-operational/products/dental/project-docs/2026-04-09-dental-security-assessment-summary.pdf",
+    "productId": "dental",
+    "productName": "DENTAL / DENCLASS",
+    "sourceType": "security_summary",
+    "sourceFamily": "document",
+    "wave": "wave-01-operational",
+    "documentDate": "2026-04-09",
+    "title": "Dental Security Assessment Summary",
+    "author": "Bromley Security Team"
+  },
+  "expectedExtraction": {
+    "_comment": "WS-A verification fixture — .pdf decoded via pdf-parse. Content is security context + mitigations. Assertions are permissive shape checks."
+  },
+  "assertions": {
+    "schemaValid": true,
+    "summary": { "minLength": 40, "substringPatterns": ["security|FHIR|mitigation|assessment|endpoint"] },
+    "topLevelConfidence": ["low", "medium", "high"]
+  }
+}

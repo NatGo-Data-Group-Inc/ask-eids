@@ -122,6 +122,14 @@ function ensureDurableJobPump() {
   if (typeof durableJobPumpHandle.unref === 'function') {
     durableJobPumpHandle.unref();
   }
+  // Phase 4 WS-D: scheduled aggregate refresh. Off by default; enabled by
+  // EIDS_AGGREGATE_REFRESH_INTERVAL_MS > 0. Skipped in test env.
+  if (typeof mutationService.ensureAggregateRefreshScheduler === 'function') {
+    const started = mutationService.ensureAggregateRefreshScheduler();
+    if (started) {
+      console.log(`[phase4] aggregate refresh scheduler started (interval ${runtimeConfig.semantic.aggregateRefreshIntervalMs}ms)`);
+    }
+  }
 }
 
 function authMiddleware(req, _res, next) {
@@ -255,10 +263,20 @@ export async function buildApp({ withVite = false } = {}) {
     if (!permissions.canUploadTranscript) {
       throw new HttpError(403, ERROR_CODES.FORBIDDEN, 'You do not have access to this product.');
     }
-    res.status(202).json(await mutationService.queueTranscriptJob(
+    // Phase 4 WS-B: /transcripts delegates to queueArtifactJob via a body translator.
+    // Legacy contract (meetingTitle / meetingDate / attendees / notes) mapped to the unified
+    // sourceType / sourceDate / title / participants / notes contract.
+    const translatedBody = {
+      sourceType: 'transcript',
+      sourceDate: req.body.meetingDate,
+      title: req.body.meetingTitle,
+      participants: req.body.attendees,
+      notes: req.body.notes,
+    };
+    res.status(202).json(await mutationService.queueArtifactJob(
       req.params.productId,
       req.file,
-      req.body,
+      translatedBody,
       { testCase: String(req.query.testCase || '') }
     ));
   });
@@ -410,6 +428,15 @@ export async function buildApp({ withVite = false } = {}) {
       console.warn(`Telemetry persistence failure (non-blocking): ${error?.message || 'unknown error'}`);
     }
     res.status(202).json({ accepted: true });
+  });
+
+  // Phase 4 WS-D: manual one-shot aggregate refresh trigger (for ops + the "Refresh" button).
+  app.post('/api/v1/admin/refresh-aggregates', async (req, res) => {
+    if (req.user.rolePreset === 'read') {
+      throw new HttpError(403, ERROR_CODES.FORBIDDEN, 'You do not have access to refresh aggregates.');
+    }
+    const results = await mutationService.refreshProductAggregates({ source: 'manual' });
+    res.json({ source: 'manual', completedAt: new Date().toISOString(), results });
   });
 
   if (process.env.NODE_ENV !== 'production') {

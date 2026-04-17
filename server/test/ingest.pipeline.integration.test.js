@@ -121,21 +121,7 @@ describe('ingest pipeline integration', () => {
     expect(source.indexed).toBe(false);
   });
 
-  it('applies OCR fallback for low-text pdf uploads when extraction is insufficient', async () => {
-    const app = await buildApp();
-    const uploadResponse = await request(app)
-      .post('/api/v1/products/dental/transcripts?testCase=ocrFallback')
-      .field('meetingTitle', 'Pipeline OCR Transcript')
-      .field('meetingDate', '2026-04-14')
-      .attach('file', Buffer.from('%PDF-1.4\n1 0 obj\n<<>>\nendobj\n%%EOF'), 'pipeline-ocr.pdf');
-
-    expect(uploadResponse.status).toBe(202);
-    const job = await waitForJob(uploadResponse.body.jobId);
-    expect(job.status).toBe('completed');
-
-    const state = await readRuntimeStateForTests();
-    const source = state.productData.dental.sources.find((item) => item.id === uploadResponse.body.sourceId);
-    expect(source.metadata?.ocrFallbackUsed).toBe(true);
-    expect(source.normalizedPreview).toContain('OCR fallback text');
-  });
+  // Phase 4 WS-B removed queueTranscriptJob and its OCR fallback helper; /transcripts now
+  // delegates to queueArtifactJob which handles .pdf uploads through pdf-parse directly.
+  // The OCR-fallback test above is removed as the feature no longer exists.
 });

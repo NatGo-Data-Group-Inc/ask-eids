@@ -90,6 +90,7 @@ export function getRuntimeConfig() {
       promptRegistryVersion: envString('EIDS_PROMPT_REGISTRY_VERSION', 'local-dev').trim() || 'local-dev',
       evalCacheDir: envString('EIDS_EVAL_CACHE_DIR', path.join(getRuntimePaths().runtimeDir, 'eval-cache')).trim() || path.join(getRuntimePaths().runtimeDir, 'eval-cache'),
       staleAfterHours: envInt('EIDS_SEMANTIC_STALE_AFTER_HOURS', 24),
+      aggregateRefreshIntervalMs: envInt('EIDS_AGGREGATE_REFRESH_INTERVAL_MS', 0),
     },
     features: {
       enableNovaDentalExtraction: envBool('ENABLE_NOVA_DENTAL_EXTRACTION', true),

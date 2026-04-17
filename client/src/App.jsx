@@ -504,6 +504,7 @@ function ProductPage() {
   const tab = searchParams.get('tab') || 'overview';
   const tabValues = ['overview', 'timeline', 'data', 'sources', 'reports'];
   const [dismissedStatusSourceId, setDismissedStatusSourceId] = useState('');
+  const [rationaleOpen, setRationaleOpen] = useState(false);
   const productQuery = useQuery({
     queryKey: ['product', rolePreset, productId],
     queryFn: () => apiGet(withRole(`/api/v1/products/${productId}`, rolePreset)),
@@ -581,7 +582,31 @@ function ProductPage() {
       </div>
       <div className="product-title-row">
         <h1>{product.name}</h1>
-        <span className="product-status-badge" data-testid="product-status-badge" style={{ background: product.status === 'risk' ? 'var(--red-100)' : product.status === 'caution' ? 'var(--amber-100)' : 'var(--green-100)', color: product.status === 'risk' ? 'var(--red-700)' : product.status === 'caution' ? 'var(--amber-700)' : 'var(--green-700)' }}>{product.statusLabel}</span>
+        {product.aggregateRationale ? (
+          <button
+            type="button"
+            className="product-status-badge product-status-badge-trigger"
+            data-testid="product-status-badge"
+            data-rationale-available="true"
+            aria-haspopup="dialog"
+            aria-expanded={rationaleOpen ? 'true' : 'false'}
+            onClick={() => setRationaleOpen(true)}
+            style={{ background: product.status === 'risk' ? 'var(--red-100)' : product.status === 'caution' ? 'var(--amber-100)' : 'var(--green-100)', color: product.status === 'risk' ? 'var(--red-700)' : product.status === 'caution' ? 'var(--amber-700)' : 'var(--green-700)', cursor: 'pointer', border: 'none' }}
+            title="Click to see why this status"
+          >
+            {product.statusLabel}<span aria-hidden="true" style={{ marginLeft: 4, fontSize: '.7em', opacity: 0.7 }}>ⓘ</span>
+          </button>
+        ) : (
+          <span className="product-status-badge" data-testid="product-status-badge" style={{ background: product.status === 'risk' ? 'var(--red-100)' : product.status === 'caution' ? 'var(--amber-100)' : 'var(--green-100)', color: product.status === 'risk' ? 'var(--red-700)' : product.status === 'caution' ? 'var(--amber-700)' : 'var(--green-700)' }}>{product.statusLabel}</span>
+        )}
+        {rationaleOpen && product.aggregateRationale ? (
+          <AggregateRationalePopover
+            rationale={product.aggregateRationale}
+            productName={product.name}
+            onDismiss={() => setRationaleOpen(false)}
+            onOpenSource={(sourceId) => { setRationaleOpen(false); setParams({ tab: 'sources', sourceId }); }}
+          />
+        ) : null}
         {showTrustSurfaces && product.semanticState ? (
           <span
             className="product-semantic-badge"
@@ -1599,6 +1624,106 @@ function UploadArtifactModal({ busy, onClose, onSubmit, error }) {
             <button type="submit" className="primary-btn" data-testid="artifact-submit" disabled={busy}>{busy ? 'Uploading…' : 'Upload Artifact'}</button>
           </div>
         </form>
+      </div>
+    </div>
+  );
+}
+
+function AggregateRationalePopover({ rationale, productName, onDismiss, onOpenSource }) {
+  useEffect(() => {
+    function onKey(event) {
+      if (event.key === 'Escape') {
+        onDismiss();
+      }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onDismiss]);
+
+  const drivers = Array.isArray(rationale?.drivers) ? rationale.drivers : [];
+  const riskFactors = Array.isArray(rationale?.riskFactors) ? rationale.riskFactors : [];
+  const directionSymbol = (direction) => direction === 'positive' ? '↑' : direction === 'negative' ? '↓' : '—';
+  const directionColor = (direction) => direction === 'positive' ? 'var(--green-700)' : direction === 'negative' ? 'var(--red-700)' : 'var(--text-500)';
+  const severityColor = (severity) => severity === 'high' ? 'var(--red-700)' : severity === 'medium' ? 'var(--amber-700)' : 'var(--text-500)';
+
+  return (
+    <div
+      className="modal-overlay"
+      data-testid="aggregate-rationale-overlay"
+      onClick={onDismiss}
+      style={{ background: 'rgba(0,0,0,0.35)', alignItems: 'flex-start' }}
+    >
+      <div
+        className="modal-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="aggregate-rationale-title"
+        data-testid="aggregate-rationale-popover"
+        onClick={(event) => event.stopPropagation()}
+        style={{ maxWidth: 560, marginTop: '10vh' }}
+      >
+        <div className="report-section-header">
+          <h3 id="aggregate-rationale-title" style={{ margin: 0 }}>Why this status — {productName}</h3>
+          <button type="button" className="secondary-btn" data-testid="aggregate-rationale-dismiss" onClick={onDismiss}>Close</button>
+        </div>
+        <p data-testid="aggregate-rationale-summary" style={{ marginTop: 12, color: 'var(--text-700)' }}>{rationale.summary}</p>
+        <div style={{ color: 'var(--text-500)', fontSize: '.82rem', marginBottom: 12 }}>
+          Confidence: <strong data-testid="aggregate-rationale-confidence">{rationale.confidence || 'unknown'}</strong>
+        </div>
+        {drivers.length ? (
+          <section style={{ marginTop: 8 }}>
+            <h4 style={{ margin: '8px 0 6px' }}>Drivers</h4>
+            {drivers.map((driver, index) => (
+              <div key={`driver-${index}`} data-testid={`aggregate-driver-row-${index}`} style={{ borderTop: '1px solid var(--card-border)', padding: '8px 0' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ color: directionColor(driver.direction), fontWeight: 700 }} data-testid={`aggregate-driver-direction-${index}`}>{directionSymbol(driver.direction)}</span>
+                  <strong>{driver.title}</strong>
+                </div>
+                <div style={{ fontSize: '.78rem', color: 'var(--text-500)', marginTop: 4 }}>
+                  {(driver.anchorSourceIds || []).map((sourceId) => (
+                    <button
+                      key={sourceId}
+                      type="button"
+                      className="inline-link"
+                      data-testid={`aggregate-anchor-link-${sourceId}`}
+                      onClick={() => onOpenSource(sourceId)}
+                      style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', padding: 0, marginRight: 12, textDecoration: 'underline' }}
+                    >
+                      {sourceId}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </section>
+        ) : null}
+        {riskFactors.length ? (
+          <section style={{ marginTop: 12 }}>
+            <h4 style={{ margin: '8px 0 6px' }}>Risk factors</h4>
+            {riskFactors.map((risk, index) => (
+              <div key={`risk-${index}`} data-testid={`aggregate-risk-factor-row-${index}`} style={{ borderTop: '1px solid var(--card-border)', padding: '8px 0' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ color: severityColor(risk.severity), fontWeight: 700, textTransform: 'uppercase', fontSize: '.7rem' }} data-testid={`aggregate-risk-severity-${index}`}>{risk.severity}</span>
+                  <strong>{risk.title}</strong>
+                </div>
+                <div style={{ fontSize: '.78rem', color: 'var(--text-500)', marginTop: 4 }}>
+                  {(risk.anchorSourceIds || []).map((sourceId) => (
+                    <button
+                      key={sourceId}
+                      type="button"
+                      className="inline-link"
+                      data-testid={`aggregate-anchor-link-${sourceId}`}
+                      onClick={() => onOpenSource(sourceId)}
+                      style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', padding: 0, marginRight: 12, textDecoration: 'underline' }}
+                    >
+                      {sourceId}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </section>
+        ) : null}
       </div>
     </div>
   );

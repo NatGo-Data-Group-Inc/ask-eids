@@ -15,8 +15,8 @@ test.describe('EIDS Prototype Document Pack — multi-product lifecycle workflow
 
   test('ingests every non-baseline artifact across dental + essence + optima and reaches the green end state', async ({ page, request }) => {
     const artifacts = await loadEidsLifecycleArtifacts({ productIds: ['dental', 'essence', 'optima'] });
-    // 26 text-format non-baseline uploads (29 manifest rows minus 2 .pdf + 1 .pptx deferred to Phase 4).
-    expect(artifacts).toHaveLength(26);
+    // All 29 non-baseline uploads: 7 csv + 4 docx + 7 eml + 8 md + 2 pdf + 1 pptx.
+    expect(artifacts).toHaveLength(29);
 
     await test.step('Baseline portfolio sanity', async () => {
       await page.goto('/portfolio');
@@ -72,9 +72,9 @@ test.describe('EIDS Prototype Document Pack — multi-product lifecycle workflow
       await expect(page.getByTestId('product-status-badge')).toHaveText('Caution');
 
       await page.getByTestId('product-tab-sources').click();
-      // 15 baseline dental sources + 21 text-format uploaded dental sources = 36. Binary .pdf/.pptx deferred to Phase 4.
-      await expect(page.locator('[data-testid^="source-item-"]')).toHaveCount(36);
-      await expect(page.locator('[data-testid^="source-item-"]').filter({ hasText: /Dental Remediation Decision Memo/ })).toHaveCount(1);
+      // 15 baseline dental sources + 24 uploaded dental sources (all formats now ingested) = 39.
+      await expect(page.locator('[data-testid^="source-item-"]')).toHaveCount(39);
+      await expect(page.locator('[data-testid^="source-item-"]').filter({ hasText: /Dental Leadership Readout Deck/ })).toHaveCount(1);
       await expect(page.locator('[data-testid^="source-item-"]').filter({ hasText: /Dental Vendor Recovery Call Transcript/ })).toHaveCount(1);
 
       await page.goto('/products/dental?tab=data');

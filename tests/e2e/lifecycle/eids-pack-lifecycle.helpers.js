@@ -93,18 +93,12 @@ function normalizeUploadSourceDate(sourceDate) {
   return trimmed > todayLabel ? todayLabel : trimmed;
 }
 
-const SKIP_EXTENSIONS = new Set(['.pdf', '.pptx', '.xlsx']);
-
 export async function loadEidsLifecycleArtifacts({ productIds = DEFAULT_PRODUCT_IDS } = {}) {
   const allowedProductIds = new Set(productIds);
   const rows = await parseManifest();
   const liveRows = rows.filter((row) => {
     if (!allowedProductIds.has(row.product_id)) return false;
     if (row.wave === 'wave-00-baseline') return false;
-    const ext = path.extname(row.relative_path).toLowerCase();
-    // Phase 3 scope: binary .pdf/.pptx/.xlsx deferred to Phase 4 (no mammoth-equivalent decoder yet).
-    // They'd route through the legacy path which overwrites product.narrativeText, hiding the LLM aggregate.
-    if (SKIP_EXTENSIONS.has(ext)) return false;
     return true;
   });
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'askeids-multi-lifecycle-'));

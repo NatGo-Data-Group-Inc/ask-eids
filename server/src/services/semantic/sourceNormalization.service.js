@@ -1,8 +1,43 @@
 import path from 'node:path';
 import mammoth from 'mammoth';
+import AdmZip from 'adm-zip';
 import { simpleParser } from 'mailparser';
 import { getSourceFamily } from '../../../../shared/artifactTypes.js';
 import { extractArtifactContent } from '../ingest/artifactUpload.service.js';
+
+function extractTextFromSlideXml(xml) {
+  // PowerPoint slide XML wraps visible text in <a:t>…</a:t> runs. Grabbing those gives
+  // readable prose. Also decode common XML entities.
+  const runs = String(xml || '').match(/<a:t[^>]*>([\s\S]*?)<\/a:t>/g) || [];
+  return runs
+    .map((run) => run.replace(/<a:t[^>]*>/, '').replace(/<\/a:t>/, ''))
+    .map((text) => text
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&apos;/g, "'"))
+    .join(' ');
+}
+
+function extractTextFromPptxBuffer(buffer) {
+  const zip = new AdmZip(buffer);
+  const slideEntries = zip
+    .getEntries()
+    .filter((entry) => /^ppt\/slides\/slide\d+\.xml$/.test(entry.entryName))
+    .sort((a, b) => {
+      const numA = Number.parseInt(a.entryName.match(/slide(\d+)\.xml$/)?.[1] || '0', 10);
+      const numB = Number.parseInt(b.entryName.match(/slide(\d+)\.xml$/)?.[1] || '0', 10);
+      return numA - numB;
+    });
+  return slideEntries
+    .map((entry, index) => {
+      const text = extractTextFromSlideXml(entry.getData().toString('utf8'));
+      return `Slide ${index + 1}: ${text}`.trim();
+    })
+    .filter(Boolean)
+    .join('\n\n');
+}
 
 async function decodeBinaryArtifactToTextBuffer(file) {
   const originalName = file?.originalname || '';
@@ -10,6 +45,16 @@ async function decodeBinaryArtifactToTextBuffer(file) {
   if (extension === '.docx') {
     const result = await mammoth.extractRawText({ buffer: file.buffer });
     return { ...file, buffer: Buffer.from(result.value || '', 'utf8') };
+  }
+  if (extension === '.pdf') {
+    const { PDFParse } = await import('pdf-parse');
+    const parser = new PDFParse({ data: new Uint8Array(file.buffer) });
+    const result = await parser.getText();
+    return { ...file, buffer: Buffer.from(result.text || '', 'utf8') };
+  }
+  if (extension === '.pptx') {
+    const text = extractTextFromPptxBuffer(file.buffer);
+    return { ...file, buffer: Buffer.from(text, 'utf8') };
   }
   return file;
 }

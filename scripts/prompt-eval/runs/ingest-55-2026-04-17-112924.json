@@ -1,0 +1,66 @@
+{
+  "ingestId": "ingest-55",
+  "promptVersion": "phase4-pptx-sanity",
+  "region": "us-east-1",
+  "modelId": "amazon.nova-pro-v1:0",
+  "timestamp": "2026-04-17T11:29:24.142Z",
+  "rawText": "{\n  \"summary\": \"The dental product improved from severe risk to managed caution after the vendor provided a phased recovery path. The knowledge picture is stronger due to corroborating evidence, but the product is not fully healthy as full environment readiness remains pending.\",\n  \"decisions\": [\n    {\n      \"label\": \"prioritize FHIR over new feature work\",\n      \"confidence\": \"high\",\n      \"anchorText\": \"Prioritize FHIR over new feature work.\"\n    },\n    {\n      \"label\": \"treat testing as a first-class deliverable\",\n      \"confidence\": \"high\",\n      \"anchorText\": \"Treat testing as a first-class deliverable.\"\n    },\n    {\n      \"label\": \"approve staged mitigation using partial sandbox plus mock services\",\n      \"confidence\": \"high\",\n      \"anchorText\": \"Approve staged mitigation using partial sandbox plus mock services.\"\n    }\n  ],\n  \"warnings\": [\n    \"Full environment capability is still pending 4/25.\",\n    \"Integration test harness work is still in progress.\",\n    \"Some demo scope still depends on mock services.\"\n  ],\n  \"confidence\": \"medium\"\n}",
+  "parsed": {
+    "summary": "The dental product improved from severe risk to managed caution after the vendor provided a phased recovery path. The knowledge picture is stronger due to corroborating evidence, but the product is not fully healthy as full environment readiness remains pending.",
+    "decisions": [
+      {
+        "label": "prioritize FHIR over new feature work",
+        "confidence": "high",
+        "anchorText": "Prioritize FHIR over new feature work."
+      },
+      {
+        "label": "treat testing as a first-class deliverable",
+        "confidence": "high",
+        "anchorText": "Treat testing as a first-class deliverable."
+      },
+      {
+        "label": "approve staged mitigation using partial sandbox plus mock services",
+        "confidence": "high",
+        "anchorText": "Approve staged mitigation using partial sandbox plus mock services."
+      }
+    ],
+    "warnings": [
+      "Full environment capability is still pending 4/25.",
+      "Integration test harness work is still in progress.",
+      "Some demo scope still depends on mock services."
+    ],
+    "confidence": "medium"
+  },
+  "extraction": {
+    "summary": "The dental product improved from severe risk to managed caution after the vendor provided a phased recovery path. The knowledge picture is stronger due to corroborating evidence, but the product is not fully healthy as full environment readiness remains pending.",
+    "decisions": [
+      {
+        "label": "prioritize FHIR over new feature work",
+        "confidence": "high",
+        "anchorText": "Prioritize FHIR over new feature work."
+      },
+      {
+        "label": "treat testing as a first-class deliverable",
+        "confidence": "high",
+        "anchorText": "Treat testing as a first-class deliverable."
+      },
+      {
+        "label": "approve staged mitigation using partial sandbox plus mock services",
+        "confidence": "high",
+        "anchorText": "Approve staged mitigation using partial sandbox plus mock services."
+      }
+    ],
+    "warnings": [
+      "Full environment capability is still pending 4/25.",
+      "Integration test harness work is still in progress.",
+      "Some demo scope still depends on mock services."
+    ],
+    "confidence": "medium",
+    "sourceId": "eval-ingest-55",
+    "productId": "dental",
+    "sourceType": "slide_deck"
+  },
+  "schemaErrors": null,
+  "error": null,
+  "passed": true
+}

@@ -1816,6 +1816,25 @@ export function createMutationService({
               throw new Error(`Unable to derive corpus state for ${productId}.`);
             }
 
+            // Phase 4 WS-C: preserve LLM-synthesized narrativeText and biggestGap across legacy-path
+            // rebuilds. When the latest published aggregate was synthesized by Nova Pro, its
+            // summary/driver-based biggestGap should survive a legacy-path upload (e.g., a deferred-class
+            // source like slide_deck or spreadsheet_attachment) that would otherwise overwrite with
+            // baseline weekly-derived text.
+            const existingProduct = draft.products.find((candidate) => candidate.id === productId);
+            const latestPublishedAggregate = (draft.productAggregates || [])
+              .find((agg) => agg.productId === productId && agg.published);
+            const llmNarrativeStillValid = latestPublishedAggregate?.payload?.synthesisSource === 'nova-pro-live'
+              && existingProduct?.narrativeText;
+            if (llmNarrativeStillValid) {
+              derived.product.narrativeText = existingProduct.narrativeText;
+              derived.product.status = existingProduct.status;
+              derived.product.statusLabel = existingProduct.statusLabel;
+              if (existingProduct.biggestGap) {
+                derived.product.biggestGap = existingProduct.biggestGap;
+              }
+            }
+
             derived.product.evidenceVersion = nextEvidenceVersion;
             derived.productData.evidenceVersion = nextEvidenceVersion;
             derived.productData.latestEvidenceUpdate = latestEvidenceUpdate;
@@ -2302,6 +2321,126 @@ export function createMutationService({
     return artifactKeyForExport(productId, reportId, fileName);
   }
 
+  // Phase 4 WS-D: scheduled aggregate refresh.
+  // Re-runs the Phase 2 aggregate prompt for each product with accumulated extractions,
+  // publishing a new aggregate and mirroring status/narrativeText onto the product.
+  // Gated by EIDS_AGGREGATE_REFRESH_INTERVAL_MS env (default 0 = disabled).
+  async function refreshProductAggregates({ source = 'scheduled' } = {}) {
+    const state = await readState();
+    const results = [];
+    for (const product of (state.products || [])) {
+      const extractions = (state.sourceExtractions || []).filter((e) => e.productId === product.id);
+      if (!extractions.length) {
+        results.push({ productId: product.id, status: 'skipped', reason: 'no_extractions' });
+        continue;
+      }
+      try {
+        const aggregateCall = await extractAggregateWithNova({
+          productId: product.id,
+          productName: product.name || product.id,
+          productMission: '',
+          extractions,
+          executionDecision: { promptVersion: `refresh-${source}`, executionMode: 'live' },
+          runtimeConfig,
+        });
+        const payload = aggregateCall?.payload;
+        if (!payload) {
+          results.push({ productId: product.id, status: 'skipped', reason: 'empty_result' });
+          continue;
+        }
+        await updateState((draft) => {
+          ensureSemanticCollections(draft);
+          const data = draft.productData[product.id];
+          const prod = draft.products.find((item) => item.id === product.id);
+          if (!data || !prod) return draft;
+          const nextEvidenceVersion = Number(prod.evidenceVersion || data.evidenceVersion || 1) + 1;
+          const aggregateId = `agg-${product.id}-${nextEvidenceVersion}`;
+          const createdAt = new Date().toISOString();
+          draft.productAggregates = (draft.productAggregates || []).map((a) => (
+            a.productId === product.id && a.published
+              ? { ...a, published: false, supersededAt: createdAt, supersededBy: aggregateId }
+              : a
+          ));
+          draft.productAggregates.unshift({
+            aggregateId,
+            productId: product.id,
+            aggregateVersion: nextEvidenceVersion,
+            evidenceVersion: nextEvidenceVersion,
+            sourceSetHash: `${product.id}:refresh:${nextEvidenceVersion}`,
+            payload: {
+              productId: product.id,
+              status: payload.status,
+              statusLabel: payload.statusLabel,
+              summary: payload.summary,
+              confidence: payload.confidence,
+              drivers: payload.drivers,
+              riskFactors: payload.riskFactors,
+              health: prod.health,
+              narrative: {
+                summary: payload.summary,
+                evidenceGaps: (payload.riskFactors || []).slice(0, 2).map((r) => r.title),
+              },
+              recentSignals: prod.recentSignals || [],
+              data: data.data || {},
+              reports: { executiveSummaryInput: payload.summary },
+              synthesisSource: 'nova-pro-live',
+            },
+            schemaVersion: '1.0',
+            promptVersion: `refresh-${source}`,
+            modelId: runtimeConfig?.bedrock?.textModelId || null,
+            published: true,
+            publishedAt: createdAt,
+            createdAt,
+            freshnessStatus: 'fresh',
+            supersededAt: null,
+            supersededBy: null,
+          });
+          prod.status = payload.status;
+          prod.statusLabel = payload.statusLabel;
+          prod.narrativeText = payload.summary;
+          if (Array.isArray(payload.riskFactors) && payload.riskFactors[0]?.title) {
+            prod.biggestGap = payload.riskFactors[0].title;
+          }
+          prod.evidenceVersion = nextEvidenceVersion;
+          data.evidenceVersion = nextEvidenceVersion;
+          return draft;
+        });
+        results.push({ productId: product.id, status: 'refreshed', synthStatus: payload.status, synthConfidence: payload.confidence });
+      } catch (error) {
+        console.warn(`[phase4] aggregate refresh failed for ${product.id} (${source}): ${error?.code || error?.message || 'unknown'}`);
+        results.push({ productId: product.id, status: 'failed', reason: error?.code || error?.message || 'unknown' });
+      }
+    }
+    return results;
+  }
+
+  let aggregateRefreshHandle = null;
+  function ensureAggregateRefreshScheduler() {
+    if (aggregateRefreshHandle) return false;
+    const intervalMs = Number(runtimeConfig?.semantic?.aggregateRefreshIntervalMs || 0);
+    if (intervalMs <= 0) return false;
+    if (process.env.VITEST || process.env.NODE_ENV === 'test') return false;
+    aggregateRefreshHandle = setInterval(async () => {
+      try {
+        console.log(`[phase4] scheduled aggregate refresh tick ${new Date().toISOString()}`);
+        const results = await refreshProductAggregates({ source: 'scheduled' });
+        const summary = results.map((r) => `${r.productId}=${r.status}${r.synthStatus ? `(${r.synthStatus})` : ''}`).join(', ');
+        console.log(`[phase4] scheduled aggregate refresh complete: ${summary}`);
+      } catch (error) {
+        console.warn(`[phase4] scheduler error: ${error?.message || 'unknown'}`);
+      }
+    }, intervalMs);
+    aggregateRefreshHandle.unref?.();
+    return true;
+  }
+
+  function stopAggregateRefreshScheduler() {
+    if (aggregateRefreshHandle) {
+      clearInterval(aggregateRefreshHandle);
+      aggregateRefreshHandle = null;
+    }
+  }
+
   return {
     queueArtifactJob,
     queueTranscriptJob,
@@ -2313,5 +2452,8 @@ export function createMutationService({
     getConnectorStatus,
     processPendingJobs,
     getExportArtifactKey,
+    refreshProductAggregates,
+    ensureAggregateRefreshScheduler,
+    stopAggregateRefreshScheduler,
   };
 }
