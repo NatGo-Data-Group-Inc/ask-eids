@@ -16,6 +16,9 @@ export function buildSemanticTrustMessage({
   reasonCodes = [],
   surface = 'product',
 } = {}) {
+  if (!usesLastKnownGood && freshnessStatus === 'fresh') {
+    return null;
+  }
   if (surface === 'ask' && usesLastKnownGood) {
     return 'This answer is using the last published product understanding while newer evidence is still being validated.';
   }
@@ -50,6 +53,9 @@ export function computeSemanticTrustState({
     freshnessStatus = 'stale';
   }
 
+  const showBanner = usesLastKnownGood || freshnessStatus === 'stale';
+  const bannerTone = showBanner ? 'warning' : null;
+
   return {
     executionMode,
     freshnessStatus,
@@ -62,6 +68,8 @@ export function computeSemanticTrustState({
       reasonCodes,
       surface,
     }),
+    showBanner,
+    bannerTone,
     lastPublishedAt,
     latestAttemptAt: latestAttemptAt || lastPublishedAt,
     reasonCodes,

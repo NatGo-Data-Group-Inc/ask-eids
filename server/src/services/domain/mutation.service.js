@@ -1,6 +1,5 @@
 import path from 'node:path';
 import { generateBedrockText } from '../../lib/aws/bedrockText.js';
-import { getRetrievalProvider } from '../../rag/retrievalProvider.js';
 import { attachSemanticStateToRuntimeState, buildCorpusReport, buildUploadedCorpusEntry, deriveCorpusProductState } from '../ingest/corpusImport.service.js';
 import { HttpError } from '../common/httpError.js';
 import { normalizeTranscriptUpload } from '../ingest/normalize/transcriptNormalizer.js';
@@ -11,14 +10,19 @@ import { buildAdoSyncDelta } from '../connectors/adoConnector.service.js';
 import { runAdoMcpEnrichment } from '../connectors/adoMcpAdapter.service.js';
 import { resolveSemanticExecutionPolicy } from '../semantic/executionPolicy.service.js';
 import { runEmailSemanticIngest } from '../semantic/semanticIngestOrchestrator.service.js';
+import { runChunkingAndIndexing } from '../semantic/chunkingAndIndexing.service.js';
 import {
   appendProductAggregateAttempt,
+  buildPublicationGuard,
+  createAggregatePublicationRun,
   buildEmailSemanticState,
   ensureSemanticCollections,
-  replaceProductAggregate,
+  replaceProductAggregateWithGuard,
   upsertPromptRun,
   upsertSourceExtraction,
 } from '../semantic/semanticPublication.service.js';
+import { validateAggregatePayload } from '../semantic/aggregateValidation.service.js';
+import { resolveEffectiveFeatureFlags } from '../semantic/featureFlags.service.js';
 import {
   buildSourceSummary,
   buildTestSourceId,
@@ -26,7 +30,7 @@ import {
   parseStructuredImportRows,
   validateArtifactUpload,
 } from '../ingest/artifactUpload.service.js';
-import { getSourceTypeDefinition, isStructuredImportType } from '../../../../shared/artifactTypes.js';
+import { getSourceFamilyClass, getSourceTypeDefinition, isStructuredImportType } from '../../../../shared/artifactTypes.js';
 
 const artifactUploadFailureAttempts = new Map();
 
@@ -88,14 +92,34 @@ function minimalPdf(title, body) {
   return `%PDF-1.1\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Count 1/Kids[3 0 R]>>endobj\n3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 612 792]/Contents 4 0 R/Resources<</Font<</F1 5 0 R>>>>>>endobj\n4 0 obj<</Length 86>>stream\nBT /F1 18 Tf 72 720 Td (${safeTitle}) Tj 0 -28 Td (${safeBody}) Tj ET\nendstream\nendobj\n5 0 obj<</Type/Font/Subtype/Type1/BaseFont/Helvetica>>endobj\nxref\n0 6\n0000000000 65535 f \n0000000010 00000 n \n0000000053 00000 n \n0000000110 00000 n \n0000000236 00000 n \n0000000374 00000 n \ntrailer<</Size 6/Root 1 0 R>>\nstartxref\n444\n%%EOF`;
 }
 
-async function indexTranscriptEvidence({ chunks }) {
-  const provider = await getRetrievalProvider();
-  await provider.indexDocuments(chunks.map((chunk) => ({
-    chunkId: `${chunk.sourceId}-chunk-${chunk.chunkIndex + 1}`,
-    docId: chunk.sourceId,
-    text: chunk.chunkText,
-    metadata: chunk.metadata,
-  })));
+async function indexTranscriptEvidence({
+  runtimeConfig,
+  productId,
+  sourceId,
+  sourceType,
+  sourceFamilyClass = 'retrieval_eligible',
+  sourceDate,
+  title,
+  author,
+  participants = [],
+  normalizedText,
+  featureFlags,
+  testCase = '',
+}) {
+  return runChunkingAndIndexing({
+    runtimeConfig,
+    productId,
+    sourceId,
+    sourceType,
+    sourceFamilyClass,
+    sourceDate,
+    title,
+    author,
+    participants,
+    normalizedText,
+    featureFlags,
+    testCase,
+  });
 }
 
 function nowDateLabel() {
@@ -104,6 +128,27 @@ function nowDateLabel() {
 
 function nowIso() {
   return new Date().toISOString();
+}
+
+function currentPublishedAggregateForProduct(draft, productId) {
+  return draft.productAggregates?.find((item) => item.productId === productId && item.published) || null;
+}
+
+function currentAggregateGuardForProduct(state, productId) {
+  const published = state.productAggregates?.find((item) => item.productId === productId && item.published) || null;
+  if (published) {
+    return buildPublicationGuard(published);
+  }
+
+  const product = state.products?.find((item) => item.id === productId) || null;
+  const productData = state.productData?.[productId] || null;
+  const aggregateVersion = Number(product?.semanticState?.aggregateVersion || product?.evidenceVersion || productData?.evidenceVersion || 0);
+  return {
+    aggregateId: product?.semanticState?.aggregateId || null,
+    aggregateVersion,
+    evidenceVersion: aggregateVersion,
+    sourceSetHash: null,
+  };
 }
 
 function parseAttendees(input) {
@@ -187,8 +232,13 @@ export function createMutationService({
   let jobPumpRunning = false;
 
   function syncSemanticState(draft) {
+    const effectiveFeatureFlags = resolveEffectiveFeatureFlags({
+      runtimeConfig,
+      persistedSemanticConfig: draft.semanticConfig,
+    });
     return attachSemanticStateToRuntimeState(draft, {
       featureMode: draft.semanticConfig?.featureMode || (runtimeConfig?.features?.enableNovaDentalExtraction ? 'extraction-first' : 'legacy'),
+      featureFlags: effectiveFeatureFlags,
       executionMode: draft.semanticConfig?.executionMode || runtimeConfig?.semantic?.extractionExecutionMode || 'replay',
       promptVersion: draft.semanticConfig?.promptVersion || runtimeConfig?.semantic?.promptRegistryVersion || 'local-dev',
       modelId: draft.semanticConfig?.modelId || runtimeConfig?.bedrock?.textModelId || 'amazon.nova-pro-v1:0',
@@ -708,6 +758,11 @@ export function createMutationService({
   async function queueTranscriptJob(productId, file, body, options = {}) {
     validateTranscriptPayload({ body, file, errorCodes });
     const state = await readState();
+    const effectiveFeatureFlags = resolveEffectiveFeatureFlags({
+      runtimeConfig,
+      persistedSemanticConfig: state.semanticConfig,
+    });
+    const sourceFamilyClass = getSourceFamilyClass('transcript');
     const sourceId = `src-${state.nextIds.source++}`;
     const jobId = `job-${state.nextIds.job++}`;
     const attendees = parseAttendees(body.attendees);
@@ -723,6 +778,8 @@ export function createMutationService({
       data.sources.unshift({
         id: sourceId,
         type: 'transcript',
+        sourceType: 'transcript',
+        sourceFamilyClass,
         title: body.meetingTitle,
         date: body.meetingDate,
         meta: `${attendees.length} attendees · Upload queued`,
@@ -734,6 +791,10 @@ export function createMutationService({
         normalizedArtifactKey,
         ingestStatus: 'pending',
         indexed: false,
+        indexingStatus: effectiveFeatureFlags.enableDentalRetrievalIndexing ? 'queued' : 'disabled',
+        chunkCount: 0,
+        embeddingDims: null,
+        embeddingSource: 'none',
         chunkArtifacts: [],
         extracted: { decisions: [], actionItems: [], stakeholders: attendees },
         summary: 'Transcript upload queued.',
@@ -818,23 +879,19 @@ export function createMutationService({
           extractionFailed = true;
         }
 
-        if (options.testCase === 'indexFailure') {
-          const injected = new Error('Injected indexing failure');
-          injected.code = 'INDEX_FAILURE';
-          throw injected;
-        }
-
-        await indexTranscriptEvidence({
-          chunks: chunkArtifacts.map((chunk) => ({
-            sourceId,
-            chunkIndex: chunk.chunkIndex,
-            chunkText: chunk.chunkText,
-            metadata: {
-              ...chunk.metadata,
-              application: 'AskEIDS',
-              environment: process.env.NODE_ENV ?? 'development',
-            },
-          })),
+        const indexingResult = await indexTranscriptEvidence({
+          runtimeConfig,
+          productId,
+          sourceId,
+          sourceType: 'transcript',
+          sourceFamilyClass,
+          sourceDate: body.meetingDate,
+          title: body.meetingTitle,
+          author: state.session.user.displayName,
+          participants: attendees,
+          normalizedText: normalized.normalizedText,
+          featureFlags: effectiveFeatureFlags,
+          testCase: options.testCase || '',
         });
 
         await updateState((draft) => {
@@ -854,7 +911,11 @@ export function createMutationService({
             }));
             source.metadata = normalized.metadata;
             source.extracted = extraction;
-            source.indexed = true;
+            source.indexed = indexingResult.indexingStatus === 'indexed';
+            source.indexingStatus = indexingResult.indexingStatus;
+            source.chunkCount = indexingResult.chunkCount;
+            source.embeddingDims = indexingResult.embeddingDims;
+            source.embeddingSource = indexingResult.embeddingSource;
             source.ingestStatus = extractionFailed ? 'partial' : 'completed';
             source.summary = normalized.normalizedPreview;
             source.citations = [{
@@ -919,7 +980,18 @@ export function createMutationService({
       errorCodes,
     });
 
-    if (validated.sourceType === 'transcript') {
+    const state = await readState();
+    const effectiveFeatureFlags = resolveEffectiveFeatureFlags({
+      runtimeConfig,
+      persistedSemanticConfig: state.semanticConfig,
+    });
+    const queuedPublicationGuard = currentAggregateGuardForProduct(state, productId);
+    const sourceFamilyClass = getSourceFamilyClass(validated.sourceType);
+    const useSemanticServicePath = productId === 'dental'
+      && effectiveFeatureFlags.enableDentalSemanticServiceSplit
+      && sourceFamilyClass === 'retrieval_eligible';
+
+    if (validated.sourceType === 'transcript' && !useSemanticServicePath) {
       return queueTranscriptJob(productId, file, {
         meetingTitle: validated.title,
         meetingDate: validated.sourceDate,
@@ -934,7 +1006,6 @@ export function createMutationService({
       throw new HttpError(503, errorCodes.INTERNAL_ERROR, 'Something went wrong. Try again.', { retryable: true });
     }
 
-    const state = await readState();
     const fallbackSourceId = `src-${state.nextIds.source++}`;
     const sourceId = buildTestSourceId(file.originalname, fallbackSourceId);
     const jobId = `job-${state.nextIds.job++}`;
@@ -944,11 +1015,7 @@ export function createMutationService({
     const sourceType = validated.sourceType;
     const rawArtifactKey = artifactKeyForSource(productId, sourceId, file.originalname);
     const normalizedArtifactKey = artifactKeyForSource(productId, sourceId, 'normalized.txt');
-    const semanticFeatureMode = state.semanticConfig?.featureMode || 'extraction-first';
-    const useSemanticEmailPath = productId === 'dental'
-      && sourceType === 'email'
-      && ['live-email-trust-hardening', 'service-split'].includes(semanticFeatureMode);
-    const effectiveExecutionDecision = useSemanticEmailPath
+    const effectiveExecutionDecision = useSemanticServicePath
       ? resolveSemanticExecutionPolicy({
         productId,
         sourceType,
@@ -974,6 +1041,7 @@ export function createMutationService({
         status: 'queued',
         stage: 'queued',
         sourceType,
+        sourceFamilyClass,
         executionMode: effectiveExecutionDecision?.executionMode || null,
         createdAt: jobCreatedAt,
         updatedAt: jobCreatedAt,
@@ -996,6 +1064,8 @@ export function createMutationService({
       data.sources.unshift({
         id: sourceId,
         type: sourceType,
+        sourceType,
+        sourceFamilyClass,
         title,
         date: sourceDate,
         meta: sourceSummary.meta,
@@ -1007,10 +1077,18 @@ export function createMutationService({
         normalizedArtifactKey,
         ingestStatus: 'queued',
         indexed: false,
+        indexingStatus: sourceFamilyClass === 'retrieval_eligible'
+          ? (effectiveFeatureFlags.enableDentalRetrievalIndexing ? 'queued' : 'disabled')
+          : 'not_applicable',
+        chunkCount: 0,
+        embeddingDims: null,
+        embeddingSource: 'none',
         chunkArtifacts: [],
         summary: 'Artifact queued for processing.',
         citations: [],
         confidence: 'low',
+        validationStatus: 'pending',
+        replayStatus: 'not_applicable',
         warnings: [],
         metadata: {
           ...validated.metadata,
@@ -1036,7 +1114,7 @@ export function createMutationService({
           draft.jobs[jobId] = {
             ...draft.jobs[jobId],
             status: 'running',
-            stage: useSemanticEmailPath ? 'normalizing' : 'extracting',
+            stage: useSemanticServicePath ? 'normalizing' : 'extracting',
             updatedAt: nowIso(),
           };
           const source = draft.productData[productId].sources.find((item) => item.id === sourceId);
@@ -1055,7 +1133,7 @@ export function createMutationService({
           return draft;
         });
 
-        if (useSemanticEmailPath) {
+        if (useSemanticServicePath) {
           const executionDecision = effectiveExecutionDecision || resolveSemanticExecutionPolicy({
             productId,
             sourceType,
@@ -1073,12 +1151,13 @@ export function createMutationService({
           });
           const {
             normalized,
-            chunkArtifacts,
             extraction,
             promptRun,
+            sourceFamilyClass: semanticSourceFamilyClass,
             citationProjection,
             warningText,
             warnings,
+            indexingResult,
             updatedDomains,
             latestAttemptAt,
           } = await runEmailSemanticIngest({
@@ -1095,7 +1174,7 @@ export function createMutationService({
             executionDecision,
             runtimeConfig,
             testCase: options.testCase || '',
-            indexEvidence: indexTranscriptEvidence,
+            featureFlags: effectiveFeatureFlags,
           });
 
           if (options.testCase === 'publicationFailure') {
@@ -1104,11 +1183,39 @@ export function createMutationService({
               const data = draft.productData[productId];
               const product = draft.products.find((item) => item.id === productId);
               const source = data.sources.find((item) => item.id === sourceId);
-              const activeAggregate = draft.productAggregates.find((item) => item.productId === productId && item.published)
+              const activeAggregate = currentPublishedAggregateForProduct(draft, productId)
                 || draft.productAggregates.find((item) => item.productId === productId)
                 || null;
               const activeAggregateId = activeAggregate?.aggregateId || product?.semanticState?.aggregateId || `agg-${productId}-${Number(product?.evidenceVersion || data?.evidenceVersion || 1)}`;
               const aggregateVersion = Number(product?.evidenceVersion || data?.evidenceVersion || 1);
+              const aggregateAttemptId = `agg-${productId}-attempt-${Date.now()}`;
+              const validatedAggregate = validateAggregatePayload({
+                productId,
+                aggregatePayload: {
+                  aggregateId: aggregateAttemptId,
+                  productId,
+                  aggregateVersion,
+                  evidenceVersion: aggregateVersion,
+                  sourceSetHash: `${productId}:${sourceId}:publication-failed`,
+                  payload: {
+                    productId,
+                    sourceId,
+                    summary: extraction.summary,
+                    status: product?.status || 'risk',
+                  },
+                },
+              });
+              const aggregateRun = createAggregatePublicationRun({
+                aggregateId: aggregateAttemptId,
+                productId,
+                executionMode: executionDecision.executionMode,
+                modelId: promptRun.modelId,
+                promptVersion: executionDecision.promptVersion,
+                parentRunIds: [promptRun.runId],
+                guardSnapshot: queuedPublicationGuard,
+                status: 'failed',
+                createdAt: latestAttemptAt,
+              });
 
               if (source) {
                 const sourceSummary = buildSourceSummary({
@@ -1123,12 +1230,7 @@ export function createMutationService({
                 source.meta = sourceSummary.meta;
                 source.previewText = normalized.previewText;
                 source.normalizedArtifactKey = normalizedArtifactKey;
-                source.chunkArtifacts = chunkArtifacts.map((chunk) => ({
-                  chunkIndex: chunk.chunkIndex,
-                  chunkKey: chunk.chunkKey,
-                  metadataKey: chunk.metadataKey,
-                  tokenCount: chunk.tokenCount,
-                }));
+                source.chunkArtifacts = indexingResult.chunks || [];
                 source.metadata = {
                   ...(source.metadata || {}),
                   ...(validated.metadata || {}),
@@ -1138,9 +1240,16 @@ export function createMutationService({
                   lineCount: normalized.lineCount,
                   providerRequestId: promptRun.providerRequestId,
                 };
-                source.indexed = true;
+                source.sourceFamilyClass = semanticSourceFamilyClass;
+                source.indexed = indexingResult.indexingStatus === 'indexed';
+                source.indexingStatus = indexingResult.indexingStatus;
+                source.chunkCount = indexingResult.chunkCount;
+                source.embeddingDims = indexingResult.embeddingDims;
+                source.embeddingSource = indexingResult.embeddingSource;
                 source.ingestStatus = 'completed';
                 source.extractionStatus = 'completed';
+                source.validationStatus = 'valid';
+                source.replayStatus = executionDecision.executionMode === 'replay' ? 'hit' : 'not_applicable';
                 source.warningText = warningText;
                 source.summary = extraction.summary;
                 source.citations = citationProjection.citations;
@@ -1164,11 +1273,12 @@ export function createMutationService({
                 productId,
                 sourceType,
                 sourceFamily: executionDecision.sourceFamily,
+                sourceFamilyClass: semanticSourceFamilyClass,
                 schemaVersion: '1.0',
                 promptFamily: `source-${sourceType}`,
                 promptVersion: executionDecision.promptVersion,
                 modelId: promptRun.modelId,
-                normalizedHash: promptRun.inputHash,
+                normalizedHash: promptRun.inputHash || `${sourceId}:${sourceDate}`,
                 payload: {
                   ...extraction,
                   decisions: citationProjection.decisions,
@@ -1177,12 +1287,18 @@ export function createMutationService({
                 validationStatus: 'valid',
                 confidence: extraction.confidence,
                 executionModeEffective: executionDecision.executionMode,
+                replayStatus: executionDecision.executionMode === 'replay' ? 'hit' : 'not_applicable',
+                replayKey: promptRun.replayKey,
                 citationMode: citationProjection.citationMode,
                 citationPayloadJson: citationProjection.citations,
                 providerRequestId: promptRun.providerRequestId,
                 normalizationVersion: normalized.normalizationVersion,
                 lineCount: normalized.lineCount,
                 warningCodes: ['publication_failed', ...citationProjection.warningCodes],
+                indexingStatus: indexingResult.indexingStatus,
+                chunkCount: indexingResult.chunkCount,
+                embeddingDims: indexingResult.embeddingDims,
+                embeddingSource: indexingResult.embeddingSource,
                 promptRunId: promptRun.runId,
                 createdAt: latestAttemptAt,
               });
@@ -1191,6 +1307,7 @@ export function createMutationService({
                 targetId: sourceId,
                 citationMode: citationProjection.citationMode,
               });
+              upsertPromptRun(draft, aggregateRun);
               const semanticState = buildEmailSemanticState({
                 draft,
                 runtimeConfig,
@@ -1206,18 +1323,11 @@ export function createMutationService({
               product.semanticState = semanticState;
               data.semanticState = semanticState;
               appendProductAggregateAttempt(draft, {
-                aggregateId: `agg-${productId}-attempt-${Date.now()}`,
-                productId,
+                ...validatedAggregate,
                 schemaVersion: '1.0',
                 promptVersion: executionDecision.promptVersion,
                 modelId: promptRun.modelId,
-                sourceSetHash: `${productId}:${sourceId}:publication-failed`,
                 aggregateInputHash: `${productId}:${aggregateVersion}:publication-failed`,
-                payload: {
-                  productId,
-                  sourceId,
-                  summary: extraction.summary,
-                },
                 published: false,
                 publishedAt: null,
                 supersededAt: null,
@@ -1227,7 +1337,11 @@ export function createMutationService({
                 freshnessReasonJson: semanticState.reasonCodes,
                 derivedFromLiveSources: executionDecision.executionMode === 'live',
                 latestSourceRunAt: latestAttemptAt,
-                publishedFromRunId: promptRun.runId,
+                sourceRunIdsJson: [promptRun.runId],
+                publishedFromRunId: aggregateRun.runId,
+                validationStatus: 'valid',
+                validationErrorsJson: [],
+                publicationGuardJson: queuedPublicationGuard,
                 createdAt: latestAttemptAt,
               });
               draft.jobs[jobId] = {
@@ -1257,6 +1371,42 @@ export function createMutationService({
             const nextEvidenceVersion = Number(product?.evidenceVersion || data?.evidenceVersion || 1) + 1;
             const aggregateId = `agg-${productId}-${nextEvidenceVersion}`;
             const lastPublishedAt = latestAttemptAt;
+            const validatedAggregate = validateAggregatePayload({
+              productId,
+              aggregatePayload: {
+                aggregateId,
+                productId,
+                aggregateVersion: nextEvidenceVersion,
+                evidenceVersion: nextEvidenceVersion,
+                sourceSetHash: `${productId}:${sourceId}:${nextEvidenceVersion}`,
+                payload: {
+                  productId,
+                  status: product.status,
+                  summary: product.narrativeText || extraction.summary,
+                  statusLabel: product.statusLabel,
+                  health: product.health,
+                  narrative: {
+                    summary: product.narrativeText || '',
+                    evidenceGaps: product.biggestGap ? [product.biggestGap] : [],
+                  },
+                  recentSignals: product.recentSignals || [],
+                  data: data.data || {},
+                  reports: {
+                    executiveSummaryInput: product.narrativeText || '',
+                  },
+                },
+              },
+            });
+            const aggregateRun = createAggregatePublicationRun({
+              aggregateId,
+              productId,
+              executionMode: executionDecision.executionMode,
+              modelId: promptRun.modelId,
+              promptVersion: executionDecision.promptVersion,
+              parentRunIds: [promptRun.runId],
+              guardSnapshot: queuedPublicationGuard,
+              createdAt: latestAttemptAt,
+            });
 
             if (source) {
               const sourceSummary = buildSourceSummary({
@@ -1267,16 +1417,11 @@ export function createMutationService({
                 participants: normalized.participants.length ? normalized.participants : participants,
                 warningText,
                 processingStatus: 'completed',
-              });
+                });
               source.meta = sourceSummary.meta;
               source.previewText = normalized.previewText;
               source.normalizedArtifactKey = normalizedArtifactKey;
-              source.chunkArtifacts = chunkArtifacts.map((chunk) => ({
-                chunkIndex: chunk.chunkIndex,
-                chunkKey: chunk.chunkKey,
-                metadataKey: chunk.metadataKey,
-                tokenCount: chunk.tokenCount,
-              }));
+              source.chunkArtifacts = indexingResult.chunks || [];
               source.metadata = {
                 ...(source.metadata || {}),
                 ...(validated.metadata || {}),
@@ -1286,9 +1431,16 @@ export function createMutationService({
                 lineCount: normalized.lineCount,
                 providerRequestId: promptRun.providerRequestId,
               };
-              source.indexed = true;
+              source.sourceFamilyClass = semanticSourceFamilyClass;
+              source.indexed = indexingResult.indexingStatus === 'indexed';
+              source.indexingStatus = indexingResult.indexingStatus;
+              source.chunkCount = indexingResult.chunkCount;
+              source.embeddingDims = indexingResult.embeddingDims;
+              source.embeddingSource = indexingResult.embeddingSource;
               source.ingestStatus = 'completed';
               source.extractionStatus = 'completed';
+              source.validationStatus = 'valid';
+              source.replayStatus = executionDecision.executionMode === 'replay' ? 'hit' : 'not_applicable';
               source.warningText = warningText;
               source.summary = extraction.summary;
               source.citations = citationProjection.citations;
@@ -1322,6 +1474,7 @@ export function createMutationService({
               productId,
               sourceType,
               sourceFamily: executionDecision.sourceFamily,
+              sourceFamilyClass: semanticSourceFamilyClass,
               schemaVersion: '1.0',
               promptFamily: `source-${sourceType}`,
               promptVersion: executionDecision.promptVersion,
@@ -1335,12 +1488,18 @@ export function createMutationService({
               validationStatus: 'valid',
               confidence: extraction.confidence,
               executionModeEffective: executionDecision.executionMode,
+              replayStatus: executionDecision.executionMode === 'replay' ? 'hit' : 'not_applicable',
+              replayKey: promptRun.replayKey,
               citationMode: citationProjection.citationMode,
               citationPayloadJson: citationProjection.citations,
               providerRequestId: promptRun.providerRequestId,
               normalizationVersion: normalized.normalizationVersion,
               lineCount: normalized.lineCount,
               warningCodes: citationProjection.warningCodes,
+              indexingStatus: indexingResult.indexingStatus,
+              chunkCount: indexingResult.chunkCount,
+              embeddingDims: indexingResult.embeddingDims,
+              embeddingSource: indexingResult.embeddingSource,
               promptRunId: promptRun.runId,
               createdAt: latestAttemptAt,
             });
@@ -1349,6 +1508,7 @@ export function createMutationService({
               targetId: sourceId,
               citationMode: citationProjection.citationMode,
             });
+            upsertPromptRun(draft, aggregateRun);
             const semanticState = buildEmailSemanticState({
               draft,
               runtimeConfig,
@@ -1363,29 +1523,12 @@ export function createMutationService({
             });
             product.semanticState = semanticState;
             data.semanticState = semanticState;
-            replaceProductAggregate(draft, {
-              aggregateId,
-              productId,
+            const publicationResult = replaceProductAggregateWithGuard(draft, {
+              ...validatedAggregate,
               schemaVersion: '1.0',
               promptVersion: executionDecision.promptVersion,
               modelId: promptRun.modelId,
-              sourceSetHash: `${productId}:${sourceId}:${nextEvidenceVersion}`,
               aggregateInputHash: `${productId}:${nextEvidenceVersion}`,
-              payload: {
-                productId,
-                status: product.status,
-                statusLabel: product.statusLabel,
-                health: product.health,
-                narrative: {
-                  summary: product.narrativeText || '',
-                  evidenceGaps: product.biggestGap ? [product.biggestGap] : [],
-                },
-                recentSignals: product.recentSignals || [],
-                data: data.data || {},
-                reports: {
-                  executiveSummaryInput: product.narrativeText || '',
-                },
-              },
               published: true,
               publishedAt: lastPublishedAt,
               supersededAt: null,
@@ -1395,9 +1538,46 @@ export function createMutationService({
               freshnessReasonJson: semanticState.reasonCodes,
               derivedFromLiveSources: executionDecision.executionMode === 'live',
               latestSourceRunAt: latestAttemptAt,
-              publishedFromRunId: promptRun.runId,
+              sourceRunIdsJson: [promptRun.runId],
+              publishedFromRunId: aggregateRun.runId,
+              validationStatus: 'valid',
+              validationErrorsJson: [],
+              publicationGuardJson: queuedPublicationGuard,
               createdAt: latestAttemptAt,
-            });
+            }, queuedPublicationGuard);
+
+            if (!publicationResult.published) {
+              const staleSemanticState = buildEmailSemanticState({
+                draft,
+                runtimeConfig,
+                executionMode: executionDecision.executionMode,
+                freshnessStatus: 'degraded',
+                usesLastKnownGood: true,
+                reasonCodes: ['stale_publication_rejected', 'using_last_known_good', ...citationProjection.warningCodes],
+                aggregateId: publicationResult.currentPublished?.aggregateId || product?.semanticState?.aggregateId || null,
+                aggregateVersion: Number(publicationResult.currentPublished?.aggregateVersion || product?.semanticState?.aggregateVersion || nextEvidenceVersion),
+                latestAttemptAt,
+                lastPublishedAt: publicationResult.currentPublished?.publishedAt || product?.semanticState?.lastPublishedAt || latestAttemptAt,
+              });
+              product.semanticState = staleSemanticState;
+              data.semanticState = staleSemanticState;
+              draft.jobs[jobId] = {
+                ...draft.jobs[jobId],
+                status: 'partial',
+                stage: 'stale_publication_rejected',
+                executionMode: executionDecision.executionMode,
+                warnings: ['stale_publication_rejected', ...citationProjection.warningCodes],
+                errorCode: 'STALE_PUBLICATION_REJECTED',
+                message: staleSemanticState.message,
+                updatedAt: latestAttemptAt,
+                result: {
+                  sourceId,
+                  title,
+                  updatedDomains,
+                },
+              };
+              return draft;
+            }
             draft.jobs[jobId] = {
               ...draft.jobs[jobId],
               status: 'completed',
@@ -1430,16 +1610,21 @@ export function createMutationService({
           throw injected;
         }
 
-        const chunkArtifacts = buildChunkArtifacts({
-          productId,
-          sourceId,
-          sourceType,
-          sourceDate,
-          title,
-          author: validated.author || state.session.user.displayName,
-          participants,
-          text: extracted.normalizedText,
-        });
+        const shouldIndexLegacyArtifact = sourceFamilyClass === 'retrieval_eligible'
+          && !(productId === 'dental' && !effectiveFeatureFlags.enableDentalRetrievalIndexing);
+        const chunkArtifacts = shouldIndexLegacyArtifact
+          ? buildChunkArtifacts({
+            productId,
+            sourceId,
+            sourceType,
+            sourceDate,
+            title,
+            author: validated.author || state.session.user.displayName,
+            participants,
+            text: extracted.normalizedText,
+          })
+          : [];
+
         for (const chunk of chunkArtifacts) {
           await artifactStore.writeTextArtifact({
             bucketType: 'normalized',
@@ -1455,18 +1640,21 @@ export function createMutationService({
           });
         }
 
-        await indexTranscriptEvidence({
-          chunks: chunkArtifacts.map((chunk) => ({
-            sourceId,
-            chunkIndex: chunk.chunkIndex,
-            chunkText: chunk.chunkText,
-            metadata: {
-              ...chunk.metadata,
-              application: 'AskEIDS',
-              environment: process.env.NODE_ENV ?? 'development',
-            },
-          })),
+        const legacyIndexingResult = await indexTranscriptEvidence({
+          runtimeConfig,
+          productId,
+          sourceId,
+          sourceType,
+          sourceFamilyClass,
+          sourceDate,
+          title,
+          author: validated.author || state.session.user.displayName,
+          participants,
+          normalizedText: extracted.normalizedText,
+          featureFlags: effectiveFeatureFlags,
+          testCase: options.testCase || '',
         });
+        const completedIndexingStatus = legacyIndexingResult.indexingStatus;
 
         const structuredRows = isStructuredImportType(sourceType)
           ? parseStructuredImportRows({ sourceType, text: extracted.normalizedText })
@@ -1571,7 +1759,11 @@ export function createMutationService({
                 ...(validated.metadata || {}),
                 ...(extracted.metadata || {}),
               };
-              derivedSource.indexed = true;
+              derivedSource.indexed = completedIndexingStatus === 'indexed';
+              derivedSource.indexingStatus = completedIndexingStatus;
+              derivedSource.chunkCount = legacyIndexingResult.chunkCount || 0;
+              derivedSource.embeddingDims = legacyIndexingResult.embeddingDims ?? null;
+              derivedSource.embeddingSource = legacyIndexingResult.embeddingSource || 'none';
               derivedSource.ingestStatus = terminalStatus;
               derivedSource.warningText = extracted.warningText;
               derivedSource.contentType = file.mimetype || derivedSource.contentType || 'application/octet-stream';
@@ -1631,7 +1823,11 @@ export function createMutationService({
                 ...(validated.metadata || {}),
                 ...(extracted.metadata || {}),
               };
-              source.indexed = true;
+              source.indexed = completedIndexingStatus === 'indexed';
+              source.indexingStatus = completedIndexingStatus;
+              source.chunkCount = legacyIndexingResult.chunkCount || 0;
+              source.embeddingDims = legacyIndexingResult.embeddingDims ?? null;
+              source.embeddingSource = legacyIndexingResult.embeddingSource || 'none';
               source.ingestStatus = terminalStatus;
               source.warningText = extracted.warningText;
               source.summary = extracted.previewText;

@@ -1,9 +1,13 @@
 // @vitest-environment node
 import request from 'supertest';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildApp, resetRuntimeData } from '../src/app.js';
 
 describe('ask orchestration integration', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   beforeEach(async () => {
     process.env.EIDS_SKIP_CORPUS_INDEX = '0';
     await resetRuntimeData();
@@ -52,5 +56,29 @@ describe('ask orchestration integration', () => {
 
     expect(response.status).toBe(500);
     expect(response.body.error.code).toBe('INTERNAL_ERROR');
+  });
+
+  it('logs ask precedence decisions for operator diagnostics', async () => {
+    const logSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
+    const app = await buildApp();
+    const response = await request(app)
+      .post('/api/v1/products/dental/ask?testCase=precedenceConflict')
+      .send({ question: 'When is the mitigation due?' });
+
+    expect(response.status).toBe(200);
+    expect(response.body.precedenceDecision.exactFieldConflict).toBe(true);
+    expect(logSpy).toHaveBeenCalledWith(
+      'askPrecedenceDecision',
+      expect.objectContaining({
+        productId: 'dental',
+        resolution: 'structured_wins_conflict',
+        winner: 'structured',
+        exactFieldConflict: true,
+        narrativeCitedForContext: true,
+        structuredHitCount: expect.any(Number),
+        vectorHitCount: expect.any(Number),
+        questionHash: expect.any(String),
+      })
+    );
   });
 });

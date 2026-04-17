@@ -5,6 +5,7 @@ import request from 'supertest';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { getRuntimeConfig } from '../src/config/runtime.js';
 import { buildApp, readRuntimeStateForTests, resetRuntimeData } from '../src/app.js';
+import { createPrototypeDuckDbStore, resetPrototypeDuckDbStore } from '../src/rag/prototypeDuckDbStore.js';
 
 async function waitForJob(jobId, timeoutMs = 5000) {
   const startedAt = Date.now();
@@ -23,6 +24,7 @@ describe('ingest pipeline integration', () => {
   beforeEach(async () => {
     process.env.EIDS_SKIP_CORPUS_INDEX = '1';
     await resetRuntimeData();
+    await resetPrototypeDuckDbStore();
   });
 
   it('writes raw + normalized + chunk artifacts and marks transcript source indexed on success', async () => {
@@ -65,6 +67,20 @@ describe('ingest pipeline integration', () => {
     await expect(fs.access(normalizedPath)).resolves.toBeUndefined();
     await expect(fs.access(chunkPath)).resolves.toBeUndefined();
     await expect(fs.access(sidecarPath)).resolves.toBeUndefined();
+
+    const store = await createPrototypeDuckDbStore();
+    const results = await store.search({
+      query: 'vendor pilot readiness packet friday',
+      filters: {
+        application: 'AskEIDS',
+        environment: process.env.NODE_ENV ?? 'test',
+        productId: 'dental',
+        sourceId: uploadResponse.body.sourceId,
+      },
+      topK: 5,
+    });
+    expect(results.length).toBeGreaterThan(0);
+    expect(results.every((item) => item.chunkId.startsWith(`${uploadResponse.body.sourceId}::`))).toBe(true);
   });
 
   it('marks source as partial when extraction fails but normalized evidence remains available', async () => {

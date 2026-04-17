@@ -294,6 +294,10 @@ function formatSemanticFreshnessLabel(semanticState) {
   return parts.join(' · ');
 }
 
+function trustSurfacesEnabled(session) {
+  return session?.featureFlags?.enableDentalTrustSurfaces === true;
+}
+
 function extractApiErrorCode(error) {
   return error?.error?.code || null;
 }
@@ -506,6 +510,10 @@ function ProductPage() {
     refetchInterval: (query) => (['queued', 'running'].includes(query.state.data?.overview?.latestIngest?.status) ? 800 : false),
     refetchIntervalInBackground: true,
   });
+  const sessionQuery = useQuery({
+    queryKey: ['session', rolePreset],
+    queryFn: () => apiGet(withRole('/api/v1/session', rolePreset)),
+  });
 
   useEffect(() => {
     const latestIngest = productQuery.data?.overview?.latestIngest;
@@ -559,6 +567,7 @@ function ProductPage() {
   const { product, permissions, health, overview } = productQuery.data;
   const latestIngest = overview.latestIngest;
   const visibleIngest = latestIngest && latestIngest.sourceId !== dismissedStatusSourceId ? latestIngest : null;
+  const showTrustSurfaces = trustSurfacesEnabled(sessionQuery.data);
 
   return (
     <div className="page" data-testid="product-page">
@@ -573,12 +582,7 @@ function ProductPage() {
       <div className="product-title-row">
         <h1>{product.name}</h1>
         <span className="product-status-badge" data-testid="product-status-badge" style={{ background: product.status === 'risk' ? 'var(--red-100)' : product.status === 'caution' ? 'var(--amber-100)' : 'var(--green-100)', color: product.status === 'risk' ? 'var(--red-700)' : product.status === 'caution' ? 'var(--amber-700)' : 'var(--green-700)' }}>{product.statusLabel}</span>
-        {product.semanticState ? (
-          <span className="product-semantic-badge" data-testid="extraction-state-badge" style={{ background: 'var(--blue-50)', color: 'var(--blue-700)', borderRadius: 999, padding: '0.35rem 0.7rem', fontSize: '.78rem', fontWeight: 600 }}>
-            {`${product.semanticState.featureMode} · ${product.semanticState.policyMode || product.semanticState.executionMode}`}
-          </span>
-        ) : null}
-        {product.semanticState ? (
+        {showTrustSurfaces && product.semanticState ? (
           <span
             className="product-semantic-badge"
             data-testid="semantic-freshness-badge"
@@ -620,16 +624,16 @@ function ProductPage() {
           onDismiss={() => setDismissedStatusSourceId(visibleIngest.sourceId)}
         />
       ) : null}
-      {tab === 'overview' ? <OverviewView productId={productId} product={product} permissions={permissions} health={health} overview={overview} rolePreset={rolePreset} setParam={setParam} setParams={setParams} /> : null}
+      {tab === 'overview' ? <OverviewView productId={productId} product={product} permissions={permissions} health={health} overview={overview} rolePreset={rolePreset} setParam={setParam} setParams={setParams} showTrustSurfaces={showTrustSurfaces} /> : null}
       {tab === 'timeline' ? <TimelineView productId={productId} rolePreset={rolePreset} searchParams={searchParams} setParam={setParam} /> : null}
       {tab === 'data' ? <DataView productId={productId} rolePreset={rolePreset} searchParams={searchParams} setParam={setParam} /> : null}
-      {tab === 'sources' ? <SourcesView productId={productId} rolePreset={rolePreset} searchParams={searchParams} setParam={setParam} /> : null}
-      {tab === 'reports' ? <ReportsView productId={productId} product={product} permissions={permissions} rolePreset={rolePreset} searchParams={searchParams} setParam={setParam} setSearchParams={setSearchParams} /> : null}
+      {tab === 'sources' ? <SourcesView productId={productId} rolePreset={rolePreset} searchParams={searchParams} setParam={setParam} showTrustSurfaces={showTrustSurfaces} /> : null}
+      {tab === 'reports' ? <ReportsView productId={productId} product={product} permissions={permissions} rolePreset={rolePreset} searchParams={searchParams} setParam={setParam} setSearchParams={setSearchParams} showTrustSurfaces={showTrustSurfaces} /> : null}
     </div>
   );
 }
 
-function OverviewView({ productId, product, permissions, health, overview, rolePreset, setParam, setParams }) {
+function OverviewView({ productId, product, permissions, health, overview, rolePreset, setParam, setParams, showTrustSurfaces }) {
   const queryClient = useQueryClient();
   const { pushToast } = useToasts();
   const { announce } = useAnnouncements();
@@ -725,7 +729,7 @@ function OverviewView({ productId, product, permissions, health, overview, roleP
             {permissions.canUpdateWeekly ? <button className="kh-action-btn" data-testid="update-weekly-button" onClick={() => setShowWeeklyModal(true)}>Update Weekly</button> : null}
           </div>
         </div>
-        {isSemanticStateDegraded(product.semanticState) ? (
+        {showTrustSurfaces && product.semanticState?.showBanner ? (
           <div className="inline-warning-panel" data-testid="semantic-degraded-banner">
             {product.semanticState.message}
           </div>
@@ -778,7 +782,7 @@ function OverviewView({ productId, product, permissions, health, overview, roleP
               <button type="button" className="secondary-btn" data-testid="ask-retry" onClick={retryAsk}>Retry</button>
             </div>
           ) : null}
-          {askMutation.isSuccess && !askMutation.isPending && !askMutation.isError ? <AskAnswer answer={askMutation.data} onOpenSource={(sourceId) => setParams({ tab: 'sources', sourceId })} /> : null}
+          {askMutation.isSuccess && !askMutation.isPending && !askMutation.isError ? <AskAnswer answer={askMutation.data} onOpenSource={(sourceId) => setParams({ tab: 'sources', sourceId })} showTrustSurfaces={showTrustSurfaces} /> : null}
         </div>
       </div>
       {showArtifactModal ? (
@@ -794,21 +798,32 @@ function OverviewView({ productId, product, permissions, health, overview, roleP
   );
 }
 
-function AskAnswer({ answer, onOpenSource }) {
+function AskAnswer({ answer, onOpenSource, showTrustSurfaces }) {
   return (
     <div className="ask-answer visible" data-testid="ask-answer">
-      {isSemanticStateDegraded(answer.semanticState) ? (
+      {showTrustSurfaces && answer.semanticState?.showBanner ? (
         <div className="inline-warning-panel" data-testid="ask-degraded-banner">
           {answer.semanticState.message}
         </div>
       ) : null}
       <div className="ask-answer-text" dangerouslySetInnerHTML={{ __html: answer.answerHtml }}></div>
       {answer.coverage.isPartial ? <div className="evidence-gap-warn" data-testid="ask-evidence-gap-warning">{answer.coverage.warnings[0]}</div> : null}
+      {answer.retrievalWarnings?.length ? (
+        <div className="inline-warning-panel" data-testid="retrieval-not-ready-notice">
+          This source is stored but not yet retrievable.
+        </div>
+      ) : null}
       <div className="evidence-section">
         <h4>Sources</h4>
         {answer.sources.map((source, index) => (
           <button key={source.sourceId} type="button" className="evidence-source" data-testid={`ask-evidence-source-${index}`} onClick={() => onOpenSource(source.sourceId)}>
-            <span className="ev-detail"><span className="ev-title">{source.title}</span><span className="ev-meta">{source.meta}</span></span>
+            <span className="ev-detail">
+              <span className="ev-title">{source.title}</span>
+              <span className="ev-meta">{source.meta}</span>
+              <span className="source-badge" data-testid="ask-source-type-chip">{source.retrievalType || source.type || 'vector'}</span>
+              {source.badge === 'field-of-record' ? <span className="source-badge" data-testid="ask-structured-row-badge">field-of-record</span> : null}
+              {source.precedenceNote ? <span className="ev-meta" data-testid="ask-precedence-note">{source.precedenceNote}</span> : null}
+            </span>
           </button>
         ))}
         <div className={`evidence-strength ${answer.evidenceStrength}`}>● Evidence Strength: {answer.evidenceStrength}</div>
@@ -966,7 +981,7 @@ function DataView({ productId, rolePreset, searchParams, setParam }) {
   );
 }
 
-function SourcesView({ productId, rolePreset, searchParams, setParam }) {
+function SourcesView({ productId, rolePreset, searchParams, setParam, showTrustSurfaces }) {
   const filter = searchParams.get('sourceFilter') || 'all';
   const sourceId = searchParams.get('sourceId');
   const sourceFilterValues = ['all', 'transcript', 'slide_deck', 'spreadsheet', 'email', 'document', 'weekly', 'ado'];
@@ -1047,14 +1062,27 @@ function SourcesView({ productId, rolePreset, searchParams, setParam }) {
             <div className="ddp-field"><strong>Date:</strong> {new Date(sourceDetailQuery.data.source.sourceDate).toLocaleString()}</div>
             <div className="ddp-field"><strong>Author:</strong> {sourceDetailQuery.data.source.author}</div>
             {sourceDetailQuery.data.source.warningText ? <div className="inline-warning-panel" data-testid="source-parser-warning">{sourceDetailQuery.data.source.warningText}</div> : null}
+            <div className="ddp-field" data-testid="source-family-class"><strong>Source family class:</strong> {sourceDetailQuery.data.source.sourceFamilyClass}</div>
+            {sourceDetailQuery.data.source.indexingStatus !== 'not_applicable' ? (
+              <div className="ddp-field" data-testid="source-indexing-status"><strong>Indexing status:</strong> {sourceDetailQuery.data.source.indexingStatus}</div>
+            ) : null}
             <div className="ddp-field" data-testid="source-detail-summary"><strong>Summary:</strong> {sourceDetailQuery.data.source.summary}</div>
-            <div className="ddp-field" data-testid="source-detail-citation-mode"><strong>Citation mode:</strong> {sourceDetailQuery.data.source.citationMode}</div>
-            {sourceDetailQuery.data.source.warnings?.length ? <div className="inline-warning-panel" data-testid="source-detail-warnings">{sourceDetailQuery.data.source.warnings.join(' ')}</div> : null}
-            <div className="ddp-field" data-testid="source-detail-citations"><strong>Citations:</strong> {sourceDetailQuery.data.source.citations?.length ? sourceDetailQuery.data.source.citations.map((citation) => citation.label || citation.kind).join(' · ') : 'No citations available'}</div>
-            {sourceDetailQuery.data.source.citationMode !== 'exact' ? (
+            {showTrustSurfaces ? <div className="ddp-field" data-testid="source-detail-citation-mode"><strong>Citation mode:</strong> {sourceDetailQuery.data.source.citationMode}</div> : null}
+            {showTrustSurfaces && sourceDetailQuery.data.source.warnings?.length ? <div className="inline-warning-panel" data-testid="source-detail-warnings">{sourceDetailQuery.data.source.warnings.join(' ')}</div> : null}
+            {showTrustSurfaces ? <div className="ddp-field" data-testid="source-detail-citations"><strong>Citations:</strong> {sourceDetailQuery.data.source.citations?.length ? sourceDetailQuery.data.source.citations.map((citation) => citation.label || citation.kind).join(' · ') : 'No citations available'}</div> : null}
+            {showTrustSurfaces && sourceDetailQuery.data.source.citationMode !== 'exact' ? (
               <div className="inline-warning-panel">
                 Exact coordinates were unavailable for this source. Showing the best available reference.
               </div>
+            ) : null}
+            {sourceDetailQuery.data.source.indexingStatus === 'failed' ? (
+              <div className="inline-warning-panel">This source was stored, but indexing did not complete. Re-upload the file once the embedding service is available.</div>
+            ) : null}
+            {sourceDetailQuery.data.source.indexingStatus === 'disabled' ? (
+              <div className="inline-warning-panel">Retrieval indexing is currently disabled for Dental. This source is stored and published, but Ask cannot cite it until indexing is re-enabled.</div>
+            ) : null}
+            {sourceDetailQuery.data.source.indexingStatus === 'queued' ? (
+              <div className="inline-warning-panel">Indexing in progress. This source will become searchable once indexing completes.</div>
             ) : null}
             <div className="ddp-field" data-testid="source-preview-content"><strong>Preview:</strong> {sourceDetailQuery.data.source.previewText}</div>
             <div className="drawer-actions">
@@ -1084,7 +1112,7 @@ function formatReportPeriod(period) {
   return `${startLabel} – ${endLabel}`;
 }
 
-function ReportsView({ productId, product, permissions, rolePreset, searchParams, setParam, setSearchParams }) {
+function ReportsView({ productId, product, permissions, rolePreset, searchParams, setParam, setSearchParams, showTrustSurfaces }) {
   const reportId = searchParams.get('reportId');
   const reportJobId = searchParams.get('reportJobId');
   const [editingSectionId, setEditingSectionId] = useState(null);
@@ -1247,7 +1275,7 @@ function ReportsView({ productId, product, permissions, rolePreset, searchParams
 
   return (
     <div data-testid="reports-view">
-      {report.semanticState?.message ? (
+      {showTrustSurfaces && report.semanticState?.showBanner ? (
         <div className="inline-warning-panel" data-testid="report-semantic-state-banner">
           {report.semanticState.message}
         </div>

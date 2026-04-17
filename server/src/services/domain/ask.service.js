@@ -6,6 +6,8 @@ import { buildEvidencePack } from '../rag/evidencePack.service.js';
 import { generateAskAnswer } from '../rag/generation.service.js';
 import { validateAskGeneration } from '../rag/validation.service.js';
 import { buildSemanticTrustMessage } from '../semantic/semanticFreshness.service.js';
+import { askPrecedenceMerge } from './askPrecedence.service.js';
+import { getSourceFamilyClass } from '../../../../shared/artifactTypes.js';
 
 function formatSourceMeta(metadata) {
   const parts = [];
@@ -23,6 +25,14 @@ function formatSourceMeta(metadata) {
 
 function unique(items) {
   return [...new Set(items.filter(Boolean))];
+}
+
+function questionTokens(question) {
+  return String(question || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .filter(Boolean);
 }
 
 function buildSourceList({ allowedSourceIds, unstructuredEvidence, productData, preferredSourceTypes }) {
@@ -58,6 +68,71 @@ function inferEvidenceStrength(unstructuredEvidence, status) {
   if (topScore >= 0.45) return 'high';
   if (topScore >= 0.25) return 'medium';
   return 'low';
+}
+
+function buildProductSourceIndex(productData, question) {
+  const tokens = questionTokens(question);
+  return (productData.sources || []).map((source) => {
+    const haystack = `${source.title || ''} ${source.previewText || ''}`.toLowerCase();
+    return {
+      sourceId: source.id,
+      sourceType: source.sourceType || source.type,
+      sourceFamilyClass: source.sourceFamilyClass || getSourceFamilyClass(source.sourceType || source.type),
+      indexingStatus: source.indexingStatus || (source.indexed ? 'indexed' : 'not_applicable'),
+      productScopedTextMatch: tokens.some((token) => haystack.includes(token)),
+    };
+  });
+}
+
+function buildDirectStructuredAnswer(merged) {
+  const winningHit = merged.decision.structuredHits?.[0];
+  const value = winningHit?.fieldValue || winningHit?.title || 'Structured evidence matched this question.';
+  return {
+    status: merged.retrievalWarnings.length ? 'partial' : 'complete',
+    answerHtml: `<strong>Evidence-backed response:</strong> ${String(value)}`,
+    sourceIds: merged.sources.map((source) => source.sourceId).filter(Boolean),
+    warnings: merged.retrievalWarnings.map((warning) => 'This source is stored but not yet retrievable.'),
+  };
+}
+
+function buildPrecedenceConflictVectorHit(productData) {
+  const narrativeSource = (productData.sources || []).find((source) => (
+    (source.sourceType || source.type) === 'email' || (source.sourceType || source.type) === 'document'
+  )) || null;
+
+  if (!narrativeSource) {
+    return null;
+  }
+
+  return {
+    chunkId: `${narrativeSource.id}::precedence-conflict`,
+    docId: narrativeSource.id,
+    text: narrativeSource.previewText || narrativeSource.summary || narrativeSource.title || 'Narrative evidence',
+    score: 0.82,
+    metadata: {
+      sourceId: narrativeSource.id,
+      sourceType: narrativeSource.sourceType || narrativeSource.type || 'email',
+      title: narrativeSource.title,
+      sourceDate: narrativeSource.date || null,
+      assertsFieldName: 'mitigation_due_date',
+      assertedFieldValue: '2026-04-19',
+    },
+  };
+}
+
+function logAskPrecedenceDecision(merged) {
+  const winningSourceId = merged?.sources?.[0]?.sourceId || null;
+  console.info('askPrecedenceDecision', {
+    questionHash: merged?.decision?.questionHash || null,
+    productId: merged?.decision?.productId || null,
+    resolution: merged?.decision?.resolution || 'no_evidence',
+    winner: merged?.decision?.winner || 'none',
+    exactFieldConflict: Boolean(merged?.decision?.exactFieldConflict),
+    narrativeCitedForContext: Boolean(merged?.decision?.narrativeCitedForContext),
+    structuredHitCount: Array.isArray(merged?.decision?.structuredHits) ? merged.decision.structuredHits.length : 0,
+    vectorHitCount: Array.isArray(merged?.decision?.vectorHits) ? merged.decision.vectorHits.length : 0,
+    winningSourceId,
+  });
 }
 
 async function retrieveUnstructuredWithRetry({ provider, query, filters, topK, testCase, trace }) {
@@ -149,6 +224,13 @@ export function createAskService({ errorCodes, runtimeConfig, readModel }) {
       throw new HttpError(503, errorCodes.KB_UNAVAILABLE, 'We couldn’t retrieve evidence right now. Try again.', { retryable: true });
     }
 
+    if (options.testCase === 'precedenceConflict') {
+      const conflictHit = buildPrecedenceConflictVectorHit(productData);
+      if (conflictHit) {
+        unstructured = [conflictHit, ...unstructured];
+      }
+    }
+
     const evidencePack = buildEvidencePack({
       plan,
       product,
@@ -189,12 +271,38 @@ export function createAskService({ errorCodes, runtimeConfig, readModel }) {
       throw new HttpError(500, errorCodes.INTERNAL_ERROR, generationError?.message || 'Something went wrong. Try again.', { retryable: true });
     }
 
-    const sources = buildSourceList({
-      allowedSourceIds: validated.sourceIds,
-      unstructuredEvidence: unstructured,
-      productData,
-      preferredSourceTypes: plan.preferredSourceTypes,
+    const merged = askPrecedenceMerge({
+      question,
+      productId,
+      structuredHits: structured.items || [],
+      vectorHits: unstructured.map((item) => ({
+        sourceId: item.metadata?.sourceId || item.docId,
+        sourceType: item.metadata?.sourceType || 'document',
+        title: item.metadata?.title || item.docId,
+        meta: formatSourceMeta(item.metadata),
+        chunkId: item.chunkId,
+        score: item.score,
+        sourceDate: item.metadata?.sourceDate || null,
+        assertsFieldName: item.metadata?.assertsFieldName || null,
+        assertedFieldValue: item.metadata?.assertedFieldValue || null,
+      })),
+      productSourceIndex: buildProductSourceIndex(productData, question),
     });
+    logAskPrecedenceDecision(merged);
+
+    if ((!validated.sourceIds?.length && merged.sources.length && merged.decision.winner === 'structured')
+      || merged.decision.exactFieldConflict) {
+      validated = buildDirectStructuredAnswer(merged);
+    }
+
+    const sources = merged.sources.length
+      ? merged.sources
+      : buildSourceList({
+        allowedSourceIds: validated.sourceIds,
+        unstructuredEvidence: unstructured,
+        productData,
+        preferredSourceTypes: plan.preferredSourceTypes,
+      });
 
     if (!sources.length) {
       throw new HttpError(422, errorCodes.INSUFFICIENT_EVIDENCE, 'This answer may be incomplete because some evidence is missing or stale.');
@@ -217,15 +325,26 @@ export function createAskService({ errorCodes, runtimeConfig, readModel }) {
       semanticState: {
         freshnessStatus: product.semanticState?.freshnessStatus || 'fresh',
         usesLastKnownGood: Boolean(product.semanticState?.usesLastKnownGood),
-        message: buildSemanticTrustMessage({
-          executionMode: product.semanticState?.executionMode || 'replay',
-          freshnessStatus: product.semanticState?.freshnessStatus || 'fresh',
-          usesLastKnownGood: Boolean(product.semanticState?.usesLastKnownGood),
-          reasonCodes: product.semanticState?.reasonCodes || [],
-          surface: 'ask',
-        }),
+        showBanner: Boolean(product.semanticState?.showBanner),
+        bannerTone: product.semanticState?.bannerTone || null,
+        message: product.semanticState?.showBanner
+          ? buildSemanticTrustMessage({
+            executionMode: product.semanticState?.executionMode || 'replay',
+            freshnessStatus: product.semanticState?.freshnessStatus || 'fresh',
+            usesLastKnownGood: Boolean(product.semanticState?.usesLastKnownGood),
+            reasonCodes: product.semanticState?.reasonCodes || [],
+            surface: 'ask',
+          })
+          : null,
       },
       sources,
+      precedenceDecision: {
+        resolution: merged.decision.resolution,
+        exactFieldConflict: merged.decision.exactFieldConflict,
+        winner: merged.decision.winner,
+        narrativeCitedForContext: merged.decision.narrativeCitedForContext,
+      },
+      retrievalWarnings: merged.retrievalWarnings,
       trace: {
         ...trace,
         latencyMs: Date.now() - startedAt,

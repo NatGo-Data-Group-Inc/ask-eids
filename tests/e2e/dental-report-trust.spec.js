@@ -9,7 +9,13 @@ test('Reports show semantic-state trust and regeneration state together', async 
     productId: 'dental',
     mode: 'wave-02',
     executionMode: 'replay',
-    featureMode: 'live-email-trust-hardening',
+    featureFlags: {
+      enableNovaDentalLiveEmail: false,
+      enableDentalTrustSurfaces: true,
+      enableDentalSemanticServiceSplit: true,
+      enableExtractionReplayMode: true,
+      enableDentalRetrievalIndexing: true,
+    },
   });
 
   await page.goto('/products/dental?tab=reports');

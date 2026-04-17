@@ -66,7 +66,12 @@ describe('semantic trust ui', () => {
     const fetchMock = vi.fn(async (input) => {
       const url = String(input);
       if (url.includes('/api/v1/session')) {
-        return Response.json({ user: { displayName: 'B. Jennings' } });
+        return Response.json({
+          user: { displayName: 'B. Jennings' },
+          featureFlags: {
+            enableDentalTrustSurfaces: true,
+          },
+        });
       }
       if (url.includes('/api/v1/products/dental')) {
         return Response.json(baseProductPayload({
@@ -76,6 +81,8 @@ describe('semantic trust ui', () => {
               ...baseProductPayload().product.semanticState,
               freshnessStatus: 'degraded',
               usesLastKnownGood: true,
+              showBanner: true,
+              bannerTone: 'warning',
               message: 'This source was stored, but product understanding was not refreshed. Last known good state remains active.',
               reasonCodes: ['publication_failed'],
             },
@@ -96,7 +103,12 @@ describe('semantic trust ui', () => {
     const fetchMock = vi.fn(async (input, init) => {
       const url = String(input);
       if (url.includes('/api/v1/session')) {
-        return Response.json({ user: { displayName: 'B. Jennings' } });
+        return Response.json({
+          user: { displayName: 'B. Jennings' },
+          featureFlags: {
+            enableDentalTrustSurfaces: true,
+          },
+        });
       }
       if (url.includes('/api/v1/products/dental') && (!init || init.method !== 'POST')) {
         return Response.json(baseProductPayload());
@@ -110,9 +122,18 @@ describe('semantic trust ui', () => {
           semanticState: {
             freshnessStatus: 'degraded',
             usesLastKnownGood: true,
+            showBanner: true,
+            bannerTone: 'warning',
             message: 'This answer is using the last published product understanding while newer evidence is still being validated.',
           },
-          sources: [{ sourceId: 'src-1', title: 'Dental Vendor Mitigation Confirmed', meta: '2026-04-16 - email' }],
+          sources: [{ sourceId: 'src-1', sourceType: 'email', retrievalType: 'vector', title: 'Dental Vendor Mitigation Confirmed', meta: '2026-04-16 - email' }],
+          precedenceDecision: {
+            resolution: 'vector_only',
+            exactFieldConflict: false,
+            winner: 'vector',
+            narrativeCitedForContext: false,
+          },
+          retrievalWarnings: [],
         });
       }
       return Response.json({ groups: [] });
@@ -131,12 +152,19 @@ describe('semantic trust ui', () => {
     const fetchMock = vi.fn(async (input) => {
       const url = String(input);
       if (url.includes('/api/v1/session')) {
-        return Response.json({ user: { displayName: 'B. Jennings' } });
+        return Response.json({
+          user: { displayName: 'B. Jennings' },
+          featureFlags: {
+            enableDentalTrustSurfaces: true,
+          },
+        });
       }
       if (url.includes('/api/v1/products/dental/sources/src-1')) {
         return Response.json({
           source: {
             id: 'src-1',
+            sourceType: 'email',
+            sourceFamilyClass: 'retrieval_eligible',
             title: 'Dental Vendor Mitigation Confirmed',
             sourceDate: '2026-04-16T12:00:00.000Z',
             author: 'Lowry',
@@ -145,6 +173,10 @@ describe('semantic trust ui', () => {
             citationMode: 'fallback',
             executionMode: 'replay',
             extractionStatus: 'completed',
+            indexingStatus: 'indexed',
+            chunkCount: 2,
+            embeddingDims: 1024,
+            embeddingSource: 'titan',
             warnings: [],
             previewText: 'Team, We can proceed with the staged mitigation on April 18.',
             binary: true,
@@ -183,7 +215,12 @@ describe('semantic trust ui', () => {
     const fetchMock = vi.fn(async (input) => {
       const url = String(input);
       if (url.includes('/api/v1/session')) {
-        return Response.json({ user: { displayName: 'B. Jennings' } });
+        return Response.json({
+          user: { displayName: 'B. Jennings' },
+          featureFlags: {
+            enableDentalTrustSurfaces: true,
+          },
+        });
       }
       if (url.includes('/api/v1/products/dental/reports/rep-1')) {
         return Response.json({
@@ -193,6 +230,8 @@ describe('semantic trust ui', () => {
           semanticState: {
             freshnessStatus: 'degraded',
             usesLastKnownGood: true,
+            showBanner: true,
+            bannerTone: 'warning',
             message: 'This report reflects the last published product understanding. Regenerate after the current evidence refresh completes.',
           },
           coverage: { percentage: 78, items: [], warningText: 'Coverage warning' },

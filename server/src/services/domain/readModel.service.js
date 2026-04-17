@@ -1,5 +1,5 @@
 import { HttpError } from '../common/httpError.js';
-import { getFilterKeyForSourceType, getSourceTypeLabel, isBinarySourceType } from '../../../../shared/artifactTypes.js';
+import { getFilterKeyForSourceType, getSourceFamilyClass, getSourceTypeLabel, isBinarySourceType } from '../../../../shared/artifactTypes.js';
 
 export function createReadModelService({ errorCodes }) {
   function resolveProductScope(state, rolePreset) {
@@ -197,11 +197,12 @@ export function createReadModelService({ errorCodes }) {
           sourceFamilyModes: product.semanticState?.sourceFamilyModes || state.semanticConfig?.sourceFamilyModes || {},
           aggregateStatus: product.semanticState?.aggregateStatus || 'legacy',
           aggregateVersion: Number(product.semanticState?.aggregateVersion || product.evidenceVersion || productData?.evidenceVersion || 1),
-          featureMode: product.semanticState?.featureMode || 'legacy',
           aggregateId: product.semanticState?.aggregateId || null,
           freshnessStatus: product.semanticState?.freshnessStatus || 'fresh',
           usesLastKnownGood: Boolean(product.semanticState?.usesLastKnownGood),
-          message: product.semanticState?.message || 'AI extraction completed in replay mode. New evidence is now available across Sources, Ask, and reports.',
+          showBanner: Boolean(product.semanticState?.showBanner),
+          bannerTone: product.semanticState?.bannerTone || null,
+          message: product.semanticState?.message || null,
           lastPublishedAt: product.semanticState?.lastPublishedAt || null,
           latestAttemptAt: product.semanticState?.latestAttemptAt || null,
           reasonCodes: Array.isArray(product.semanticState?.reasonCodes) ? product.semanticState.reasonCodes : [],
@@ -291,12 +292,15 @@ export function createReadModelService({ errorCodes }) {
       },
       items: filtered.map((source) => ({
         ...source,
+        sourceType: source.sourceType || source.type,
+        sourceFamilyClass: source.sourceFamilyClass || getSourceFamilyClass(source.sourceType || source.type),
         filterKey: getFilterKeyForSourceType(source.type),
         typeLabel: getSourceTypeLabel(source.type),
         processingStatus: source.ingestStatus || 'completed',
         extractionStatus: source.extractionStatus || source.ingestStatus || 'completed',
         executionMode: source.executionMode || state.products.find((item) => item.id === productId)?.semanticState?.executionMode || 'replay',
         citationMode: source.citationMode || 'fallback',
+        indexingStatus: source.indexingStatus || (source.indexed ? 'indexed' : 'not_applicable'),
       })),
     };
   }
@@ -311,6 +315,8 @@ export function createReadModelService({ errorCodes }) {
       source: {
         id: source.id,
         type: source.type,
+        sourceType: source.sourceType || source.type,
+        sourceFamilyClass: source.sourceFamilyClass || getSourceFamilyClass(source.sourceType || source.type),
         title: source.title,
         sourceDate: `${source.date}T12:00:00.000Z`,
         author: source.author,
@@ -330,6 +336,12 @@ export function createReadModelService({ errorCodes }) {
         citationMode: source.citationMode || 'fallback',
         executionMode: source.executionMode || state.products.find((item) => item.id === productId)?.semanticState?.executionMode || 'replay',
         extractionStatus: source.extractionStatus || source.ingestStatus || 'completed',
+        validationStatus: source.validationStatus || 'valid',
+        indexingStatus: source.indexingStatus || (source.indexed ? 'indexed' : 'not_applicable'),
+        chunkCount: Number(source.chunkCount || source.chunkArtifacts?.length || 0),
+        embeddingDims: source.embeddingDims ?? null,
+        embeddingSource: source.embeddingSource || (source.indexed ? 'pseudo' : 'none'),
+        replayStatus: source.replayStatus || 'not_applicable',
         processingStatus: source.ingestStatus || 'completed',
         warningText: source.warningText || null,
         typeLabel: getSourceTypeLabel(source.type),

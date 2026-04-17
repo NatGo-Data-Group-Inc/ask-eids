@@ -1,11 +1,24 @@
 // @vitest-environment node
 import request from 'supertest';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { buildApp, resetRuntimeData } from '../src/app.js';
+import { buildApp, readRuntimeStateForTests, resetRuntimeData } from '../src/app.js';
 import {
   createPrototypeDuckDbStore,
   resetPrototypeDuckDbStore,
 } from '../src/rag/prototypeDuckDbStore.js';
+
+async function waitForJob(jobId, timeoutMs = 5000) {
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < timeoutMs) {
+    const state = await readRuntimeStateForTests();
+    const job = state.jobs[jobId];
+    if (job && ['completed', 'partial', 'failed'].includes(job.status)) {
+      return job;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 120));
+  }
+  throw new Error(`Timed out waiting for job ${jobId}`);
+}
 
 describe('prototype DuckDB retrieval', () => {
   beforeEach(async () => {
@@ -66,15 +79,23 @@ describe('prototype DuckDB retrieval', () => {
       );
 
     expect(uploadResponse.status).toBe(202);
-
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    const job = await waitForJob(uploadResponse.body.jobId);
+    expect(job.status).toBe('completed');
 
     const askResponse = await request(app)
       .post('/api/v1/products/dental/ask')
-      .send({ question: 'What decision was made in the vendor readiness meeting?' });
+      .send({ question: 'What did Juan confirm in the vendor readiness meeting transcript?' });
 
     expect(askResponse.status).toBe(200);
     expect(askResponse.body.answerHtml).toContain('Evidence-backed response');
-    expect(askResponse.body.sources.some((source) => source.title === 'Vendor Readiness Meeting')).toBe(true);
+    expect(askResponse.body.sources).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          sourceId: uploadResponse.body.sourceId,
+          title: 'Vendor Readiness Meeting',
+          retrievalType: 'vector',
+        }),
+      ])
+    );
   });
 });

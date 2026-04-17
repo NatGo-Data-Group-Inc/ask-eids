@@ -35,12 +35,13 @@ describe('read contracts', () => {
       executionMode: expect.any(String),
       aggregateStatus: expect.any(String),
       aggregateVersion: expect.any(Number),
-      featureMode: expect.any(String),
       freshnessStatus: expect.any(String),
       usesLastKnownGood: expect.any(Boolean),
-      message: expect.any(String),
+      showBanner: expect.any(Boolean),
       reasonCodes: expect.any(Array),
     });
+    expect(response.body.product.semanticState).toHaveProperty('bannerTone');
+    expect(response.body.product.semanticState).toHaveProperty('message');
     expect(response.body.overview.askSuggestions[0]).toContain('What decisions');
   });
 
@@ -79,10 +80,16 @@ describe('read contracts', () => {
       productId: 'dental',
       mode: 'wave-00',
       executionMode: 'replay',
-      featureMode: 'extraction-first',
+      effectiveFeatureFlags: expect.objectContaining({
+        enableDentalTrustSurfaces: expect.any(Boolean),
+        enableDentalSemanticServiceSplit: expect.any(Boolean),
+        enableExtractionReplayMode: expect.any(Boolean),
+        enableDentalRetrievalIndexing: expect.any(Boolean),
+      }),
       sourceFamilyModes: expect.any(Object),
     });
     expect(response.body.seededSources).toBeGreaterThan(0);
+    expect(Array.isArray(response.body.warnings)).toBe(true);
   });
 
   it('returns scoped search results', async () => {

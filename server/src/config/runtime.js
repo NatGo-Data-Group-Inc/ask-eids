@@ -93,6 +93,7 @@ export function getRuntimeConfig() {
       enableDentalTrustSurfaces: envBool('ENABLE_DENTAL_TRUST_SURFACES', false),
       enableDentalSemanticServiceSplit: envBool('ENABLE_DENTAL_SEMANTIC_SERVICE_SPLIT', false),
       enableExtractionReplayMode: envBool('ENABLE_EXTRACTION_REPLAY_MODE', isTest),
+      enableDentalRetrievalIndexing: envBool('ENABLE_DENTAL_RETRIEVAL_INDEXING', isTest || appEnv !== 'production'),
     },
     textract: {
       enabled: envBool('DOCS_TEXTRACT_ENABLED', true),

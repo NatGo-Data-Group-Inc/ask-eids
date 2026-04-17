@@ -1,7 +1,8 @@
-import { buildChunkArtifacts } from '../rag/chunking.service.js';
 import { normalizeSourceArtifact } from './sourceNormalization.service.js';
 import { extractSourceWithNova } from './novaSourceExtraction.service.js';
 import { projectExtractionCitations } from './citationProjection.service.js';
+import { runChunkingAndIndexing } from './chunkingAndIndexing.service.js';
+import { getSourceFamilyClass } from '../../../../shared/artifactTypes.js';
 
 const FALLBACK_CITATION_MESSAGE = 'Exact coordinates were unavailable for this source. Showing the best available reference.';
 
@@ -19,7 +20,7 @@ export async function runEmailSemanticIngest({
   executionDecision,
   runtimeConfig,
   testCase = '',
-  indexEvidence,
+  featureFlags,
 } = {}) {
   const normalized = await normalizeSourceArtifact({
     file,
@@ -38,47 +39,6 @@ export async function runEmailSemanticIngest({
     contentType: 'text/plain; charset=utf-8',
   });
 
-  const chunkArtifacts = buildChunkArtifacts({
-    productId,
-    sourceId,
-    sourceType,
-    sourceDate,
-    title,
-    author,
-    participants: normalized.participants.length ? normalized.participants : participants,
-    text: normalized.normalizedText,
-  });
-
-  for (const chunk of chunkArtifacts) {
-    await artifactStore.writeTextArtifact({
-      bucketType: 'normalized',
-      key: chunk.chunkKey,
-      content: chunk.chunkText,
-      contentType: 'text/markdown; charset=utf-8',
-    });
-    await artifactStore.writeTextArtifact({
-      bucketType: 'normalized',
-      key: chunk.metadataKey,
-      content: JSON.stringify(chunk.metadata, null, 2),
-      contentType: 'application/json; charset=utf-8',
-    });
-  }
-
-  if (typeof indexEvidence === 'function') {
-    await indexEvidence({
-      chunks: chunkArtifacts.map((chunk) => ({
-        sourceId,
-        chunkIndex: chunk.chunkIndex,
-        chunkText: chunk.chunkText,
-        metadata: {
-          ...chunk.metadata,
-          application: 'AskEIDS',
-          environment: process.env.NODE_ENV ?? 'development',
-        },
-      })),
-    });
-  }
-
   const { extraction, promptRun } = await extractSourceWithNova({
     normalized,
     executionDecision,
@@ -86,6 +46,7 @@ export async function runEmailSemanticIngest({
     testCase,
   });
 
+  const sourceFamilyClass = getSourceFamilyClass(sourceType);
   const citationProjection = projectExtractionCitations({
     extraction,
     normalized,
@@ -99,15 +60,45 @@ export async function runEmailSemanticIngest({
     ...(Array.isArray(extraction.warnings) ? extraction.warnings : []),
     ...(warningText ? [warningText] : []),
   ];
+  let indexingResult;
+  try {
+    indexingResult = await runChunkingAndIndexing({
+      runtimeConfig,
+      productId,
+      sourceId,
+      sourceType,
+      sourceFamilyClass,
+      sourceDate,
+      title,
+      author,
+      participants: normalized.participants.length ? normalized.participants : participants,
+      normalizedText: normalized.normalizedText,
+      featureFlags,
+      testCase,
+    });
+  } catch (error) {
+    if (!['EMBEDDING_UNAVAILABLE', 'INDEXING_FAILED'].includes(error?.code)) {
+      throw error;
+    }
+    indexingResult = {
+      indexingStatus: 'failed',
+      chunkCount: 0,
+      embeddingDims: null,
+      embeddingSource: 'none',
+      chunks: [],
+      failureReason: error.code,
+    };
+  }
 
   return {
     normalized,
-    chunkArtifacts,
     extraction,
     promptRun,
+    sourceFamilyClass,
     citationProjection,
     warningText,
     warnings,
+    indexingResult,
     updatedDomains: ['sources', 'ask', 'reports'],
     latestAttemptAt: new Date().toISOString(),
   };

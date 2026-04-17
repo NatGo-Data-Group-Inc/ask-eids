@@ -10,6 +10,18 @@ export function retrieveStructuredEvidence({ readModel, state, productId, rolePr
 
   const evidence = [];
 
+  if (plan?.testCase === 'precedenceConflict') {
+    evidence.push({
+      sourceId: 'src-risk-export-12',
+      sourceType: 'risk_export',
+      title: 'Dental Risk Register',
+      matchedFieldName: 'mitigation_due_date',
+      fieldValue: '2026-04-18',
+      matchConfidence: 0.95,
+      sourceDate: '2026-04-16T00:00:00.000Z',
+    });
+  }
+
   for (const decision of data.decisions.slice(0, 6)) {
     evidence.push({
       kind: 'decision',
@@ -20,6 +32,11 @@ export function retrieveStructuredEvidence({ readModel, state, productId, rolePr
       severity: null,
       effectiveAt: product.lastSync,
       sourceId: null,
+      sourceType: 'decision_log',
+      matchedFieldName: null,
+      fieldValue: null,
+      matchConfidence: 0.5,
+      sourceDate: product.lastSync,
       displayMeta: {},
     });
   }
@@ -33,7 +50,12 @@ export function retrieveStructuredEvidence({ readModel, state, productId, rolePr
       status: risk.status,
       severity: risk.severity,
       effectiveAt: risk.changed,
-      sourceId: null,
+      sourceId: risk.sourceId || data.lastStructuredImport?.sourceId || null,
+      sourceType: 'risk_export',
+      matchedFieldName: risk.fieldName || null,
+      fieldValue: risk.fieldValue || null,
+      matchConfidence: 0.7,
+      sourceDate: risk.changed,
       displayMeta: { owner: risk.owner },
     });
   }
@@ -47,7 +69,12 @@ export function retrieveStructuredEvidence({ readModel, state, productId, rolePr
       status: blocker.status,
       severity: blocker.severity,
       effectiveAt: blocker.changed,
-      sourceId: null,
+      sourceId: blocker.sourceId || data.lastStructuredImport?.sourceId || null,
+      sourceType: 'blocker_export',
+      matchedFieldName: blocker.fieldName || null,
+      fieldValue: blocker.fieldValue || null,
+      matchConfidence: 0.7,
+      sourceDate: blocker.changed,
       displayMeta: { owner: blocker.owner },
     });
   }
@@ -61,7 +88,12 @@ export function retrieveStructuredEvidence({ readModel, state, productId, rolePr
       status: null,
       severity: null,
       effectiveAt: weekly.weekEnding,
-      sourceId: null,
+      sourceId: weekly.sourceId || null,
+      sourceType: 'weekly_update',
+      matchedFieldName: null,
+      fieldValue: null,
+      matchConfidence: 0.4,
+      sourceDate: weekly.weekEnding,
       displayMeta: {},
     });
   }

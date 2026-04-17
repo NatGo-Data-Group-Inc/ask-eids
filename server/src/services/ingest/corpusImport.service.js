@@ -2,9 +2,10 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import mammoth from 'mammoth';
-import { getSourceFamily } from '../../../../shared/artifactTypes.js';
+import { getSourceFamily, getSourceFamilyClass } from '../../../../shared/artifactTypes.js';
 import { buildSourceFamilyModes } from '../semantic/executionPolicy.service.js';
 import { computeSemanticTrustState } from '../semantic/semanticFreshness.service.js';
+import { featureFlagsFromLegacyMode } from '../semantic/featureFlags.service.js';
 
 const corpusRoot = path.resolve('EIDS-Prototype-Document-Pack');
 const manifestPath = path.join(corpusRoot, '00-operator-guide', 'MASTER-MANIFEST.csv');
@@ -757,6 +758,7 @@ export function attachSemanticStateToRuntimeState(
   state,
   {
     featureMode = 'extraction-first',
+    featureFlags = null,
     executionMode = (process.env.VITEST || process.env.NODE_ENV === 'test') ? 'replay' : 'live',
     promptVersion = process.env.EIDS_PROMPT_REGISTRY_VERSION || 'local-dev',
     modelId = process.env.BEDROCK_TEXT_MODEL_ID || 'amazon.nova-pro-v1:0',
@@ -767,12 +769,24 @@ export function attachSemanticStateToRuntimeState(
   state.sourceExtractions = [];
   state.productAggregates = [];
   state.promptRuns = [];
+  const baseFeatureFlags = featureFlagsFromLegacyMode(featureMode, {
+    enableNovaDentalLiveEmail: executionMode === 'live' || executionMode === 'hybrid',
+    enableDentalTrustSurfaces: true,
+    enableDentalSemanticServiceSplit: featureMode === 'service-split' || featureMode === 'live-email-trust-hardening',
+    enableExtractionReplayMode: executionMode !== 'live',
+    enableDentalRetrievalIndexing: true,
+  });
+  const effectiveFeatureFlags = {
+    ...baseFeatureFlags,
+    ...(featureFlags || {}),
+  };
   const sourceFamilyModes = buildSourceFamilyModes({
     executionMode,
     liveSourceFamilies,
   });
   state.semanticConfig = {
     featureMode,
+    featureFlags: effectiveFeatureFlags,
     executionMode,
     sourceFamilyModes,
     promptVersion,
@@ -786,7 +800,7 @@ export function attachSemanticStateToRuntimeState(
       continue;
     }
 
-    const extractionFirstEnabled = product.id === 'dental' && ['extraction-first', 'live-email-trust-hardening', 'service-split'].includes(featureMode);
+    const extractionFirstEnabled = product.id === 'dental' && effectiveFeatureFlags.enableDentalSemanticServiceSplit;
     const aggregateVersion = Number(product.evidenceVersion || productData.evidenceVersion || 1);
     if (!extractionFirstEnabled) {
       const legacyTrust = computeSemanticTrustState({
@@ -801,9 +815,8 @@ export function attachSemanticStateToRuntimeState(
         sourceFamilyModes,
         aggregateStatus: 'legacy',
         aggregateVersion,
-        featureMode: 'legacy',
         aggregateId: null,
-        ...legacyTrust,
+        ...applyTrustSurfaceVisibility(legacyTrust, effectiveFeatureFlags),
       };
       productData.semanticState = product.semanticState;
       continue;
@@ -972,14 +985,25 @@ export function attachSemanticStateToRuntimeState(
       sourceFamilyModes,
       aggregateStatus: 'published',
       aggregateVersion,
-        featureMode,
       aggregateId,
-      ...aggregateTrust,
+      ...applyTrustSurfaceVisibility(aggregateTrust, effectiveFeatureFlags),
     };
     productData.semanticState = product.semanticState;
   }
 
   return state;
+}
+
+function applyTrustSurfaceVisibility(trustState, featureFlags) {
+  if (featureFlags?.enableDentalTrustSurfaces) {
+    return trustState;
+  }
+  return {
+    ...trustState,
+    showBanner: false,
+    bannerTone: null,
+    message: null,
+  };
 }
 
 function sortProducts(products) {
@@ -1111,6 +1135,8 @@ export function deriveCorpusProductState({ productId, productEntries, latestCorp
   const sources = sortedEntries.map((entry) => ({
     id: entry.id,
     type: entry.uiType,
+    sourceType: entry.sourceType,
+    sourceFamilyClass: getSourceFamilyClass(entry.sourceType),
     title: entry.title,
     date: entry.documentDate,
     meta: entry.metaText,
@@ -1118,6 +1144,10 @@ export function deriveCorpusProductState({ productId, productEntries, latestCorp
     author: entry.author,
     participants: entry.participants,
     contentType: entry.format,
+    indexingStatus: getSourceFamilyClass(entry.sourceType) === 'retrieval_eligible' ? 'indexed' : 'not_applicable',
+    chunkCount: 0,
+    embeddingDims: null,
+    embeddingSource: 'none',
     openable: true,
   }));
   const sourceContents = Object.fromEntries(sortedEntries.map((entry) => [entry.id, entry.strippedText || entry.rawText || entry.previewText]));
@@ -1459,6 +1489,7 @@ export async function buildInitialCorpusState(options = {}) {
 
   return attachSemanticStateToRuntimeState(state, {
     featureMode: options.featureMode || 'extraction-first',
+    featureFlags: options.featureFlags || null,
     executionMode: options.executionMode || ((process.env.VITEST || process.env.NODE_ENV === 'test') ? 'replay' : 'live'),
     promptVersion: options.promptVersion || process.env.EIDS_PROMPT_REGISTRY_VERSION || 'seed-v1',
   });

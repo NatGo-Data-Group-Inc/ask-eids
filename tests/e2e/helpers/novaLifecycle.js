@@ -1,6 +1,11 @@
 import fs from 'node:fs/promises';
 import { expect } from '@playwright/test';
 import { docPackPath } from '../test-helpers.js';
+import { getRuntimeConfig } from '../../../server/src/config/runtime.js';
+import { normalizeSourceArtifact } from '../../../server/src/services/semantic/sourceNormalization.service.js';
+import { buildReplayKey, createSemanticReplayStore } from '../../../server/src/services/semantic/semanticReplayStore.service.js';
+
+const runtimeConfig = getRuntimeConfig();
 
 const FIXTURE_MAP = {
   'wave01-vendor-delay-email': {
@@ -38,14 +43,79 @@ async function resolveFixtureDescriptor(fixtureKey) {
   };
 }
 
+async function seedReplayArtifactForDescriptor(descriptor) {
+  if (descriptor.sourceType !== 'email') {
+    return null;
+  }
+  const buffer = await fs.readFile(descriptor.filePath);
+  const normalized = await normalizeSourceArtifact({
+    file: {
+      buffer,
+      originalname: descriptor.filePath.split(/[\\/]/).pop(),
+    },
+    sourceType: descriptor.sourceType,
+    sourceId: 'seed-source',
+    productId: 'dental',
+    title: descriptor.title,
+    sourceDate: descriptor.sourceDate,
+  });
+  const replayKey = buildReplayKey({
+    normalizedPayload: {
+      productId: normalized.productId,
+      sourceType: normalized.sourceType,
+      normalizedText: normalized.normalizedText,
+      normalizationVersion: normalized.normalizationVersion,
+    },
+    promptVersion: runtimeConfig.semantic.promptRegistryVersion,
+    modelId: runtimeConfig.bedrock.textModelId,
+    sourceFamily: normalized.sourceFamily,
+    schemaVersion: 'source-schema-v1',
+  });
+  const validatedPayload = {
+    summary: 'Vendor confirmed staged mitigation.',
+    decisions: [
+      {
+        label: 'Proceed with staged mitigation on April 18',
+        confidence: 'high',
+        anchorText: 'We can proceed with the staged mitigation on April 18.',
+      },
+    ],
+    warnings: [],
+    confidence: 'high',
+  };
+  const replayStore = createSemanticReplayStore({
+    evalCacheDir: runtimeConfig.semantic.evalCacheDir,
+  });
+  await replayStore.writeReplayArtifact({
+    replayKey,
+    payloadEnvelope: {
+      schemaVersion: 'source-schema-v1',
+      promptVersion: runtimeConfig.semantic.promptRegistryVersion,
+      rawOutputText: JSON.stringify(validatedPayload),
+      parsedJson: validatedPayload,
+      validatedPayload,
+    },
+  });
+  return replayKey;
+}
+
 export async function resetLifecycleState(request, {
   productId = 'dental',
   mode = 'wave-00',
   executionMode = 'replay',
   featureMode = 'extraction-first',
+  featureFlags = null,
+  testCase = '',
 } = {}) {
+  const effectiveFeatureFlags = featureFlags || {
+    enableNovaDentalLiveEmail: featureMode === 'live-email-trust-hardening',
+    enableDentalTrustSurfaces: featureMode !== 'legacy',
+    enableDentalSemanticServiceSplit: ['service-split', 'live-email-trust-hardening'].includes(featureMode),
+    enableExtractionReplayMode: executionMode !== 'live',
+    enableDentalRetrievalIndexing: true,
+  };
   const response = await request.post('/api/v1/test/reset', {
-    data: { productId, mode, executionMode, featureMode },
+    data: { productId, mode, executionMode, featureFlags: effectiveFeatureFlags, testCase },
   });
   expect(response.ok()).toBeTruthy();
   return response.json();
@@ -56,6 +126,9 @@ export async function uploadNovaArtifact(page, {
   testCase = '',
 } = {}) {
   const descriptor = await resolveFixtureDescriptor(fixtureKey);
+  if (!['replayCacheMiss', 'forcedInvalidExtraction'].includes(testCase)) {
+    await seedReplayArtifactForDescriptor(descriptor);
+  }
   const targetUrl = `/products/dental?tab=overview${testCase ? `&testCase=${encodeURIComponent(testCase)}` : ''}`;
   await page.goto(targetUrl);
   await expect(page.getByTestId('product-page')).toBeVisible();
@@ -99,6 +172,16 @@ export async function uploadNovaArtifact(page, {
     ...descriptor,
     ...payload,
   };
+}
+
+export async function countRagChunksForSource(request, {
+  sourceId,
+  productId = 'dental',
+} = {}) {
+  const response = await request.get(`/api/v1/test/rag-chunks/count?sourceId=${encodeURIComponent(sourceId)}&productId=${encodeURIComponent(productId)}`);
+  expect(response.ok()).toBeTruthy();
+  const payload = await response.json();
+  return Number(payload.count || 0);
 }
 
 export async function askAndWait(page, question) {

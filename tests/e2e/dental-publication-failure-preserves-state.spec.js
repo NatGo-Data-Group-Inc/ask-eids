@@ -8,8 +8,14 @@ test('Publication failure preserves last-known-good semantic state', async ({ pa
   await resetLifecycleState(request, {
     productId: 'dental',
     mode: 'wave-00',
-    executionMode: 'hybrid',
-    featureMode: 'live-email-trust-hardening',
+    executionMode: 'replay',
+    featureFlags: {
+      enableNovaDentalLiveEmail: false,
+      enableDentalTrustSurfaces: true,
+      enableDentalSemanticServiceSplit: true,
+      enableExtractionReplayMode: true,
+      enableDentalRetrievalIndexing: true,
+    },
   });
 
   await page.goto('/products/dental?tab=overview');

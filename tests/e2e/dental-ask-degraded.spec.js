@@ -8,8 +8,14 @@ test('Ask shows degraded semantic state when last-known-good aggregate is active
   await resetLifecycleState(request, {
     productId: 'dental',
     mode: 'wave-00',
-    executionMode: 'hybrid',
-    featureMode: 'live-email-trust-hardening',
+    executionMode: 'replay',
+    featureFlags: {
+      enableNovaDentalLiveEmail: false,
+      enableDentalTrustSurfaces: true,
+      enableDentalSemanticServiceSplit: true,
+      enableExtractionReplayMode: true,
+      enableDentalRetrievalIndexing: true,
+    },
   });
 
   await uploadNovaArtifact(page, {

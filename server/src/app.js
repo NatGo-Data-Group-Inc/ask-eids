@@ -13,6 +13,7 @@ import { createReadModelService } from './services/domain/readModel.service.js';
 import { createAskService } from './services/domain/ask.service.js';
 import { createMutationService, resetMutationHarnessState } from './services/domain/mutation.service.js';
 import { buildSemanticTrustMessage } from './services/semantic/semanticFreshness.service.js';
+import { resolveEffectiveFeatureFlags } from './services/semantic/featureFlags.service.js';
 
 const runtimeConfig = getRuntimeConfig();
 const runtimeDir = runtimeConfig.storage.paths.runtimeDir;
@@ -174,6 +175,10 @@ export async function buildApp({ withVite = false } = {}) {
   app.get('/api/v1/session', async (req, res) => {
     const state = await readState();
     const scopedProductIds = readModel.resolveProductScope(state, req.user.rolePreset);
+    const featureFlags = resolveEffectiveFeatureFlags({
+      runtimeConfig,
+      persistedSemanticConfig: state.semanticConfig,
+    });
     res.json({
       user: {
         sub: req.user.sub,
@@ -181,6 +186,7 @@ export async function buildApp({ withVite = false } = {}) {
         email: req.user.email,
       },
       roles: scopedProductIds.map((productId) => ({ productId, role: req.user.rolePreset })),
+      featureFlags,
     });
   });
 
@@ -302,13 +308,17 @@ export async function buildApp({ withVite = false } = {}) {
       semanticState: {
         freshnessStatus: product?.semanticState?.freshnessStatus || 'fresh',
         usesLastKnownGood: Boolean(product?.semanticState?.usesLastKnownGood),
-        message: buildSemanticTrustMessage({
-          executionMode: product?.semanticState?.executionMode || 'replay',
-          freshnessStatus: product?.semanticState?.freshnessStatus || 'fresh',
-          usesLastKnownGood: Boolean(product?.semanticState?.usesLastKnownGood),
-          reasonCodes: product?.semanticState?.reasonCodes || [],
-          surface: 'report',
-        }),
+        showBanner: Boolean(product?.semanticState?.showBanner),
+        bannerTone: product?.semanticState?.bannerTone || null,
+        message: product?.semanticState?.showBanner
+          ? (product?.semanticState?.message || buildSemanticTrustMessage({
+            executionMode: product?.semanticState?.executionMode || 'replay',
+            freshnessStatus: product?.semanticState?.freshnessStatus || 'fresh',
+            usesLastKnownGood: Boolean(product?.semanticState?.usesLastKnownGood),
+            reasonCodes: product?.semanticState?.reasonCodes || [],
+            surface: 'report',
+          }))
+          : null,
       },
       requiresRegeneration: Number(report.evidenceVersion || 0) < Number(product?.evidenceVersion || 0),
       regenerateNotice: Number(report.evidenceVersion || 0) < Number(product?.evidenceVersion || 0)
@@ -406,13 +416,19 @@ export async function buildApp({ withVite = false } = {}) {
     app.post('/api/v1/test/reset', async (req, res) => {
       const requestedMode = String(req.body?.mode || req.query.corpusWave || '').trim() || 'wave-00';
       const executionMode = String(req.body?.executionMode || runtimeConfig.semantic.extractionExecutionMode || 'replay').trim() || 'replay';
-      const featureMode = String(req.body?.featureMode || 'extraction-first').trim() || 'extraction-first';
+      const featureMode = String(req.body?.featureMode || '').trim();
       const productId = String(req.body?.productId || 'dental').trim() || 'dental';
+      const featureFlags = resolveEffectiveFeatureFlags({
+        runtimeConfig,
+        overrideFeatureFlags: req.body?.featureFlags,
+        legacyFeatureMode: featureMode,
+      });
       const maxWave = normalizeResetWave(requestedMode);
       const state = await resetPrototypeState({
         maxWave,
         executionMode,
         featureMode,
+        featureFlags,
       });
       const persistedState = await readState();
       res.json({
@@ -420,10 +436,20 @@ export async function buildApp({ withVite = false } = {}) {
         productId,
         mode: requestedMode,
         executionMode,
-        featureMode,
+        effectiveFeatureFlags: featureFlags,
         sourceFamilyModes: persistedState?.semanticConfig?.sourceFamilyModes || state?.semanticConfig?.sourceFamilyModes || {},
         seededSources: persistedState?.productData?.[productId]?.sources?.length ?? state?.productData?.[productId]?.sources?.length ?? 0,
+        warnings: featureMode ? ['legacyFeatureMode is deprecated; explicit featureFlags are authoritative.'] : [],
       });
+    });
+
+    app.get('/api/v1/test/rag-chunks/count', async (req, res) => {
+      const provider = await getRetrievalProvider();
+      const count = await provider.countChunksForSource({
+        sourceId: String(req.query.sourceId || ''),
+        productId: String(req.query.productId || '') || null,
+      });
+      res.json({ count });
     });
   }
 

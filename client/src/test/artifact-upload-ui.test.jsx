@@ -38,7 +38,12 @@ describe('artifact upload UI integration', () => {
     const fetchMock = vi.fn(async (input) => {
       const url = String(input);
       if (url.includes('/api/v1/session')) {
-        return Response.json({ user: { displayName: 'B. Jennings' } });
+        return Response.json({
+          user: { displayName: 'B. Jennings' },
+          featureFlags: {
+            enableDentalTrustSurfaces: true,
+          },
+        });
       }
       if (url.includes('/api/v1/products/dental')) {
         return Response.json({
@@ -47,7 +52,7 @@ describe('artifact upload UI integration', () => {
             name: 'DENTAL / DENCLASS',
             status: 'risk',
             statusLabel: 'At Risk',
-            semanticState: { executionMode: 'replay', aggregateStatus: 'published', aggregateVersion: 3, featureMode: 'extraction-first' },
+            semanticState: { executionMode: 'replay', aggregateStatus: 'published', aggregateVersion: 3, showBanner: false, bannerTone: null, message: null, reasonCodes: [] },
             meta: { pi: 4, sprint: 2, pm: 'Jaden', lastSync: '2026-04-15T12:00:00.000Z' },
           },
           permissions: { canUploadArtifact: !url.includes('asRole=read'), canUpdateWeekly: false, canEditReport: true, canExportReport: true },
@@ -61,7 +66,6 @@ describe('artifact upload UI integration', () => {
 
     const firstRender = renderApp('/products/dental?tab=overview');
     expect(await screen.findByTestId('upload-artifact-button')).toBeVisible();
-    expect(screen.getByTestId('extraction-state-badge')).toHaveTextContent('extraction-first');
     expect(screen.getByTestId('overview-current-state')).toBeVisible();
     firstRender.unmount();
 
@@ -78,7 +82,7 @@ describe('artifact upload UI integration', () => {
         name: 'DENTAL / DENCLASS',
         status: 'risk',
         statusLabel: 'At Risk',
-        semanticState: { executionMode: 'replay', aggregateStatus: 'published', aggregateVersion: 3, featureMode: 'extraction-first' },
+        semanticState: { executionMode: 'replay', aggregateStatus: 'published', aggregateVersion: 3, showBanner: false, bannerTone: null, message: null, reasonCodes: [] },
         meta: { pi: 4, sprint: 2, pm: 'Jaden', lastSync: '2026-04-15T12:00:00.000Z' },
       },
       permissions: { canUploadArtifact: true, canUpdateWeekly: false, canEditReport: true, canExportReport: true },
@@ -88,7 +92,12 @@ describe('artifact upload UI integration', () => {
     const fetchMock = vi.fn(async (input, init) => {
       const url = String(input);
       if (url.includes('/api/v1/session')) {
-        return Response.json({ user: { displayName: 'B. Jennings' } });
+        return Response.json({
+          user: { displayName: 'B. Jennings' },
+          featureFlags: {
+            enableDentalTrustSurfaces: true,
+          },
+        });
       }
       if (url.includes('/api/v1/products/dental/sources?')) {
         return Response.json({ counts: { all: 0 }, items: [] });

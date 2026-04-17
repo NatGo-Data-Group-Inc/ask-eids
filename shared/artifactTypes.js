@@ -81,6 +81,16 @@ export function getSourceFamily(sourceType = '') {
   return SOURCE_TYPES[sourceType]?.family || 'document';
 }
 
+export function getSourceFamilyClass(sourceType = '') {
+  if (isStructuredImportType(sourceType)) {
+    return 'fixed_schema_structured';
+  }
+  if (sourceType === 'spreadsheet_attachment' || sourceType === 'ado') {
+    return 'deferred';
+  }
+  return 'retrieval_eligible';
+}
+
 export function getSourceTypeLabel(sourceType = '') {
   return SOURCE_TYPES[sourceType]?.label || sourceType || 'source';
 }

@@ -19,12 +19,13 @@ describe('ask contracts', () => {
     expect(response.body.status).toBe('partial');
     expect(response.body.coverage.isPartial).toBe(true);
     expect(response.body.coverage.warnings.length).toBeGreaterThan(0);
-    expect(response.body.sources[0].sourceId).toBeTruthy();
+    expect(response.body.sources.some((source) => source.sourceId)).toBe(true);
     expect(response.body.semanticState).toMatchObject({
       freshnessStatus: expect.any(String),
       usesLastKnownGood: expect.any(Boolean),
-      message: expect.any(String),
+      showBanner: expect.any(Boolean),
     });
+    expect(response.body.semanticState).toHaveProperty('message');
   });
 
   it('returns insufficient evidence for unsupported questions', async () => {

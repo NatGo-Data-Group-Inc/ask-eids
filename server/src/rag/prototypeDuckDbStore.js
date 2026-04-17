@@ -2,7 +2,7 @@ import duckdb from 'duckdb';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { getRuntimeConfig } from '../config/runtime.js';
-import { embedQuery, embedTexts, getEmbeddingDims } from '../lib/aws/titanEmbeddings.js';
+import { embedQuery, embedTexts, embeddingsAvailable, getEmbeddingDims } from '../lib/aws/titanEmbeddings.js';
 
 const runtimeConfig = getRuntimeConfig();
 const ragDir = runtimeConfig.storage.paths.runtimeDir;
@@ -153,53 +153,103 @@ function buildSearchText(document) {
 }
 
 async function indexDocuments(documents) {
-  await runSerialized(async () => {
+  const firstDocument = documents[0];
+  return replaceSourceDocuments({
+    productId: firstDocument?.metadata?.productId ?? null,
+    sourceId: firstDocument?.metadata?.sourceId ?? firstDocument?.docId ?? null,
+    documents,
+  });
+}
+
+async function replaceSourceDocuments({ productId = null, sourceId = null, documents = [] } = {}) {
+  return runSerialized(async () => {
     const db = await getDatabase();
     const searchTexts = documents.map((document) => buildSearchText(document));
     const embeddings = await embedTexts(searchTexts);
-    for (const [index, document] of documents.entries()) {
-      const metadata = normalizeMetadata(document.metadata, document.docId);
-      const searchText = searchTexts[index];
-      const embedding = embeddings[index] ?? Array.from({ length: VECTOR_SIZE }, () => 0);
-      const tokenText = tokenize(searchText).join(' ');
+    const embeddingSource = embeddingsAvailable(runtimeConfig)
+      ? 'titan'
+      : (runtimeConfig.retrieval.allowPseudoEmbeddings ? 'pseudo' : 'none');
 
-      await runSql(db, 'DELETE FROM rag_chunks WHERE chunk_id = ?', [document.chunkId]);
-      await runSql(
-        db,
-        `
-        INSERT INTO rag_chunks (
-          chunk_id,
-          doc_id,
-          application,
-          environment,
-          product_id,
-          source_id,
-          source_type,
-          title,
-          source_date,
-          token_text,
-          text,
-          embedding_json,
-          metadata_json
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `,
-        [
-          document.chunkId,
-          document.docId,
-          metadata.application,
-          metadata.environment,
-          metadata.productId,
-          metadata.sourceId,
-          metadata.sourceType,
-          metadata.title,
-          metadata.sourceDate,
-          tokenText,
-          document.text,
-          JSON.stringify(embedding),
-          JSON.stringify(metadata),
-        ]
-      );
+    await execSql(db, 'BEGIN TRANSACTION');
+    try {
+      if (sourceId) {
+        await runSql(
+          db,
+          'DELETE FROM rag_chunks WHERE source_id = ? AND (? IS NULL OR product_id = ?)',
+          [sourceId, productId, productId]
+        );
+      }
+
+      for (const [index, document] of documents.entries()) {
+        const metadata = normalizeMetadata(document.metadata, document.docId);
+        const searchText = searchTexts[index];
+        const embedding = embeddings[index] ?? Array.from({ length: VECTOR_SIZE }, () => 0);
+        const tokenText = tokenize(searchText).join(' ');
+
+        await runSql(
+          db,
+          `
+          INSERT INTO rag_chunks (
+            chunk_id,
+            doc_id,
+            application,
+            environment,
+            product_id,
+            source_id,
+            source_type,
+            title,
+            source_date,
+            token_text,
+            text,
+            embedding_json,
+            metadata_json
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `,
+          [
+            document.chunkId,
+            document.docId,
+            metadata.application,
+            metadata.environment,
+            metadata.productId,
+            metadata.sourceId,
+            metadata.sourceType,
+            metadata.title,
+            metadata.sourceDate,
+            tokenText,
+            document.text,
+            JSON.stringify(embedding),
+            JSON.stringify(metadata),
+          ]
+        );
+      }
+
+      await execSql(db, 'COMMIT');
+      return {
+        chunkCount: documents.length,
+        embeddingDims: embeddings[0]?.length ?? VECTOR_SIZE,
+        embeddingSource,
+      };
+    } catch (error) {
+      await execSql(db, 'ROLLBACK');
+      throw error;
     }
+  });
+}
+
+async function countChunksForSource({ sourceId, productId = null } = {}) {
+  return runSerialized(async () => {
+    const db = await getDatabase();
+    const rows = await allSql(
+      db,
+      `
+      SELECT COUNT(*) AS count
+      FROM rag_chunks
+      WHERE source_id = ?
+        AND (? IS NULL OR product_id = ?)
+      `,
+      [sourceId, productId, productId]
+    );
+    return Number(rows[0]?.count ?? 0);
   });
 }
 
@@ -268,7 +318,9 @@ export async function createPrototypeDuckDbStore() {
   await getDatabase();
   return {
     indexDocuments,
+    replaceSourceDocuments,
     search,
+    countChunksForSource,
   };
 }
 

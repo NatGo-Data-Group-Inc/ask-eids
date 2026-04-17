@@ -8,8 +8,14 @@ test('Dental flow remains stable when semantic service split is enabled', async 
   await resetLifecycleState(request, {
     productId: 'dental',
     mode: 'wave-00',
-    executionMode: 'hybrid',
-    featureMode: 'service-split',
+    executionMode: 'replay',
+    featureFlags: {
+      enableNovaDentalLiveEmail: false,
+      enableDentalTrustSurfaces: true,
+      enableDentalSemanticServiceSplit: true,
+      enableExtractionReplayMode: true,
+      enableDentalRetrievalIndexing: true,
+    },
   });
 
   await page.goto('/products/dental?tab=overview');
@@ -19,5 +25,6 @@ test('Dental flow remains stable when semantic service split is enabled', async 
   await expect(page.getByTestId('ask-answer')).toBeVisible();
   await page.getByTestId('product-tab-reports').click();
   await page.getByTestId('generate-report-button').click();
-  await expect(page.getByTestId('report-semantic-state-banner')).toBeVisible({ timeout: 60000 });
+  await expect(page.getByTestId('report-section-executive-summary')).toBeVisible({ timeout: 60000 });
+  await expect(page.getByTestId('report-semantic-state-banner')).toHaveCount(0);
 });

@@ -8,12 +8,18 @@ test('Dental hybrid mode surfaces semantic freshness after email upload', async 
   await resetLifecycleState(request, {
     productId: 'dental',
     mode: 'wave-00',
-    executionMode: 'hybrid',
-    featureMode: 'live-email-trust-hardening',
+    executionMode: 'replay',
+    featureFlags: {
+      enableNovaDentalLiveEmail: false,
+      enableDentalTrustSurfaces: true,
+      enableDentalSemanticServiceSplit: true,
+      enableExtractionReplayMode: true,
+      enableDentalRetrievalIndexing: true,
+    },
   });
 
   await page.goto('/products/dental?tab=overview');
-  await expect(page.getByTestId('extraction-state-badge')).toBeVisible();
+  await expect(page.getByTestId('semantic-freshness-badge')).toBeVisible();
 
   await uploadNovaArtifact(page, { fixtureKey: 'wave03-vendor-mitigation-email' });
 

@@ -8,8 +8,14 @@ test('Source detail distinguishes exact citations from fallback references', asy
   await resetLifecycleState(request, {
     productId: 'dental',
     mode: 'wave-00',
-    executionMode: 'hybrid',
-    featureMode: 'live-email-trust-hardening',
+    executionMode: 'replay',
+    featureFlags: {
+      enableNovaDentalLiveEmail: false,
+      enableDentalTrustSurfaces: true,
+      enableDentalSemanticServiceSplit: true,
+      enableExtractionReplayMode: true,
+      enableDentalRetrievalIndexing: true,
+    },
   });
 
   const upload = await uploadNovaArtifact(page, { fixtureKey: 'wave03-vendor-mitigation-email' });

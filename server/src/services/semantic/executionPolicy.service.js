@@ -1,4 +1,5 @@
 import { getSourceFamily } from '../../../../shared/artifactTypes.js';
+import { resolveEffectiveFeatureFlags } from './featureFlags.service.js';
 
 const KNOWN_SOURCE_FAMILIES = ['email', 'document', 'transcript', 'spreadsheet', 'slide_deck'];
 
@@ -23,6 +24,10 @@ export function resolveSemanticExecutionPolicy({
   stateSemanticConfig = {},
 } = {}) {
   const semanticConfig = stateSemanticConfig || {};
+  const effectiveFeatureFlags = resolveEffectiveFeatureFlags({
+    runtimeConfig,
+    persistedSemanticConfig: semanticConfig,
+  });
   const sourceFamilyModes = semanticConfig.sourceFamilyModes
     || buildSourceFamilyModes({
       executionMode: semanticConfig.executionMode || runtimeConfig?.semantic?.defaultExecutionMode || 'replay',
@@ -34,7 +39,7 @@ export function resolveSemanticExecutionPolicy({
   const liveSupported = Boolean(
     productId === 'dental'
       && requestedMode === 'live'
-      && runtimeConfig?.features?.enableNovaDentalLiveEmail
+      && effectiveFeatureFlags.enableNovaDentalLiveEmail
       && runtimeConfig?.bedrock?.enabled
       && runtimeConfig?.bedrock?.textModelId
       && (runtimeConfig?.semantic?.liveSourceFamilies || []).includes(sourceFamily)
@@ -42,9 +47,14 @@ export function resolveSemanticExecutionPolicy({
 
   let executionMode = requestedMode;
   let reason = 'configured_execution_mode';
+  let disabled = false;
   if (productId !== 'dental') {
     executionMode = 'replay';
     reason = 'non_dental_replay';
+  } else if (requestedMode === 'replay' && !effectiveFeatureFlags.enableExtractionReplayMode) {
+    executionMode = 'disabled';
+    reason = 'replay_disabled';
+    disabled = true;
   } else if (requestedMode === 'live' && !liveSupported) {
     executionMode = 'replay';
     reason = 'live_unavailable_replay_fallback';
@@ -59,7 +69,9 @@ export function resolveSemanticExecutionPolicy({
     executionMode,
     requestedMode,
     reason,
+    disabled,
     promptVersion: runtimeConfig?.semantic?.promptRegistryVersion || 'local-dev',
+    featureFlags: effectiveFeatureFlags,
   };
 }
 
