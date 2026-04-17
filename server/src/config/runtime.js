@@ -47,6 +47,10 @@ export function getRuntimeConfig() {
     .split(',')
     .map((item) => item.trim())
     .filter(Boolean);
+  const semanticLiveProductIds = envString('EIDS_LIVE_PRODUCT_IDS', 'dental,essence,optima')
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
   const artifactStoreMode = envString('EIDS_ARTIFACT_STORE_MODE', isTest ? 'filesystem' : '').trim()
     || ((isProduction && rawBucket && normalizedBucket && exportBucket) ? 's3' : 'filesystem');
   const sharedCredentialsProject = envString('EIDS_SHARED_CREDENTIALS_PROJECT', DEFAULT_SHARED_PROJECT).trim() || DEFAULT_SHARED_PROJECT;
@@ -82,6 +86,7 @@ export function getRuntimeConfig() {
       aggregationExecutionMode: envString('EIDS_AGGREGATION_EXECUTION_MODE', executionModeDefault).trim() || executionModeDefault,
       defaultExecutionMode: semanticDefaultExecutionMode,
       liveSourceFamilies: semanticLiveSourceFamilies,
+      liveProductIds: semanticLiveProductIds,
       promptRegistryVersion: envString('EIDS_PROMPT_REGISTRY_VERSION', 'local-dev').trim() || 'local-dev',
       evalCacheDir: envString('EIDS_EVAL_CACHE_DIR', path.join(getRuntimePaths().runtimeDir, 'eval-cache')).trim() || path.join(getRuntimePaths().runtimeDir, 'eval-cache'),
       staleAfterHours: envInt('EIDS_SEMANTIC_STALE_AFTER_HOURS', 24),

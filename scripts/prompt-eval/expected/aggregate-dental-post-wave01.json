@@ -1,0 +1,28 @@
+{
+  "_meta": {
+    "fixture": "aggregate-dental-post-wave01",
+    "productId": "dental",
+    "productName": "DENTAL / DENCLASS",
+    "waveContext": "After all wave-01-operational uploads. Vendor sandbox delay, FHIR prioritisation, feature deferrals, evolving risks.",
+    "expectedRationale": "Wave-01 introduces clear operational risk (vendor delay, feature deferrals, integration-test gaps). No mitigation yet. Status should reflect escalating risk, not yet recovery."
+  },
+  "assertions": {
+    "status": "risk",
+    "statusLabel": "At Risk",
+    "confidenceEnum": ["medium", "high"],
+    "summary": {
+      "minLength": 80,
+      "substringPatterns": ["vendor|delay|FHIR|deferr|integration|environment"]
+    },
+    "drivers": {
+      "minCount": 1,
+      "maxCount": 6,
+      "anyDirection": ["negative"]
+    },
+    "riskFactors": {
+      "minCount": 1,
+      "maxCount": 6,
+      "anySeverity": ["medium", "high"]
+    }
+  }
+}

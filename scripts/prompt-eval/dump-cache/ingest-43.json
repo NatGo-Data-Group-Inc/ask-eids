@@ -1,0 +1,47 @@
+{
+  "sourceId": "ingest-43",
+  "productId": "dental",
+  "productName": "DENTAL / DENCLASS",
+  "sourceType": "blocker_export",
+  "sourceFamily": "spreadsheet",
+  "wave": "wave-02-escalation",
+  "ingestOrder": 43,
+  "documentDate": "2026-04-13",
+  "title": "Dental Blockers Export — Escalated",
+  "author": "Jaden Cole",
+  "metadata": {
+    "product_id": "dental",
+    "product_name": "DENTAL / DENCLASS",
+    "wave": "wave-02-escalation",
+    "wave_label": "Escalation Week",
+    "source_type": "blocker_export",
+    "document_date": "2026-04-13",
+    "author": "Jaden Cole",
+    "title": "Dental Blockers Export — Escalated",
+    "pi": 4,
+    "sprint": 2,
+    "contains_decisions": false,
+    "contains_action_items": false,
+    "status_signal": "risk",
+    "stakeholders": "Jaden Cole; Lowry Beckett",
+    "demo_effect": "Introduces active blockers that should populate the Data tab and lower health confidence."
+  },
+  "payload": {
+    "summary": "The blocker export highlights two active issues for the dental product: an unsigned vendor contract and pending test environment access. Both issues are critical and require immediate attention to avoid delays in project planning and execution.",
+    "decisions": [
+      {
+        "label": "require decision from acquisition/legal path",
+        "confidence": "high",
+        "anchorText": "Decision required from acquisition/legal path by 4/15."
+      }
+    ],
+    "warnings": [
+      "The vendor contract remains unsigned, which blocks final sandbox commitment and Sprint 3 planning.",
+      "Named users still cannot access the vendor environment, and mitigation options are under review."
+    ],
+    "confidence": "high"
+  },
+  "promptVersion": "phase2-dump-v1",
+  "modelId": "amazon.nova-pro-v1:0",
+  "recordedAt": "2026-04-17T09:54:17.467Z"
+}

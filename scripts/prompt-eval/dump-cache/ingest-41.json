@@ -1,0 +1,77 @@
+{
+  "sourceId": "ingest-41",
+  "productId": "dental",
+  "productName": "DENTAL / DENCLASS",
+  "sourceType": "release_plan",
+  "sourceFamily": "document",
+  "wave": "wave-02-escalation",
+  "ingestOrder": 41,
+  "documentDate": "2026-04-12",
+  "title": "Dental Release Plan Revision",
+  "author": "Jaden Cole",
+  "metadata": {
+    "product_id": "dental",
+    "product_name": "DENTAL / DENCLASS",
+    "wave": "wave-02-escalation",
+    "wave_label": "Escalation Week",
+    "source_type": "release_plan",
+    "document_date": "2026-04-12",
+    "author": "Jaden Cole",
+    "title": "Dental Release Plan Revision",
+    "pi": 4,
+    "sprint": 2,
+    "contains_decisions": true,
+    "contains_action_items": false,
+    "status_signal": "risk",
+    "stakeholders": "Jaden Cole; Benjiman Jennings",
+    "demo_effect": "Documents the delivery impact of the delay and how scope is reshaped around critical path work."
+  },
+  "payload": {
+    "summary": "The Dental Release Plan has been revised due to a critical-path disruption caused by a vendor sandbox issue. The plan now includes mitigation strategies based on whether the vendor path recovers by 4/15 or not.",
+    "decisions": [
+      {
+        "label": "Complete FHIR endpoint mapping",
+        "confidence": "high",
+        "anchorText": "FHIR endpoint mapping completion"
+      },
+      {
+        "label": "Complete minimum viable integration-test path",
+        "confidence": "high",
+        "anchorText": "Minimum viable integration-test path"
+      },
+      {
+        "label": "Complete security assessment",
+        "confidence": "high",
+        "anchorText": "Security assessment completion"
+      },
+      {
+        "label": "Align stakeholder narrative and reporting",
+        "confidence": "high",
+        "anchorText": "Stakeholder narrative and reporting alignment"
+      },
+      {
+        "label": "Defer non-critical feature stories",
+        "confidence": "high",
+        "anchorText": "Non-critical feature stories originally slated for Sprint 2"
+      },
+      {
+        "label": "Defer polished demo scripting",
+        "confidence": "high",
+        "anchorText": "Polished demo scripting that assumes full environment readiness"
+      },
+      {
+        "label": "Defer some stakeholder-facing refinements",
+        "confidence": "high",
+        "anchorText": "Some stakeholder-facing refinements that do not reduce actual readiness risk"
+      }
+    ],
+    "warnings": [
+      "The vendor sandbox issue is a critical-path disruption that now governs what can be credibly promised in PI 4.",
+      "If the vendor path does not recover, the product will continue to be reported as at risk until the evidence posture materially improves."
+    ],
+    "confidence": "high"
+  },
+  "promptVersion": "phase2-dump-v1",
+  "modelId": "amazon.nova-pro-v1:0",
+  "recordedAt": "2026-04-17T09:54:14.830Z"
+}

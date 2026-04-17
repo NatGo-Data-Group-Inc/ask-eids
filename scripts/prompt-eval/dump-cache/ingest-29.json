@@ -1,0 +1,47 @@
+{
+  "sourceId": "ingest-29",
+  "productId": "dental",
+  "productName": "DENTAL / DENCLASS",
+  "sourceType": "email",
+  "sourceFamily": "email",
+  "wave": "wave-01-operational",
+  "ingestOrder": 29,
+  "documentDate": "2026-04-08",
+  "title": "Email — Vendor Sandbox Delay",
+  "author": "Elena Markovic",
+  "metadata": {
+    "product_id": "dental",
+    "product_name": "DENTAL / DENCLASS",
+    "wave": "wave-01-operational",
+    "wave_label": "Operational Week",
+    "source_type": "email",
+    "document_date": "2026-04-08",
+    "author": "Elena Markovic",
+    "title": "Email — Vendor Sandbox Delay",
+    "pi": 4,
+    "sprint": 2,
+    "contains_decisions": false,
+    "contains_action_items": true,
+    "status_signal": "risk",
+    "stakeholders": "Elena Markovic; Lowry Beckett; Jaden Cole",
+    "demo_effect": "Introduces hard evidence of the vendor delay that will elevate risk and reduce confidence."
+  },
+  "payload": {
+    "summary": "The email discusses a delay in the dental sandbox milestone due to infrastructure team requirements, with a potential two-week slip. Phased access for a small group is being evaluated, with more clarity expected before 4/15. The note is not a final approval but a forecast pending internal sign-off.",
+    "decisions": [
+      {
+        "label": "evaluate phased access",
+        "confidence": "medium",
+        "anchorText": "We are evaluating whether we can provide phased access earlier for a small named-user group."
+      }
+    ],
+    "warnings": [
+      "The infrastructure team needs additional time, causing a roughly two-week slip relative to the original target.",
+      "Do not interpret this note as final milestone approval; it is the best available forecast pending internal sign-off."
+    ],
+    "confidence": "medium"
+  },
+  "promptVersion": "phase2-dump-v1",
+  "modelId": "amazon.nova-pro-v1:0",
+  "recordedAt": "2026-04-17T09:54:00.804Z"
+}

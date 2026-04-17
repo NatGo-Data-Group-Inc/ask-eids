@@ -1,0 +1,22 @@
+{
+  "_meta": {
+    "ingestOrder": 30,
+    "manifestPath": "EIDS-Prototype-Document-Pack/wave-01-operational/products/dental/transcripts/2026-04-09-dental-sprint2-review-transcript.docx",
+    "productId": "dental",
+    "productName": "DENTAL / DENCLASS",
+    "sourceType": "transcript",
+    "sourceFamily": "transcript",
+    "wave": "wave-01-operational",
+    "documentDate": "2026-04-09",
+    "title": "Dental Sprint 2 Review Transcript",
+    "author": "Teams Auto Transcript"
+  },
+  "expectedExtraction": {
+    "_comment": "Sanity-check fixture only. Verifies the generic Phase-1 prompt produces schema-valid JSON for a non-email source type."
+  },
+  "assertions": {
+    "schemaValid": true,
+    "summary": { "minLength": 40 },
+    "topLevelConfidence": ["low", "medium", "high"]
+  }
+}

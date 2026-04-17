@@ -1,0 +1,48 @@
+{
+  "_meta": {
+    "ingestOrder": 28,
+    "manifestPath": "EIDS-Prototype-Document-Pack/wave-01-operational/products/dental/emails/2026-04-07-email-dr-sohl-to-jaden-test-schedule-approval.eml",
+    "productId": "dental",
+    "productName": "DENTAL / DENCLASS",
+    "sourceType": "email",
+    "sourceFamily": "email",
+    "wave": "wave-01-operational",
+    "documentDate": "2026-04-07",
+    "title": "Email — Test Schedule Approval",
+    "author": "Dr. Minji Sohl",
+    "stakeholders": ["Dr. Minji Sohl", "Jaden Cole", "Benjiman Jennings", "Lowry Beckett"]
+  },
+  "expectedExtraction": {
+    "summary": "Dr. Sohl approves the revised Sprint 2 test schedule but withholds environment-ready certification until validation in the demo path; asks Jaden to forward Lowry's written vendor timeline if obtained.",
+    "decisions": [
+      {
+        "label": "Approve revised Sprint 2 test schedule",
+        "confidence": "high",
+        "anchorText": "Approved the revised test schedule."
+      }
+    ],
+    "warnings": [
+      "Approval does not certify environment readiness until validated in the demo path."
+    ],
+    "confidence": "high"
+  },
+  "assertions": {
+    "schemaValid": true,
+    "decisions": {
+      "minCount": 1,
+      "maxCount": 2,
+      "labelPattern": "approv(e|al|ed)",
+      "anchorTextSubstrings": ["test schedule"],
+      "confidenceEnum": ["high"]
+    },
+    "warnings": {
+      "minCount": 1,
+      "matchPattern": "environment|readiness|certif|valid"
+    },
+    "summary": {
+      "minLength": 80,
+      "substringPatterns": ["test schedule|cadence", "environment|readiness|certif|valid"]
+    },
+    "topLevelConfidence": ["high"]
+  }
+}

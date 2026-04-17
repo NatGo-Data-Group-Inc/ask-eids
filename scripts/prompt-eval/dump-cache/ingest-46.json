@@ -1,0 +1,53 @@
+{
+  "sourceId": "ingest-46",
+  "productId": "dental",
+  "productName": "DENTAL / DENCLASS",
+  "sourceType": "ado_export",
+  "sourceFamily": "spreadsheet",
+  "wave": "wave-02-escalation",
+  "ingestOrder": 46,
+  "documentDate": "2026-04-13",
+  "title": "Dental ADO Export — Escalation",
+  "author": "Whitney Core Force",
+  "metadata": {
+    "product_id": "dental",
+    "product_name": "DENTAL / DENCLASS",
+    "wave": "wave-02-escalation",
+    "wave_label": "Escalation Week",
+    "source_type": "ado_export",
+    "document_date": "2026-04-13",
+    "author": "Whitney Core Force",
+    "title": "Dental ADO Export — Escalation",
+    "pi": 4,
+    "sprint": 2,
+    "contains_decisions": false,
+    "contains_action_items": false,
+    "status_signal": "risk",
+    "stakeholders": "Whitney Core Force; Jaden Cole",
+    "demo_effect": "Captures deferred stories, newly blocked items, and the FHIR critical path."
+  },
+  "payload": {
+    "summary": "The source details various work items related to dental product development, including features, tasks, and user stories. Key points include the critical path item of FHIR endpoint mapping, blocked tasks due to contract and environment path issues, and tasks pulled forward due to stakeholder pressure.",
+    "decisions": [
+      {
+        "label": "map FHIR endpoint",
+        "confidence": "high",
+        "anchorText": "FHIR endpoint mapping"
+      },
+      {
+        "label": "draft integration test harness",
+        "confidence": "high",
+        "anchorText": "Draft integration test harness"
+      }
+    ],
+    "warnings": [
+      "Task 'Confirm vendor sandbox users' is blocked pending contract path.",
+      "User Story 'Create stakeholder demo script' is deferred until environment path settles.",
+      "Task 'Model cost impact scenarios' was added after a specific request."
+    ],
+    "confidence": "high"
+  },
+  "promptVersion": "phase2-dump-v1",
+  "modelId": "amazon.nova-pro-v1:0",
+  "recordedAt": "2026-04-17T09:54:20.038Z"
+}

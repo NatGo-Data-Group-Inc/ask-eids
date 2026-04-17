@@ -1,0 +1,57 @@
+{
+  "sourceId": "ingest-30",
+  "productId": "dental",
+  "productName": "DENTAL / DENCLASS",
+  "sourceType": "transcript",
+  "sourceFamily": "transcript",
+  "wave": "wave-01-operational",
+  "ingestOrder": 30,
+  "documentDate": "2026-04-09",
+  "title": "Dental Sprint 2 Review Transcript",
+  "author": "Teams Auto Transcript",
+  "metadata": {
+    "product_id": "dental",
+    "product_name": "DENTAL / DENCLASS",
+    "wave": "wave-01-operational",
+    "wave_label": "Operational Week",
+    "source_type": "transcript",
+    "document_date": "2026-04-09",
+    "author": "Teams Auto Transcript",
+    "title": "Dental Sprint 2 Review Transcript",
+    "pi": 4,
+    "sprint": 2,
+    "contains_decisions": true,
+    "contains_action_items": true,
+    "status_signal": "risk",
+    "stakeholders": "Jaden Cole; Dr. Minji Sohl; Benjiman Jennings",
+    "demo_effect": "Provides the first high-value decision-rich transcript used by Ask and reporting."
+  },
+  "payload": {
+    "summary": "Sprint 2 review shifted the program posture materially. The vendor delay became explicit, leadership directed the team to prioritize FHIR over feature work, and Dr. Sohl raised concern about insufficient integration-test readiness.",
+    "decisions": [
+      {
+        "label": "prioritize FHIR migration",
+        "confidence": "high",
+        "anchorText": "FHIR migration work will take priority over all new feature work until the dependency risk is reduced."
+      },
+      {
+        "label": "defer three feature stories",
+        "confidence": "high",
+        "anchorText": "Three feature stories will be deferred to Sprint 3 so engineering effort can stay aligned to the critical path."
+      },
+      {
+        "label": "plan integration test harness",
+        "confidence": "high",
+        "anchorText": "Integration test harness work must be planned explicitly for Sprint 3 rather than assumed as hidden labor."
+      }
+    ],
+    "warnings": [
+      "Dr. Minji Sohl raised concern about insufficient integration-test readiness.",
+      "Dr. Minji Sohl stated that approval of a schedule does not erase the environment risk."
+    ],
+    "confidence": "high"
+  },
+  "promptVersion": "phase2-dump-v1",
+  "modelId": "amazon.nova-pro-v1:0",
+  "recordedAt": "2026-04-17T09:54:02.185Z"
+}

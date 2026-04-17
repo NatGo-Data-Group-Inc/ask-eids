@@ -1,0 +1,52 @@
+{
+  "sourceId": "ingest-47",
+  "productId": "essence",
+  "productName": "ESSENCE Transition Support",
+  "sourceType": "transcript",
+  "sourceFamily": "transcript",
+  "wave": "wave-02-escalation",
+  "ingestOrder": 47,
+  "documentDate": "2026-04-11",
+  "title": "ESSENCE Handoff Working Session Transcript",
+  "author": "Teams Auto Transcript",
+  "metadata": {
+    "product_id": "essence",
+    "product_name": "ESSENCE Transition Support",
+    "wave": "wave-02-escalation",
+    "wave_label": "Escalation Week",
+    "source_type": "transcript",
+    "document_date": "2026-04-11",
+    "author": "Teams Auto Transcript",
+    "title": "ESSENCE Handoff Working Session Transcript",
+    "pi": 4,
+    "sprint": 2,
+    "contains_decisions": false,
+    "contains_action_items": true,
+    "status_signal": "risk",
+    "stakeholders": "Commander Melissa Jones; Virginia Howard",
+    "demo_effect": "Adds a late-stage continuity-recovery artifact that still exposes missing knowledge."
+  },
+  "payload": {
+    "summary": "The ESSENCE working session focused on identifying missing artifacts and the need for explicit logging of uncertainties. Weekly updates will continue with confidence caveats until the handoff is reconstructed.",
+    "decisions": [
+      {
+        "label": "log missing artifacts",
+        "confidence": "high",
+        "anchorText": "The team will stop pretending the current repository is complete and will explicitly log missing artifacts."
+      },
+      {
+        "label": "include confidence caveats in updates",
+        "confidence": "high",
+        "anchorText": "Weekly updates will continue, but every update will include a confidence caveat until the handoff is reconstructed."
+      }
+    ],
+    "warnings": [
+      "The team is operating with incomplete information and has identified significant gaps in the current repository.",
+      "Decisions made during this session are based on partial data and should be revisited once more information is available."
+    ],
+    "confidence": "medium"
+  },
+  "promptVersion": "phase2-dump-v1",
+  "modelId": "amazon.nova-pro-v1:0",
+  "recordedAt": "2026-04-17T09:54:21.204Z"
+}

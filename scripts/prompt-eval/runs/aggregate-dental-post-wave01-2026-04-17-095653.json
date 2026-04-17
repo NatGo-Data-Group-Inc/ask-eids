@@ -1,0 +1,65 @@
+{
+  "fixtureName": "aggregate-dental-post-wave01",
+  "promptVersion": "aggregate-eval-1",
+  "region": "us-east-1",
+  "modelId": "amazon.nova-pro-v1:0",
+  "timestamp": "2026-04-17T09:56:53.062Z",
+  "rawText": "{\n  \"productId\": \"dental\",\n  \"status\": \"risk\",\n  \"statusLabel\": \"At Risk\",\n  \"summary\": \"The dental product is at risk due to vendor delays, leadership directives to prioritize FHIR migration, and insufficient integration-test readiness. The schedule is recoverable but requires a decision by 4/15.\",\n  \"confidence\": \"high\",\n  \"drivers\": [\n    {\n      \"title\": \"FHIR migration prioritization\",\n      \"direction\": \"positive\",\n      \"anchorSourceIds\": [\"ingest-32\", \"ingest-31\", \"ingest-30\"]\n    },\n    {\n      \"title\": \"Vendor delays\",\n      \"direction\": \"negative\",\n      \"anchorSourceIds\": [\"ingest-34\", \"ingest-33\", \"ingest-32\", \"ingest-29\"]\n    }\n  ],\n  \"riskFactors\": [\n    {\n      \"title\": \"Insufficient integration-test readiness\",\n      \"severity\": \"high\",\n      \"anchorSourceIds\": [\"ingest-32\", \"ingest-30\"]\n    },\n    {\n      \"title\": \"Vendor sandbox delivery slip\",\n      \"severity\": \"high\",\n      \"anchorSourceIds\": [\"ingest-33\", \"ingest-29\"]\n    },\n    {\n      \"title\": \"Deferred user stories\",\n      \"severity\": \"medium\",\n      \"anchorSourceIds\": [\"ingest-34\", \"ingest-30\"]\n    }\n  ]\n}",
+  "payload": {
+    "productId": "dental",
+    "status": "risk",
+    "statusLabel": "At Risk",
+    "summary": "The dental product is at risk due to vendor delays, leadership directives to prioritize FHIR migration, and insufficient integration-test readiness. The schedule is recoverable but requires a decision by 4/15.",
+    "confidence": "high",
+    "drivers": [
+      {
+        "title": "FHIR migration prioritization",
+        "direction": "positive",
+        "anchorSourceIds": [
+          "ingest-32",
+          "ingest-31",
+          "ingest-30"
+        ]
+      },
+      {
+        "title": "Vendor delays",
+        "direction": "negative",
+        "anchorSourceIds": [
+          "ingest-34",
+          "ingest-33",
+          "ingest-32",
+          "ingest-29"
+        ]
+      }
+    ],
+    "riskFactors": [
+      {
+        "title": "Insufficient integration-test readiness",
+        "severity": "high",
+        "anchorSourceIds": [
+          "ingest-32",
+          "ingest-30"
+        ]
+      },
+      {
+        "title": "Vendor sandbox delivery slip",
+        "severity": "high",
+        "anchorSourceIds": [
+          "ingest-33",
+          "ingest-29"
+        ]
+      },
+      {
+        "title": "Deferred user stories",
+        "severity": "medium",
+        "anchorSourceIds": [
+          "ingest-34",
+          "ingest-30"
+        ]
+      }
+    ]
+  },
+  "schemaErrors": null,
+  "error": null,
+  "passed": true
+}

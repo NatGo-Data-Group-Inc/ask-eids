@@ -1,0 +1,56 @@
+{
+  "sourceId": "ingest-53",
+  "productId": "dental",
+  "productName": "DENTAL / DENCLASS",
+  "sourceType": "ado_export",
+  "sourceFamily": "spreadsheet",
+  "wave": "wave-03-recovery",
+  "ingestOrder": 53,
+  "documentDate": "2026-04-16",
+  "title": "Dental ADO Export — Recovery",
+  "author": "Whitney Core Force",
+  "metadata": {
+    "product_id": "dental",
+    "product_name": "DENTAL / DENCLASS",
+    "wave": "wave-03-recovery",
+    "wave_label": "Recovery Week",
+    "source_type": "ado_export",
+    "document_date": "2026-04-16",
+    "author": "Whitney Core Force",
+    "title": "Dental ADO Export — Recovery",
+    "pi": 4,
+    "sprint": 2,
+    "contains_decisions": false,
+    "contains_action_items": false,
+    "status_signal": "caution",
+    "stakeholders": "Whitney Core Force; Jaden Cole",
+    "demo_effect": "Shows blocked work stabilizing and critical-path items moving with clearer ownership."
+  },
+  "payload": {
+    "summary": "The dental product development is progressing with several tasks in motion, including FHIR endpoint mapping, vendor sandbox user confirmation, and drafting an integration test harness. Cost impact scenarios have been modeled and delivered.",
+    "decisions": [
+      {
+        "label": "accelerate progress",
+        "confidence": "high",
+        "anchorText": "Progress accelerated after mitigation approval."
+      },
+      {
+        "label": "confirm partial access",
+        "confidence": "high",
+        "anchorText": "Partial access confirmed for named users."
+      },
+      {
+        "label": "deliver estimate",
+        "confidence": "high",
+        "anchorText": "Estimate delivered to Juan and Benjiman."
+      }
+    ],
+    "warnings": [
+      "Some tasks are still in progress or have only partial completion."
+    ],
+    "confidence": "high"
+  },
+  "promptVersion": "phase2-dump-v1",
+  "modelId": "amazon.nova-pro-v1:0",
+  "recordedAt": "2026-04-17T09:54:28.932Z"
+}

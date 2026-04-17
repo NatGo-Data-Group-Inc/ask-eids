@@ -1,0 +1,27 @@
+{
+  "_meta": {
+    "fixture": "aggregate-essence-post-wave02",
+    "productId": "essence",
+    "productName": "ESSENCE Transition Support",
+    "waveContext": "Only 2 extractions: handoff working session transcript + document-gap followup email. Both wave-02 escalation signals.",
+    "expectedRationale": "Essence shows open handoff risk and a documented gap concern. Fewer data points than dental but uniformly risk-signalling. Status should be at-risk; confidence may be lower due to limited evidence."
+  },
+  "assertions": {
+    "status": "risk",
+    "statusLabel": "At Risk",
+    "confidenceEnum": ["low", "medium", "high"],
+    "summary": {
+      "minLength": 60,
+      "substringPatterns": ["handoff|document|gap|transition"]
+    },
+    "drivers": {
+      "minCount": 0,
+      "maxCount": 6
+    },
+    "riskFactors": {
+      "minCount": 1,
+      "maxCount": 6,
+      "anySeverity": ["medium", "high"]
+    }
+  }
+}

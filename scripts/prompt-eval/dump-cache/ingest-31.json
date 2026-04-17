@@ -1,0 +1,51 @@
+{
+  "sourceId": "ingest-31",
+  "productId": "dental",
+  "productName": "DENTAL / DENCLASS",
+  "sourceType": "decision_memo",
+  "sourceFamily": "document",
+  "wave": "wave-01-operational",
+  "ingestOrder": 31,
+  "documentDate": "2026-04-09",
+  "title": "Dental Decision Memo — FHIR Priority",
+  "author": "Benjiman Jennings",
+  "metadata": {
+    "product_id": "dental",
+    "product_name": "DENTAL / DENCLASS",
+    "wave": "wave-01-operational",
+    "wave_label": "Operational Week",
+    "source_type": "decision_memo",
+    "document_date": "2026-04-09",
+    "author": "Benjiman Jennings",
+    "title": "Dental Decision Memo — FHIR Priority",
+    "pi": 4,
+    "sprint": 2,
+    "contains_decisions": true,
+    "contains_action_items": false,
+    "status_signal": "risk",
+    "stakeholders": "Benjiman Jennings; Jaden Cole",
+    "demo_effect": "Codifies the leadership decision to prioritize FHIR over new feature work."
+  },
+  "payload": {
+    "summary": "FHIR migration work becomes the primary priority for Dental / DenClass, deferring new feature work not required to reduce critical-path risk.",
+    "decisions": [
+      {
+        "label": "prioritize FHIR migration",
+        "confidence": "high",
+        "anchorText": "Effective immediately, FHIR migration work becomes the primary priority for Dental / DenClass."
+      },
+      {
+        "label": "defer non-critical feature work",
+        "confidence": "high",
+        "anchorText": "New feature work not required to reduce critical-path risk is deferred."
+      }
+    ],
+    "warnings": [
+      "This decision remains in force until leadership revisits the vendor dependency posture on or after April 15, 2026."
+    ],
+    "confidence": "high"
+  },
+  "promptVersion": "phase2-dump-v1",
+  "modelId": "amazon.nova-pro-v1:0",
+  "recordedAt": "2026-04-17T09:54:03.201Z"
+}

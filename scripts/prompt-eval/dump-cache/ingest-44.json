@@ -1,0 +1,61 @@
+{
+  "sourceId": "ingest-44",
+  "productId": "dental",
+  "productName": "DENTAL / DENCLASS",
+  "sourceType": "action_item_export",
+  "sourceFamily": "spreadsheet",
+  "wave": "wave-02-escalation",
+  "ingestOrder": 44,
+  "documentDate": "2026-04-13",
+  "title": "Dental Action Items Export",
+  "author": "Jaden Cole",
+  "metadata": {
+    "product_id": "dental",
+    "product_name": "DENTAL / DENCLASS",
+    "wave": "wave-02-escalation",
+    "wave_label": "Escalation Week",
+    "source_type": "action_item_export",
+    "document_date": "2026-04-13",
+    "author": "Jaden Cole",
+    "title": "Dental Action Items Export",
+    "pi": 4,
+    "sprint": 2,
+    "contains_decisions": false,
+    "contains_action_items": true,
+    "status_signal": "risk",
+    "stakeholders": "Jaden Cole; Lowry Beckett; Benjiman Jennings",
+    "demo_effect": "Adds structured action-item evidence that links meetings, risks, and blockers."
+  },
+  "payload": {
+    "summary": "Action items related to dental product management, including vendor delays, legal contract issues, cost impact updates, and mock service setup.",
+    "decisions": [
+      {
+        "label": "document phased mitigation options",
+        "confidence": "medium",
+        "anchorText": "Document phased mitigation options for vendor delay"
+      },
+      {
+        "label": "obtain legal path for unsigned vendor contract",
+        "confidence": "medium",
+        "anchorText": "Obtain legal path for unsigned vendor contract"
+      },
+      {
+        "label": "update cost impact estimate",
+        "confidence": "medium",
+        "anchorText": "Update cost impact estimate for stakeholder review"
+      },
+      {
+        "label": "stand up mock service path",
+        "confidence": "medium",
+        "anchorText": "Stand up mock service path for demo continuity"
+      }
+    ],
+    "warnings": [
+      "Action items are currently open or in progress, indicating ongoing challenges or pending resolutions."
+    ],
+    "confidence": "medium"
+  },
+  "promptVersion": "phase2-dump-v1",
+  "modelId": "amazon.nova-pro-v1:0",
+  "recordedAt": "2026-04-17T09:54:18.773Z"
+}

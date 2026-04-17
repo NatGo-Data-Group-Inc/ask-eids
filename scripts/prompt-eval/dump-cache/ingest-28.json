@@ -1,0 +1,47 @@
+{
+  "sourceId": "ingest-28",
+  "productId": "dental",
+  "productName": "DENTAL / DENCLASS",
+  "sourceType": "email",
+  "sourceFamily": "email",
+  "wave": "wave-01-operational",
+  "ingestOrder": 28,
+  "documentDate": "2026-04-07",
+  "title": "Email — Test Schedule Approval",
+  "author": "Dr. Minji Sohl",
+  "metadata": {
+    "product_id": "dental",
+    "product_name": "DENTAL / DENCLASS",
+    "wave": "wave-01-operational",
+    "wave_label": "Operational Week",
+    "source_type": "email",
+    "document_date": "2026-04-07",
+    "author": "Dr. Minji Sohl",
+    "title": "Email — Test Schedule Approval",
+    "pi": 4,
+    "sprint": 2,
+    "contains_decisions": true,
+    "contains_action_items": false,
+    "status_signal": "healthy",
+    "stakeholders": "Dr. Minji Sohl; Jaden Cole",
+    "demo_effect": "Adds a stakeholder approval event that the Ask panel can cite."
+  },
+  "payload": {
+    "summary": "Dr. Minji Sohl approved the revised test schedule for the dental product but emphasized that the environment is not considered ready until actual validation is achieved.",
+    "decisions": [
+      {
+        "label": "approve revised test schedule",
+        "confidence": "high",
+        "anchorText": "Approved the revised test schedule."
+      }
+    ],
+    "warnings": [
+      "The environment is not considered ready until actual validation is achieved.",
+      "Confidence in the stakeholder demo date depends on receiving the vendor timeline in writing."
+    ],
+    "confidence": "high"
+  },
+  "promptVersion": "phase2-dump-v1",
+  "modelId": "amazon.nova-pro-v1:0",
+  "recordedAt": "2026-04-17T09:53:59.499Z"
+}

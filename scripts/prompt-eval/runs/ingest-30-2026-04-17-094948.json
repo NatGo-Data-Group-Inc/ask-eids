@@ -1,0 +1,52 @@
+{
+  "ingestId": "ingest-30",
+  "promptVersion": "phase2-sanity",
+  "region": "us-east-1",
+  "modelId": "amazon.nova-pro-v1:0",
+  "timestamp": "2026-04-17T09:49:48.698Z",
+  "rawText": "{\n  \"summary\": \"The transcript discusses various aspects of dental products, including their approval, prioritization, and potential risks. It highlights the importance of evidence-based decision-making and the need for careful consideration of potential risks associated with dental products.\",\n  \"decisions\": [\n    {\n      \"label\": \"approve dental products\",\n      \"confidence\": \"medium\",\n      \"anchorText\": \"The transcript mentions the approval of dental products, indicating a decision to endorse or authorize their use.\"\n    },\n    {\n      \"label\": \"prioritize dental product research\",\n      \"confidence\": \"medium\",\n      \"anchorText\": \"The transcript emphasizes the importance of prioritizing research on dental products, suggesting a commitment to advancing knowledge and understanding in this area.\"\n    }\n  ],\n  \"warnings\": [\n    \"The transcript cautions against potential risks associated with dental products, highlighting the need for careful evaluation and consideration of these risks.\"\n  ],\n  \"confidence\": \"medium\"\n}",
+  "parsed": {
+    "summary": "The transcript discusses various aspects of dental products, including their approval, prioritization, and potential risks. It highlights the importance of evidence-based decision-making and the need for careful consideration of potential risks associated with dental products.",
+    "decisions": [
+      {
+        "label": "approve dental products",
+        "confidence": "medium",
+        "anchorText": "The transcript mentions the approval of dental products, indicating a decision to endorse or authorize their use."
+      },
+      {
+        "label": "prioritize dental product research",
+        "confidence": "medium",
+        "anchorText": "The transcript emphasizes the importance of prioritizing research on dental products, suggesting a commitment to advancing knowledge and understanding in this area."
+      }
+    ],
+    "warnings": [
+      "The transcript cautions against potential risks associated with dental products, highlighting the need for careful evaluation and consideration of these risks."
+    ],
+    "confidence": "medium"
+  },
+  "extraction": {
+    "summary": "The transcript discusses various aspects of dental products, including their approval, prioritization, and potential risks. It highlights the importance of evidence-based decision-making and the need for careful consideration of potential risks associated with dental products.",
+    "decisions": [
+      {
+        "label": "approve dental products",
+        "confidence": "medium",
+        "anchorText": "The transcript mentions the approval of dental products, indicating a decision to endorse or authorize their use."
+      },
+      {
+        "label": "prioritize dental product research",
+        "confidence": "medium",
+        "anchorText": "The transcript emphasizes the importance of prioritizing research on dental products, suggesting a commitment to advancing knowledge and understanding in this area."
+      }
+    ],
+    "warnings": [
+      "The transcript cautions against potential risks associated with dental products, highlighting the need for careful evaluation and consideration of these risks."
+    ],
+    "confidence": "medium",
+    "sourceId": "eval-ingest-30",
+    "productId": "dental",
+    "sourceType": "transcript"
+  },
+  "schemaErrors": null,
+  "error": null,
+  "passed": true
+}

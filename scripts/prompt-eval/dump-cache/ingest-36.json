@@ -1,0 +1,46 @@
+{
+  "sourceId": "ingest-36",
+  "productId": "optima",
+  "productName": "OPTIMA Care Coordination",
+  "sourceType": "email",
+  "sourceFamily": "email",
+  "wave": "wave-01-operational",
+  "ingestOrder": 36,
+  "documentDate": "2026-04-09",
+  "title": "Email — Demo Readout",
+  "author": "Anna Kim",
+  "metadata": {
+    "product_id": "optima",
+    "product_name": "OPTIMA Care Coordination",
+    "wave": "wave-01-operational",
+    "wave_label": "Operational Week",
+    "source_type": "email",
+    "document_date": "2026-04-09",
+    "author": "Anna Kim",
+    "title": "Email — Demo Readout",
+    "pi": 4,
+    "sprint": 2,
+    "contains_decisions": false,
+    "contains_action_items": true,
+    "status_signal": "healthy",
+    "stakeholders": "Anna Kim; Sandy Pierce",
+    "demo_effect": "Adds another confidence-building coordination thread for Optima."
+  },
+  "payload": {
+    "summary": "Optima demo readout and next actions",
+    "decisions": [
+      {
+        "label": "tighten training slide",
+        "confidence": "high",
+        "anchorText": "the only action item is to tighten one training slide before broader rollout."
+      }
+    ],
+    "warnings": [
+      "This should stay a healthy product unless something unexpected appears."
+    ],
+    "confidence": "high"
+  },
+  "promptVersion": "phase2-dump-v1",
+  "modelId": "amazon.nova-pro-v1:0",
+  "recordedAt": "2026-04-17T09:54:07.524Z"
+}

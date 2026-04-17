@@ -22,6 +22,7 @@ import {
   upsertSourceExtraction,
 } from '../semantic/semanticPublication.service.js';
 import { validateAggregatePayload } from '../semantic/aggregateValidation.service.js';
+import { extractAggregateWithNova } from '../semantic/novaAggregateExtraction.service.js';
 import { resolveEffectiveFeatureFlags } from '../semantic/featureFlags.service.js';
 import {
   buildSourceSummary,
@@ -1177,6 +1178,41 @@ export function createMutationService({
             featureFlags: effectiveFeatureFlags,
           });
 
+          // Phase 2: LLM-driven aggregate status synthesis. Best-effort; falls back to seed-derived status on any failure.
+          let llmAggregateContent = null;
+          if (options.testCase !== 'publicationFailure') {
+            try {
+              const preAggState = await readState();
+              const productName = preAggState.products.find((p) => p.id === productId)?.name || productId;
+              const existingExtractions = (preAggState.sourceExtractions || []).filter((e) => e.productId === productId);
+              const newExtractionRecord = {
+                sourceId,
+                productId,
+                sourceType,
+                sourceFamily: executionDecision.sourceFamily,
+                documentDate: sourceDate,
+                title,
+                payload: {
+                  ...extraction,
+                  decisions: citationProjection.decisions,
+                  citations: citationProjection.citations,
+                },
+              };
+              const aggregateCall = await extractAggregateWithNova({
+                productId,
+                productName,
+                productMission: '',
+                extractions: [newExtractionRecord, ...existingExtractions],
+                executionDecision: { promptVersion: executionDecision.promptVersion, executionMode: 'live' },
+                runtimeConfig,
+              });
+              llmAggregateContent = aggregateCall?.payload || null;
+              console.log(`[phase2] aggregate synth ok for ${productId}/${sourceId}: status=${llmAggregateContent?.status} conf=${llmAggregateContent?.confidence} drivers=${llmAggregateContent?.drivers?.length||0} risks=${llmAggregateContent?.riskFactors?.length||0}`);
+            } catch (error) {
+              console.warn(`[phase2] aggregate synthesis failed for ${productId}/${sourceId}: ${error?.code || error?.message || 'unknown'} — falling back to seed-derived status`);
+            }
+          }
+
           if (options.testCase === 'publicationFailure') {
             await updateState((draft) => {
               ensureSemanticCollections(draft);
@@ -1371,6 +1407,58 @@ export function createMutationService({
             const nextEvidenceVersion = Number(product?.evidenceVersion || data?.evidenceVersion || 1) + 1;
             const aggregateId = `agg-${productId}-${nextEvidenceVersion}`;
             const lastPublishedAt = latestAttemptAt;
+
+            // Phase 2: mirror LLM aggregate onto product.* fields so the UI badge reflects the synthesis.
+            if (llmAggregateContent) {
+              const priorStatus = product.status;
+              product.status = llmAggregateContent.status;
+              product.statusLabel = llmAggregateContent.statusLabel;
+              product.narrativeText = llmAggregateContent.summary;
+              if (Array.isArray(llmAggregateContent.riskFactors) && llmAggregateContent.riskFactors[0]?.title) {
+                product.biggestGap = llmAggregateContent.riskFactors[0].title;
+              }
+              console.log(`[phase2] product ${productId} status ${priorStatus} -> ${product.status} (${product.statusLabel})`);
+            }
+
+            const aggregatePayloadContent = llmAggregateContent
+              ? {
+                productId,
+                status: llmAggregateContent.status,
+                statusLabel: llmAggregateContent.statusLabel,
+                summary: llmAggregateContent.summary,
+                confidence: llmAggregateContent.confidence,
+                drivers: llmAggregateContent.drivers,
+                riskFactors: llmAggregateContent.riskFactors,
+                health: product.health,
+                narrative: {
+                  summary: llmAggregateContent.summary,
+                  evidenceGaps: (llmAggregateContent.riskFactors || []).slice(0, 2).map((r) => r.title),
+                },
+                recentSignals: product.recentSignals || [],
+                data: data.data || {},
+                reports: {
+                  executiveSummaryInput: llmAggregateContent.summary,
+                },
+                synthesisSource: 'nova-pro-live',
+              }
+              : {
+                productId,
+                status: product.status,
+                summary: product.narrativeText || extraction.summary,
+                statusLabel: product.statusLabel,
+                health: product.health,
+                narrative: {
+                  summary: product.narrativeText || '',
+                  evidenceGaps: product.biggestGap ? [product.biggestGap] : [],
+                },
+                recentSignals: product.recentSignals || [],
+                data: data.data || {},
+                reports: {
+                  executiveSummaryInput: product.narrativeText || '',
+                },
+                synthesisSource: 'seed-fallback',
+              };
+
             const validatedAggregate = validateAggregatePayload({
               productId,
               aggregatePayload: {
@@ -1379,22 +1467,7 @@ export function createMutationService({
                 aggregateVersion: nextEvidenceVersion,
                 evidenceVersion: nextEvidenceVersion,
                 sourceSetHash: `${productId}:${sourceId}:${nextEvidenceVersion}`,
-                payload: {
-                  productId,
-                  status: product.status,
-                  summary: product.narrativeText || extraction.summary,
-                  statusLabel: product.statusLabel,
-                  health: product.health,
-                  narrative: {
-                    summary: product.narrativeText || '',
-                    evidenceGaps: product.biggestGap ? [product.biggestGap] : [],
-                  },
-                  recentSignals: product.recentSignals || [],
-                  data: data.data || {},
-                  reports: {
-                    executiveSummaryInput: product.narrativeText || '',
-                  },
-                },
+                payload: aggregatePayloadContent,
               },
             });
             const aggregateRun = createAggregatePublicationRun({

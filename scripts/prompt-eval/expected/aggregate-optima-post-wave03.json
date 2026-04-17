@@ -1,0 +1,27 @@
+{
+  "_meta": {
+    "fixture": "aggregate-optima-post-wave03",
+    "productId": "optima",
+    "productName": "OPTIMA Care Coordination",
+    "waveContext": "3 extractions across wave-01 and wave-03: demo readout email, decision log update, and April 16 weekly update. All healthy signals.",
+    "expectedRationale": "Optima has uniformly positive signals: approved demo, decision log progress, on-track weekly update. Status should be healthy with high confidence that no risk factors dominate."
+  },
+  "assertions": {
+    "status": "healthy",
+    "statusLabel": "On Track",
+    "confidenceEnum": ["medium", "high"],
+    "summary": {
+      "minLength": 60,
+      "substringPatterns": ["demo|decision|weekly|on track|approved|healthy"]
+    },
+    "drivers": {
+      "minCount": 1,
+      "maxCount": 6,
+      "anyDirection": ["positive"]
+    },
+    "riskFactors": {
+      "minCount": 0,
+      "maxCount": 3
+    }
+  }
+}

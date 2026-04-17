@@ -1,0 +1,71 @@
+{
+  "sourceId": "ingest-50",
+  "productId": "dental",
+  "productName": "DENTAL / DENCLASS",
+  "sourceType": "email",
+  "sourceFamily": "email",
+  "wave": "wave-03-recovery",
+  "ingestOrder": 50,
+  "documentDate": "2026-04-16",
+  "title": "Email — Vendor Mitigation Confirmed",
+  "author": "Lowry Beckett",
+  "metadata": {
+    "product_id": "dental",
+    "product_name": "DENTAL / DENCLASS",
+    "wave": "wave-03-recovery",
+    "wave_label": "Recovery Week",
+    "source_type": "email",
+    "document_date": "2026-04-16",
+    "author": "Lowry Beckett",
+    "title": "Email — Vendor Mitigation Confirmed",
+    "pi": 4,
+    "sprint": 2,
+    "contains_decisions": true,
+    "contains_action_items": true,
+    "status_signal": "caution",
+    "stakeholders": "Lowry Beckett; Jaden Cole; Benjiman Jennings",
+    "demo_effect": "Confirms mitigation steps and provides a clean citation for status improvement."
+  },
+  "payload": {
+    "summary": "Email confirming dental mitigation plan with phased access and mock service path.",
+    "decisions": [
+      {
+        "label": "grant partial sandbox access",
+        "confidence": "high",
+        "anchorText": "Partial sandbox access for named users begins 4/18."
+      },
+      {
+        "label": "target full environment access",
+        "confidence": "high",
+        "anchorText": "Full environment target is 4/25."
+      },
+      {
+        "label": "implement mock-service mitigation",
+        "confidence": "high",
+        "anchorText": "Vendor accepted that we will proceed with a mock-service mitigation path for any capability not available in the partial environment."
+      },
+      {
+        "label": "update primary blocker status",
+        "confidence": "medium",
+        "anchorText": "I recommend: moving the primary blocker from active to partially mitigated,"
+      },
+      {
+        "label": "update PI objective percentages",
+        "confidence": "medium",
+        "anchorText": "I recommend: updating PI objective percentages,"
+      },
+      {
+        "label": "use staged path in leadership language",
+        "confidence": "medium",
+        "anchorText": "I recommend: using the staged path in all leadership-facing language."
+      }
+    ],
+    "warnings": [
+      "This does not make Dental healthy, but it materially improves the planning picture compared with where we were on 4/13."
+    ],
+    "confidence": "medium"
+  },
+  "promptVersion": "phase2-dump-v1",
+  "modelId": "amazon.nova-pro-v1:0",
+  "recordedAt": "2026-04-17T09:54:24.911Z"
+}

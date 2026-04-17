@@ -36,8 +36,12 @@ export function resolveSemanticExecutionPolicy({
   const requestedMode = sourceFamilyModes[sourceFamily]
     || runtimeConfig?.semantic?.defaultExecutionMode
     || 'replay';
+  const liveProductIds = Array.isArray(runtimeConfig?.semantic?.liveProductIds)
+    ? runtimeConfig.semantic.liveProductIds
+    : ['dental'];
+  const productLiveAllowed = liveProductIds.includes(productId);
   const liveSupported = Boolean(
-    productId === 'dental'
+    productLiveAllowed
       && requestedMode === 'live'
       && effectiveFeatureFlags.enableNovaDentalLiveEmail
       && runtimeConfig?.bedrock?.enabled
@@ -48,9 +52,9 @@ export function resolveSemanticExecutionPolicy({
   let executionMode = requestedMode;
   let reason = 'configured_execution_mode';
   let disabled = false;
-  if (productId !== 'dental') {
+  if (!productLiveAllowed) {
     executionMode = 'replay';
-    reason = 'non_dental_replay';
+    reason = 'product_not_in_live_allowlist';
   } else if (requestedMode === 'replay' && !effectiveFeatureFlags.enableExtractionReplayMode) {
     executionMode = 'disabled';
     reason = 'replay_disabled';

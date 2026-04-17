@@ -1,0 +1,56 @@
+{
+  "sourceId": "ingest-49",
+  "productId": "dental",
+  "productName": "DENTAL / DENCLASS",
+  "sourceType": "transcript",
+  "sourceFamily": "transcript",
+  "wave": "wave-03-recovery",
+  "ingestOrder": 49,
+  "documentDate": "2026-04-15",
+  "title": "Dental Vendor Recovery Call Transcript",
+  "author": "Teams Auto Transcript",
+  "metadata": {
+    "product_id": "dental",
+    "product_name": "DENTAL / DENCLASS",
+    "wave": "wave-03-recovery",
+    "wave_label": "Recovery Week",
+    "source_type": "transcript",
+    "document_date": "2026-04-15",
+    "author": "Teams Auto Transcript",
+    "title": "Dental Vendor Recovery Call Transcript",
+    "pi": 4,
+    "sprint": 2,
+    "contains_decisions": true,
+    "contains_action_items": true,
+    "status_signal": "caution",
+    "stakeholders": "Elena Markovic; Lowry Beckett; Jaden Cole",
+    "demo_effect": "Introduces recovery evidence and a revised schedule that should improve answer completeness."
+  },
+  "payload": {
+    "summary": "The recovery call produced the first concrete improvement in the vendor path: partial sandbox access for named users on April 18 and a full environment target of April 25. The team still treats the program as caution, but the uncertainty is now bounded.",
+    "decisions": [
+      {
+        "label": "accept phased access",
+        "confidence": "high",
+        "anchorText": "The team will accept phased access beginning 4/18 instead of waiting for a perfect environment."
+      },
+      {
+        "label": "protect demo continuity",
+        "confidence": "high",
+        "anchorText": "Demo continuity will be protected by combining partial sandbox validation with mock services for uncovered paths."
+      },
+      {
+        "label": "circulate milestone confirmation",
+        "confidence": "high",
+        "anchorText": "Lowry will circulate the milestone confirmation the same day to close the primary action item."
+      }
+    ],
+    "warnings": [
+      "The team still treats the program as caution, but the uncertainty is now bounded."
+    ],
+    "confidence": "high"
+  },
+  "promptVersion": "phase2-dump-v1",
+  "modelId": "amazon.nova-pro-v1:0",
+  "recordedAt": "2026-04-17T09:54:23.434Z"
+}

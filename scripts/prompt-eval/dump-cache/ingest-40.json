@@ -1,0 +1,57 @@
+{
+  "sourceId": "ingest-40",
+  "productId": "dental",
+  "productName": "DENTAL / DENCLASS",
+  "sourceType": "transcript",
+  "sourceFamily": "transcript",
+  "wave": "wave-02-escalation",
+  "ingestOrder": 40,
+  "documentDate": "2026-04-12",
+  "title": "Dental Leadership Sync Transcript",
+  "author": "Teams Auto Transcript",
+  "metadata": {
+    "product_id": "dental",
+    "product_name": "DENTAL / DENCLASS",
+    "wave": "wave-02-escalation",
+    "wave_label": "Escalation Week",
+    "source_type": "transcript",
+    "document_date": "2026-04-12",
+    "author": "Teams Auto Transcript",
+    "title": "Dental Leadership Sync Transcript",
+    "pi": 4,
+    "sprint": 2,
+    "contains_decisions": true,
+    "contains_action_items": true,
+    "status_signal": "risk",
+    "stakeholders": "Benjiman Jennings; Jaden Cole; Robin Holt; Chris Alvarez",
+    "demo_effect": "Adds a second decision-rich meeting and explains how leadership is steering the response."
+  },
+  "payload": {
+    "summary": "Leadership sync focused on mitigation planning, contract and acquisition friction, and how to keep the Dental story coherent for stakeholders while the vendor path remains unstable.",
+    "decisions": [
+      {
+        "label": "pursue staged mitigation path",
+        "confidence": "high",
+        "anchorText": "Decision one: we stage mitigation now."
+      },
+      {
+        "label": "prepare mock-service option",
+        "confidence": "high",
+        "anchorText": "Decision two: mock services are not a maybe, they're a deliberate backup."
+      },
+      {
+        "label": "rewrite release plan",
+        "confidence": "high",
+        "anchorText": "Decision three: the release plan gets rewritten today."
+      }
+    ],
+    "warnings": [
+      "The vendor path remains unstable and is a significant risk.",
+      "The contract path needs to be clarified by 4/15 or will be elevated with a direct message."
+    ],
+    "confidence": "high"
+  },
+  "promptVersion": "phase2-dump-v1",
+  "modelId": "amazon.nova-pro-v1:0",
+  "recordedAt": "2026-04-17T09:54:12.931Z"
+}

@@ -1,0 +1,51 @@
+{
+  "fixtureName": "aggregate-optima-post-wave03",
+  "promptVersion": "aggregate-eval-1",
+  "region": "us-east-1",
+  "modelId": "amazon.nova-pro-v1:0",
+  "timestamp": "2026-04-17T09:58:34.429Z",
+  "rawText": "{\n  \"productId\": \"optima\",\n  \"status\": \"healthy\",\n  \"statusLabel\": \"On Track\",\n  \"summary\": \"Optima is currently on track with recent updates showing consistent progress, minor warnings, and effective decision execution.\",\n  \"confidence\": \"high\",\n  \"drivers\": [\n    {\n      \"title\": \"Consistent progress in weekly updates\",\n      \"direction\": \"positive\",\n      \"anchorSourceIds\": [\"ingest-56\"]\n    },\n    {\n      \"title\": \"Effective decision execution\",\n      \"direction\": \"positive\",\n      \"anchorSourceIds\": [\"ingest-37\", \"ingest-36\"]\n    }\n  ],\n  \"riskFactors\": [\n    {\n      \"title\": \"Minor user training variability\",\n      \"severity\": \"low\",\n      \"anchorSourceIds\": [\"ingest-56\"]\n    },\n    {\n      \"title\": \"Pending actions from decision log\",\n      \"severity\": \"low\",\n      \"anchorSourceIds\": [\"ingest-37\"]\n    }\n  ]\n}",
+  "payload": {
+    "productId": "optima",
+    "status": "healthy",
+    "statusLabel": "On Track",
+    "summary": "Optima is currently on track with recent updates showing consistent progress, minor warnings, and effective decision execution.",
+    "confidence": "high",
+    "drivers": [
+      {
+        "title": "Consistent progress in weekly updates",
+        "direction": "positive",
+        "anchorSourceIds": [
+          "ingest-56"
+        ]
+      },
+      {
+        "title": "Effective decision execution",
+        "direction": "positive",
+        "anchorSourceIds": [
+          "ingest-37",
+          "ingest-36"
+        ]
+      }
+    ],
+    "riskFactors": [
+      {
+        "title": "Minor user training variability",
+        "severity": "low",
+        "anchorSourceIds": [
+          "ingest-56"
+        ]
+      },
+      {
+        "title": "Pending actions from decision log",
+        "severity": "low",
+        "anchorSourceIds": [
+          "ingest-37"
+        ]
+      }
+    ]
+  },
+  "schemaErrors": null,
+  "error": null,
+  "passed": true
+}

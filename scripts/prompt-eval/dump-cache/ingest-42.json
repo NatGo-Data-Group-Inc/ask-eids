@@ -1,0 +1,58 @@
+{
+  "sourceId": "ingest-42",
+  "productId": "dental",
+  "productName": "DENTAL / DENCLASS",
+  "sourceType": "weekly_update",
+  "sourceFamily": "document",
+  "wave": "wave-02-escalation",
+  "ingestOrder": 42,
+  "documentDate": "2026-04-13",
+  "title": "Dental Weekly Update — Sprint 2 End",
+  "author": "Jaden Cole",
+  "metadata": {
+    "product_id": "dental",
+    "product_name": "DENTAL / DENCLASS",
+    "wave": "wave-02-escalation",
+    "wave_label": "Escalation Week",
+    "source_type": "weekly_update",
+    "document_date": "2026-04-13",
+    "author": "Jaden Cole",
+    "title": "Dental Weekly Update — Sprint 2 End",
+    "pi": 4,
+    "sprint": 2,
+    "contains_decisions": false,
+    "contains_action_items": true,
+    "status_signal": "risk",
+    "stakeholders": "Jaden Cole; Robin Holt; Chris Alvarez",
+    "demo_effect": "Captures the product at its most stressed point before recovery evidence arrives."
+  },
+  "payload": {
+    "summary": "Dental remains at risk and is at the lowest confidence point in this demo sequence. The vendor contract path and environment access issues are now active blockers, leadership is asking for cost impact, and the team has formally reworked the release plan around FHIR and mitigation activity.",
+    "decisions": [
+      {
+        "label": "secure legal and acquisition path",
+        "confidence": "medium",
+        "anchorText": "Secure legal and acquisition path by 4/15."
+      },
+      {
+        "label": "provide cost-impact estimate",
+        "confidence": "medium",
+        "anchorText": "Provide Juan Rivera with a cost-impact estimate."
+      },
+      {
+        "label": "stand up mock-service path",
+        "confidence": "medium",
+        "anchorText": "Stand up a mock-service path so demo work can continue if the vendor path slips again."
+      }
+    ],
+    "warnings": [
+      "B-003 (vendor contract unsigned) is now an active blocker for Sprint 3 planning.",
+      "B-004 (test environment access pending) prevents direct validation in the vendor environment.",
+      "Evidence is broad, but the report should still warn that transcript coverage is incomplete and that some critical decisions are only referenced indirectly in email."
+    ],
+    "confidence": "medium"
+  },
+  "promptVersion": "phase2-dump-v1",
+  "modelId": "amazon.nova-pro-v1:0",
+  "recordedAt": "2026-04-17T09:54:16.183Z"
+}

@@ -1,6 +1,18 @@
+import path from 'node:path';
+import mammoth from 'mammoth';
 import { simpleParser } from 'mailparser';
 import { getSourceFamily } from '../../../../shared/artifactTypes.js';
 import { extractArtifactContent } from '../ingest/artifactUpload.service.js';
+
+async function decodeBinaryArtifactToTextBuffer(file) {
+  const originalName = file?.originalname || '';
+  const extension = path.extname(originalName).toLowerCase();
+  if (extension === '.docx') {
+    const result = await mammoth.extractRawText({ buffer: file.buffer });
+    return { ...file, buffer: Buffer.from(result.value || '', 'utf8') };
+  }
+  return file;
+}
 
 function buildCoordinateMap(text) {
   const lines = String(text || '').replace(/\r\n/g, '\n').split('\n');
@@ -44,7 +56,8 @@ export async function normalizeSourceArtifact({
   const sourceFamily = getSourceFamily(sourceType);
 
   if (sourceType !== 'email') {
-    const extracted = extractArtifactContent({ file, sourceType, testCase });
+    const decodedFile = await decodeBinaryArtifactToTextBuffer(file);
+    const extracted = extractArtifactContent({ file: decodedFile, sourceType, testCase });
     return {
       sourceId,
       productId,

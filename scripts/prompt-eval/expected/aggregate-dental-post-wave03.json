@@ -1,0 +1,28 @@
+{
+  "_meta": {
+    "fixture": "aggregate-dental-post-wave03",
+    "productId": "dental",
+    "productName": "DENTAL / DENCLASS",
+    "waveContext": "After wave-01 escalation + wave-02 blocker escalation + wave-03 recovery (vendor mitigation confirmed, recovery memos, PI objectives revised).",
+    "expectedRationale": "Wave-03 brings recovery posture: vendor confirmed mitigation, deck readouts, decision memos committing to a revised plan. Not yet fully healthy (unresolved work remains) but meaningfully de-escalated from wave-02."
+  },
+  "assertions": {
+    "status": "caution",
+    "statusLabel": "Caution",
+    "confidenceEnum": ["medium", "high"],
+    "summary": {
+      "minLength": 100,
+      "substringPatterns": ["recovery|mitigation|mitigated|remediation|confirmed", "vendor|FHIR|blocker|release|contract|environment"]
+    },
+    "drivers": {
+      "minCount": 2,
+      "maxCount": 6,
+      "anyDirection": ["positive"]
+    },
+    "riskFactors": {
+      "minCount": 1,
+      "maxCount": 6,
+      "anySeverity": ["low", "medium"]
+    }
+  }
+}

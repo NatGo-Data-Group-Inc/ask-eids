@@ -1,0 +1,58 @@
+{
+  "fixtureName": "aggregate-optima-post-wave03",
+  "promptVersion": "aggregate-eval-1",
+  "region": "us-east-1",
+  "modelId": "amazon.nova-pro-v1:0",
+  "timestamp": "2026-04-17T09:56:39.989Z",
+  "rawText": "{\n  \"productId\": \"optima\",\n  \"status\": \"healthy\",\n  \"statusLabel\": \"On Track\",\n  \"summary\": \"Optima remains healthy with consistent progress, low-noise communications, and minor warnings that do not significantly impact the project trajectory.\",\n  \"confidence\": \"high\",\n  \"drivers\": [\n    {\n      \"title\": \"Consistent progress in Sprint 2 execution\",\n      \"direction\": \"positive\",\n      \"anchorSourceIds\": [\"ingest-56\", \"ingest-37\"]\n    },\n    {\n      \"title\": \"Low-noise stakeholder communications\",\n      \"direction\": \"positive\",\n      \"anchorSourceIds\": [\"ingest-56\"]\n    },\n    {\n      \"title\": \"Successful April demo delivery\",\n      \"direction\": \"positive\",\n      \"anchorSourceIds\": [\"ingest-56\"]\n    }\n  ],\n  \"riskFactors\": [\n    {\n      \"title\": \"Minor user training variability\",\n      \"severity\": \"low\",\n      \"anchorSourceIds\": [\"ingest-56\"]\n    },\n    {\n      \"title\": \"Pending actions from decision log\",\n      \"severity\": \"low\",\n      \"anchorSourceIds\": [\"ingest-37\"]\n    }\n  ]\n}",
+  "payload": {
+    "productId": "optima",
+    "status": "healthy",
+    "statusLabel": "On Track",
+    "summary": "Optima remains healthy with consistent progress, low-noise communications, and minor warnings that do not significantly impact the project trajectory.",
+    "confidence": "high",
+    "drivers": [
+      {
+        "title": "Consistent progress in Sprint 2 execution",
+        "direction": "positive",
+        "anchorSourceIds": [
+          "ingest-56",
+          "ingest-37"
+        ]
+      },
+      {
+        "title": "Low-noise stakeholder communications",
+        "direction": "positive",
+        "anchorSourceIds": [
+          "ingest-56"
+        ]
+      },
+      {
+        "title": "Successful April demo delivery",
+        "direction": "positive",
+        "anchorSourceIds": [
+          "ingest-56"
+        ]
+      }
+    ],
+    "riskFactors": [
+      {
+        "title": "Minor user training variability",
+        "severity": "low",
+        "anchorSourceIds": [
+          "ingest-56"
+        ]
+      },
+      {
+        "title": "Pending actions from decision log",
+        "severity": "low",
+        "anchorSourceIds": [
+          "ingest-37"
+        ]
+      }
+    ]
+  },
+  "schemaErrors": null,
+  "error": null,
+  "passed": true
+}

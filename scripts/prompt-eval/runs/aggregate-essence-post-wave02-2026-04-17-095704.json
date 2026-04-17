@@ -1,0 +1,50 @@
+{
+  "fixtureName": "aggregate-essence-post-wave02",
+  "promptVersion": "aggregate-eval-1",
+  "region": "us-east-1",
+  "modelId": "amazon.nova-pro-v1:0",
+  "timestamp": "2026-04-17T09:57:04.694Z",
+  "rawText": "{\n  \"productId\": \"essence\",\n  \"status\": \"risk\",\n  \"statusLabel\": \"At Risk\",\n  \"summary\": \"The project is at risk due to substantial continuity gaps and incomplete documentation, as highlighted in recent extractions.\",\n  \"confidence\": \"medium\",\n  \"drivers\": [\n    {\n      \"title\": \"Incomplete Documentation\",\n      \"direction\": \"negative\",\n      \"anchorSourceIds\": [\"ingest-48\"]\n    },\n    {\n      \"title\": \"Explicit Logging of Uncertainties\",\n      \"direction\": \"neutral\",\n      \"anchorSourceIds\": [\"ingest-47\"]\n    }\n  ],\n  \"riskFactors\": [\n    {\n      \"title\": \"Substantial Continuity Gaps\",\n      \"severity\": \"high\",\n      \"anchorSourceIds\": [\"ingest-48\"]\n    },\n    {\n      \"title\": \"Incomplete Information\",\n      \"severity\": \"high\",\n      \"anchorSourceIds\": [\"ingest-47\"]\n    }\n  ]\n}",
+  "payload": {
+    "productId": "essence",
+    "status": "risk",
+    "statusLabel": "At Risk",
+    "summary": "The project is at risk due to substantial continuity gaps and incomplete documentation, as highlighted in recent extractions.",
+    "confidence": "medium",
+    "drivers": [
+      {
+        "title": "Incomplete Documentation",
+        "direction": "negative",
+        "anchorSourceIds": [
+          "ingest-48"
+        ]
+      },
+      {
+        "title": "Explicit Logging of Uncertainties",
+        "direction": "neutral",
+        "anchorSourceIds": [
+          "ingest-47"
+        ]
+      }
+    ],
+    "riskFactors": [
+      {
+        "title": "Substantial Continuity Gaps",
+        "severity": "high",
+        "anchorSourceIds": [
+          "ingest-48"
+        ]
+      },
+      {
+        "title": "Incomplete Information",
+        "severity": "high",
+        "anchorSourceIds": [
+          "ingest-47"
+        ]
+      }
+    ]
+  },
+  "schemaErrors": null,
+  "error": null,
+  "passed": true
+}

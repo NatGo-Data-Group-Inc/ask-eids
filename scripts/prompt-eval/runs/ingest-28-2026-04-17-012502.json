@@ -1,0 +1,44 @@
+{
+  "ingestId": "ingest-28",
+  "promptVersion": "2026-04-17-generic-v3",
+  "region": "us-east-1",
+  "modelId": "amazon.nova-pro-v1:0",
+  "timestamp": "2026-04-17T01:25:02.391Z",
+  "rawText": "{\n  \"summary\": \"Dr. Minji Sohl approved the revised test schedule for Sprint 2 but emphasized that the environment is not considered ready until actual validation is achieved.\",\n  \"decisions\": [\n    {\n      \"label\": \"Approve revised test schedule\",\n      \"confidence\": \"high\",\n      \"anchorText\": \"Approved the revised test schedule.\"\n    }\n  ],\n  \"warnings\": [\n    \"The environment is not considered ready until actual validation is achieved.\",\n    \"Confidence in the stakeholder demo date depends on receiving the vendor timeline in writing.\"\n  ],\n  \"confidence\": \"high\"\n}",
+  "parsed": {
+    "summary": "Dr. Minji Sohl approved the revised test schedule for Sprint 2 but emphasized that the environment is not considered ready until actual validation is achieved.",
+    "decisions": [
+      {
+        "label": "Approve revised test schedule",
+        "confidence": "high",
+        "anchorText": "Approved the revised test schedule."
+      }
+    ],
+    "warnings": [
+      "The environment is not considered ready until actual validation is achieved.",
+      "Confidence in the stakeholder demo date depends on receiving the vendor timeline in writing."
+    ],
+    "confidence": "high"
+  },
+  "extraction": {
+    "summary": "Dr. Minji Sohl approved the revised test schedule for Sprint 2 but emphasized that the environment is not considered ready until actual validation is achieved.",
+    "decisions": [
+      {
+        "label": "Approve revised test schedule",
+        "confidence": "high",
+        "anchorText": "Approved the revised test schedule."
+      }
+    ],
+    "warnings": [
+      "The environment is not considered ready until actual validation is achieved.",
+      "Confidence in the stakeholder demo date depends on receiving the vendor timeline in writing."
+    ],
+    "confidence": "high",
+    "sourceId": "eval-ingest-28",
+    "productId": "dental",
+    "sourceType": "email"
+  },
+  "schemaErrors": null,
+  "error": null,
+  "passed": true
+}

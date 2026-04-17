@@ -1,0 +1,57 @@
+{
+  "sourceId": "ingest-34",
+  "productId": "dental",
+  "productName": "DENTAL / DENCLASS",
+  "sourceType": "ado_export",
+  "sourceFamily": "spreadsheet",
+  "wave": "wave-01-operational",
+  "ingestOrder": 34,
+  "documentDate": "2026-04-10",
+  "title": "Dental ADO Export — Updated",
+  "author": "Whitney Core Force",
+  "metadata": {
+    "product_id": "dental",
+    "product_name": "DENTAL / DENCLASS",
+    "wave": "wave-01-operational",
+    "wave_label": "Operational Week",
+    "source_type": "ado_export",
+    "document_date": "2026-04-10",
+    "author": "Whitney Core Force",
+    "title": "Dental ADO Export — Updated",
+    "pi": 4,
+    "sprint": 2,
+    "contains_decisions": false,
+    "contains_action_items": false,
+    "status_signal": "risk",
+    "stakeholders": "Whitney Core Force; Jaden Cole",
+    "demo_effect": "Shows stories being moved, blocked, or deferred in response to the dependency change."
+  },
+  "payload": {
+    "summary": "The dental product development includes active FHIR endpoint mapping, a blocked task due to vendor delays, ongoing bug fixes, deferred user story, and a new task for integration testing.",
+    "decisions": [
+      {
+        "label": "map FHIR endpoint",
+        "confidence": "high",
+        "anchorText": "FHIR endpoint mapping"
+      },
+      {
+        "label": "parse legacy referral payload",
+        "confidence": "medium",
+        "anchorText": "Legacy referral payload parsing"
+      },
+      {
+        "label": "draft integration test harness",
+        "confidence": "medium",
+        "anchorText": "Draft integration test harness"
+      }
+    ],
+    "warnings": [
+      "The task to confirm vendor sandbox users is blocked by revised vendor delivery dates.",
+      "The user story to create a stakeholder demo script has been deferred to Sprint 3 due to FHIR prioritization."
+    ],
+    "confidence": "medium"
+  },
+  "promptVersion": "phase2-dump-v1",
+  "modelId": "amazon.nova-pro-v1:0",
+  "recordedAt": "2026-04-17T09:54:06.869Z"
+}

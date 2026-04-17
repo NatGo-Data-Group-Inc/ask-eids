@@ -1,0 +1,89 @@
+{
+  "fixtureName": "aggregate-dental-post-wave03",
+  "promptVersion": "aggregate-eval-1",
+  "region": "us-east-1",
+  "modelId": "amazon.nova-pro-v1:0",
+  "timestamp": "2026-04-17T09:57:03.184Z",
+  "rawText": "{\n  \"productId\": \"dental\",\n  \"status\": \"caution\",\n  \"statusLabel\": \"Caution\",\n  \"summary\": \"The project is making progress with mitigation strategies in place, but full environment readiness and contract issues remain unresolved, keeping the project at caution.\",\n  \"confidence\": \"high\",\n  \"drivers\": [\n    {\n      \"title\": \"Staged mitigation path\",\n      \"direction\": \"positive\",\n      \"anchorSourceIds\": [\"ingest-54\", \"ingest-51\", \"ingest-50\", \"ingest-49\"]\n    },\n    {\n      \"title\": \"Partial sandbox access\",\n      \"direction\": \"positive\",\n      \"anchorSourceIds\": [\"ingest-54\", \"ingest-51\", \"ingest-50\", \"ingest-49\"]\n    },\n    {\n      \"title\": \"Mock services for gaps\",\n      \"direction\": \"positive\",\n      \"anchorSourceIds\": [\"ingest-54\", \"ingest-51\", \"ingest-50\", \"ingest-49\"]\n    }\n  ],\n  \"riskFactors\": [\n    {\n      \"title\": \"Full vendor environment access pending\",\n      \"severity\": \"medium\",\n      \"anchorSourceIds\": [\"ingest-54\", \"ingest-51\", \"ingest-50\", \"ingest-49\", \"ingest-43\", \"ingest-42\", \"ingest-41\", \"ingest-40\", \"ingest-38\", \"ingest-34\", \"ingest-33\", \"ingest-32\", \"ingest-29\"]\n    },\n    {\n      \"title\": \"Unsigned vendor contract\",\n      \"severity\": \"high\",\n      \"anchorSourceIds\": [\"ingest-43\", \"ingest-42\", \"ingest-40\", \"ingest-38\"]\n    },\n    {\n      \"title\": \"Insufficient integration-test readiness\",\n      \"severity\": \"medium\",\n      \"anchorSourceIds\": [\"ingest-32\", \"ingest-30\"]\n    }\n  ]\n}",
+  "payload": {
+    "productId": "dental",
+    "status": "caution",
+    "statusLabel": "Caution",
+    "summary": "The project is making progress with mitigation strategies in place, but full environment readiness and contract issues remain unresolved, keeping the project at caution.",
+    "confidence": "high",
+    "drivers": [
+      {
+        "title": "Staged mitigation path",
+        "direction": "positive",
+        "anchorSourceIds": [
+          "ingest-54",
+          "ingest-51",
+          "ingest-50",
+          "ingest-49"
+        ]
+      },
+      {
+        "title": "Partial sandbox access",
+        "direction": "positive",
+        "anchorSourceIds": [
+          "ingest-54",
+          "ingest-51",
+          "ingest-50",
+          "ingest-49"
+        ]
+      },
+      {
+        "title": "Mock services for gaps",
+        "direction": "positive",
+        "anchorSourceIds": [
+          "ingest-54",
+          "ingest-51",
+          "ingest-50",
+          "ingest-49"
+        ]
+      }
+    ],
+    "riskFactors": [
+      {
+        "title": "Full vendor environment access pending",
+        "severity": "medium",
+        "anchorSourceIds": [
+          "ingest-54",
+          "ingest-51",
+          "ingest-50",
+          "ingest-49",
+          "ingest-43",
+          "ingest-42",
+          "ingest-41",
+          "ingest-40",
+          "ingest-38",
+          "ingest-34",
+          "ingest-33",
+          "ingest-32",
+          "ingest-29"
+        ]
+      },
+      {
+        "title": "Unsigned vendor contract",
+        "severity": "high",
+        "anchorSourceIds": [
+          "ingest-43",
+          "ingest-42",
+          "ingest-40",
+          "ingest-38"
+        ]
+      },
+      {
+        "title": "Insufficient integration-test readiness",
+        "severity": "medium",
+        "anchorSourceIds": [
+          "ingest-32",
+          "ingest-30"
+        ]
+      }
+    ]
+  },
+  "schemaErrors": null,
+  "error": null,
+  "passed": false
+}

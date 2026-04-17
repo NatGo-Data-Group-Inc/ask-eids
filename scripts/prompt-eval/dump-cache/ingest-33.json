@@ -1,0 +1,53 @@
+{
+  "sourceId": "ingest-33",
+  "productId": "dental",
+  "productName": "DENTAL / DENCLASS",
+  "sourceType": "risk_export",
+  "sourceFamily": "spreadsheet",
+  "wave": "wave-01-operational",
+  "ingestOrder": 33,
+  "documentDate": "2026-04-10",
+  "title": "Dental Risks and Issues Export — Updated",
+  "author": "Jaden Cole",
+  "metadata": {
+    "product_id": "dental",
+    "product_name": "DENTAL / DENCLASS",
+    "wave": "wave-01-operational",
+    "wave_label": "Operational Week",
+    "source_type": "risk_export",
+    "document_date": "2026-04-10",
+    "author": "Jaden Cole",
+    "title": "Dental Risks and Issues Export — Updated",
+    "pi": 4,
+    "sprint": 2,
+    "contains_decisions": false,
+    "contains_action_items": false,
+    "status_signal": "risk",
+    "stakeholders": "Jaden Cole; Lowry Beckett",
+    "demo_effect": "Escalates the FHIR migration dependency from medium to high."
+  },
+  "payload": {
+    "summary": "The risk export details several ongoing issues and decisions related to the dental product's FHIR migration and test readiness, with varying levels of severity and confidence in the decisions made.",
+    "decisions": [
+      {
+        "label": "escalate issue to leadership",
+        "confidence": "medium",
+        "anchorText": "Escalate to leadership and obtain revised milestone plan by 4/15."
+      },
+      {
+        "label": "prioritize test harness work",
+        "confidence": "medium",
+        "anchorText": "Prioritize test harness work in Sprint 3."
+      }
+    ],
+    "warnings": [
+      "Vendor confirmed sandbox delivery will slip by approximately two weeks unless phased access is approved.",
+      "If the vendor paperwork slips, sandbox access and credential issuance will both be impacted.",
+      "Legacy samples contain inconsistent referral status codes."
+    ],
+    "confidence": "medium"
+  },
+  "promptVersion": "phase2-dump-v1",
+  "modelId": "amazon.nova-pro-v1:0",
+  "recordedAt": "2026-04-17T09:54:05.656Z"
+}

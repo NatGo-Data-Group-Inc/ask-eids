@@ -1,0 +1,64 @@
+{
+  "ingestId": "ingest-30",
+  "promptVersion": "phase2-sanity-v2",
+  "region": "us-east-1",
+  "modelId": "amazon.nova-pro-v1:0",
+  "timestamp": "2026-04-17T09:51:55.561Z",
+  "rawText": "{\n  \"summary\": \"Sprint 2 review shifted the program posture materially. The vendor delay became explicit, leadership directed the team to prioritize FHIR over feature work, and Dr. Sohl raised concern about insufficient integration-test readiness.\",\n  \"decisions\": [\n    {\n      \"label\": \"prioritize FHIR migration work\",\n      \"confidence\": \"high\",\n      \"anchorText\": \"FHIR migration work will take priority over all new feature work until the dependency risk is reduced.\"\n    },\n    {\n      \"label\": \"defer three feature stories to Sprint 3\",\n      \"confidence\": \"high\",\n      \"anchorText\": \"Three feature stories will be deferred to Sprint 3 so engineering effort can stay aligned to the critical path.\"\n    },\n    {\n      \"label\": \"plan integration test harness work for Sprint 3\",\n      \"confidence\": \"high\",\n      \"anchorText\": \"Integration test harness work must be planned explicitly for Sprint 3 rather than assumed as hidden labor.\"\n    }\n  ],\n  \"warnings\": [\n    \"Dr. Sohl raised concern about insufficient integration-test readiness.\",\n    \"Approval of a revised test schedule does not erase the environment risk.\"\n  ],\n  \"confidence\": \"high\"\n}",
+  "parsed": {
+    "summary": "Sprint 2 review shifted the program posture materially. The vendor delay became explicit, leadership directed the team to prioritize FHIR over feature work, and Dr. Sohl raised concern about insufficient integration-test readiness.",
+    "decisions": [
+      {
+        "label": "prioritize FHIR migration work",
+        "confidence": "high",
+        "anchorText": "FHIR migration work will take priority over all new feature work until the dependency risk is reduced."
+      },
+      {
+        "label": "defer three feature stories to Sprint 3",
+        "confidence": "high",
+        "anchorText": "Three feature stories will be deferred to Sprint 3 so engineering effort can stay aligned to the critical path."
+      },
+      {
+        "label": "plan integration test harness work for Sprint 3",
+        "confidence": "high",
+        "anchorText": "Integration test harness work must be planned explicitly for Sprint 3 rather than assumed as hidden labor."
+      }
+    ],
+    "warnings": [
+      "Dr. Sohl raised concern about insufficient integration-test readiness.",
+      "Approval of a revised test schedule does not erase the environment risk."
+    ],
+    "confidence": "high"
+  },
+  "extraction": {
+    "summary": "Sprint 2 review shifted the program posture materially. The vendor delay became explicit, leadership directed the team to prioritize FHIR over feature work, and Dr. Sohl raised concern about insufficient integration-test readiness.",
+    "decisions": [
+      {
+        "label": "prioritize FHIR migration work",
+        "confidence": "high",
+        "anchorText": "FHIR migration work will take priority over all new feature work until the dependency risk is reduced."
+      },
+      {
+        "label": "defer three feature stories to Sprint 3",
+        "confidence": "high",
+        "anchorText": "Three feature stories will be deferred to Sprint 3 so engineering effort can stay aligned to the critical path."
+      },
+      {
+        "label": "plan integration test harness work for Sprint 3",
+        "confidence": "high",
+        "anchorText": "Integration test harness work must be planned explicitly for Sprint 3 rather than assumed as hidden labor."
+      }
+    ],
+    "warnings": [
+      "Dr. Sohl raised concern about insufficient integration-test readiness.",
+      "Approval of a revised test schedule does not erase the environment risk."
+    ],
+    "confidence": "high",
+    "sourceId": "eval-ingest-30",
+    "productId": "dental",
+    "sourceType": "transcript"
+  },
+  "schemaErrors": null,
+  "error": null,
+  "passed": true
+}

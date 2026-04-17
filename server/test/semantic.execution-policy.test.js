@@ -14,9 +14,11 @@ describe('semantic execution policy', () => {
           promptRegistryVersion: '2026-04-16-email-v1',
           defaultExecutionMode: 'replay',
           liveSourceFamilies: ['email'],
+          liveProductIds: ['dental', 'essence', 'optima'],
         },
         features: {
           enableNovaDentalLiveEmail: true,
+          enableExtractionReplayMode: true,
         },
       },
       stateSemanticConfig: {
@@ -49,9 +51,11 @@ describe('semantic execution policy', () => {
           promptRegistryVersion: '2026-04-16-email-v1',
           defaultExecutionMode: 'replay',
           liveSourceFamilies: ['email'],
+          liveProductIds: ['dental', 'essence', 'optima'],
         },
         features: {
           enableNovaDentalLiveEmail: true,
+          enableExtractionReplayMode: true,
         },
       },
       stateSemanticConfig: {
@@ -64,5 +68,60 @@ describe('semantic execution policy', () => {
     });
 
     expect(decision.executionMode).toBe('replay');
+  });
+
+  it('resolves non-allowlisted product to replay with non_dental_replay-style reason', () => {
+    const decision = resolveSemanticExecutionPolicy({
+      productId: 'experimental-product-42',
+      sourceType: 'email',
+      sourceFamily: 'email',
+      runtimeConfig: {
+        bedrock: { enabled: true, textModelId: 'amazon.nova-pro-v1:0' },
+        semantic: {
+          promptRegistryVersion: '2026-04-16-email-v1',
+          defaultExecutionMode: 'replay',
+          liveSourceFamilies: ['email'],
+          liveProductIds: ['dental', 'essence', 'optima'],
+        },
+        features: {
+          enableNovaDentalLiveEmail: true,
+          enableExtractionReplayMode: true,
+        },
+      },
+      stateSemanticConfig: {
+        executionMode: 'hybrid',
+        sourceFamilyModes: { email: 'live' },
+      },
+    });
+
+    expect(decision.executionMode).toBe('replay');
+    expect(decision.reason).toBe('product_not_in_live_allowlist');
+  });
+
+  it('resolves allowlisted non-dental product email to live when family is enabled', () => {
+    const decision = resolveSemanticExecutionPolicy({
+      productId: 'essence',
+      sourceType: 'email',
+      sourceFamily: 'email',
+      runtimeConfig: {
+        bedrock: { enabled: true, textModelId: 'amazon.nova-pro-v1:0' },
+        semantic: {
+          promptRegistryVersion: '2026-04-16-email-v1',
+          defaultExecutionMode: 'replay',
+          liveSourceFamilies: ['email'],
+          liveProductIds: ['dental', 'essence', 'optima'],
+        },
+        features: {
+          enableNovaDentalLiveEmail: true,
+          enableExtractionReplayMode: true,
+        },
+      },
+      stateSemanticConfig: {
+        executionMode: 'hybrid',
+        sourceFamilyModes: { email: 'live' },
+      },
+    });
+
+    expect(decision.executionMode).toBe('live');
   });
 });

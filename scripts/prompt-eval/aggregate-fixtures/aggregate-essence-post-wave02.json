@@ -1,0 +1,114 @@
+{
+  "_meta": {
+    "generatedAt": "2026-04-17T09:54:31.602Z",
+    "productId": "essence",
+    "productName": "ESSENCE Transition Support",
+    "waveCutoffs": [
+      "wave-02-escalation"
+    ],
+    "extractionCount": 2
+  },
+  "productId": "essence",
+  "productName": "ESSENCE Transition Support",
+  "productMission": "",
+  "extractions": [
+    {
+      "sourceId": "ingest-48",
+      "productId": "essence",
+      "productName": "ESSENCE Transition Support",
+      "sourceType": "email",
+      "sourceFamily": "email",
+      "wave": "wave-02-escalation",
+      "ingestOrder": 48,
+      "documentDate": "2026-04-12",
+      "title": "Email — Document Gap Followup",
+      "author": "Commander Melissa Jones",
+      "metadata": {
+        "product_id": "essence",
+        "product_name": "ESSENCE Transition Support",
+        "wave": "wave-02-escalation",
+        "wave_label": "Escalation Week",
+        "source_type": "email",
+        "document_date": "2026-04-12",
+        "author": "Commander Melissa Jones",
+        "title": "Email — Document Gap Followup",
+        "pi": 4,
+        "sprint": 2,
+        "contains_decisions": false,
+        "contains_action_items": true,
+        "status_signal": "risk",
+        "stakeholders": "Commander Melissa Jones; Virginia Howard",
+        "demo_effect": "Makes the continuity gap explicit and demonstrates why Ask confidence should remain low."
+      },
+      "payload": {
+        "summary": "The continuity gap in the ESSENCE project remains substantial, with incomplete and unreliable documentation.",
+        "decisions": [
+          {
+            "label": "show low confidence",
+            "confidence": "high",
+            "anchorText": "I would rather the application show low confidence than manufacture a clean story from fragments."
+          }
+        ],
+        "warnings": [
+          "The current corpus should be treated as incomplete until more evidence is recovered."
+        ],
+        "confidence": "high"
+      },
+      "promptVersion": "phase2-dump-v1",
+      "modelId": "amazon.nova-pro-v1:0",
+      "recordedAt": "2026-04-17T09:54:22.119Z"
+    },
+    {
+      "sourceId": "ingest-47",
+      "productId": "essence",
+      "productName": "ESSENCE Transition Support",
+      "sourceType": "transcript",
+      "sourceFamily": "transcript",
+      "wave": "wave-02-escalation",
+      "ingestOrder": 47,
+      "documentDate": "2026-04-11",
+      "title": "ESSENCE Handoff Working Session Transcript",
+      "author": "Teams Auto Transcript",
+      "metadata": {
+        "product_id": "essence",
+        "product_name": "ESSENCE Transition Support",
+        "wave": "wave-02-escalation",
+        "wave_label": "Escalation Week",
+        "source_type": "transcript",
+        "document_date": "2026-04-11",
+        "author": "Teams Auto Transcript",
+        "title": "ESSENCE Handoff Working Session Transcript",
+        "pi": 4,
+        "sprint": 2,
+        "contains_decisions": false,
+        "contains_action_items": true,
+        "status_signal": "risk",
+        "stakeholders": "Commander Melissa Jones; Virginia Howard",
+        "demo_effect": "Adds a late-stage continuity-recovery artifact that still exposes missing knowledge."
+      },
+      "payload": {
+        "summary": "The ESSENCE working session focused on identifying missing artifacts and the need for explicit logging of uncertainties. Weekly updates will continue with confidence caveats until the handoff is reconstructed.",
+        "decisions": [
+          {
+            "label": "log missing artifacts",
+            "confidence": "high",
+            "anchorText": "The team will stop pretending the current repository is complete and will explicitly log missing artifacts."
+          },
+          {
+            "label": "include confidence caveats in updates",
+            "confidence": "high",
+            "anchorText": "Weekly updates will continue, but every update will include a confidence caveat until the handoff is reconstructed."
+          }
+        ],
+        "warnings": [
+          "The team is operating with incomplete information and has identified significant gaps in the current repository.",
+          "Decisions made during this session are based on partial data and should be revisited once more information is available."
+        ],
+        "confidence": "medium"
+      },
+      "promptVersion": "phase2-dump-v1",
+      "modelId": "amazon.nova-pro-v1:0",
+      "recordedAt": "2026-04-17T09:54:21.204Z"
+    }
+  ]
+}

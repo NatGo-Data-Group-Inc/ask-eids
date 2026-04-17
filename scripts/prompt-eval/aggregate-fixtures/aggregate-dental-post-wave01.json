@@ -1,0 +1,381 @@
+{
+  "_meta": {
+    "generatedAt": "2026-04-17T09:54:31.600Z",
+    "productId": "dental",
+    "productName": "DENTAL / DENCLASS",
+    "waveCutoffs": [
+      "wave-01-operational"
+    ],
+    "extractionCount": 7
+  },
+  "productId": "dental",
+  "productName": "DENTAL / DENCLASS",
+  "productMission": "",
+  "extractions": [
+    {
+      "sourceId": "ingest-34",
+      "productId": "dental",
+      "productName": "DENTAL / DENCLASS",
+      "sourceType": "ado_export",
+      "sourceFamily": "spreadsheet",
+      "wave": "wave-01-operational",
+      "ingestOrder": 34,
+      "documentDate": "2026-04-10",
+      "title": "Dental ADO Export — Updated",
+      "author": "Whitney Core Force",
+      "metadata": {
+        "product_id": "dental",
+        "product_name": "DENTAL / DENCLASS",
+        "wave": "wave-01-operational",
+        "wave_label": "Operational Week",
+        "source_type": "ado_export",
+        "document_date": "2026-04-10",
+        "author": "Whitney Core Force",
+        "title": "Dental ADO Export — Updated",
+        "pi": 4,
+        "sprint": 2,
+        "contains_decisions": false,
+        "contains_action_items": false,
+        "status_signal": "risk",
+        "stakeholders": "Whitney Core Force; Jaden Cole",
+        "demo_effect": "Shows stories being moved, blocked, or deferred in response to the dependency change."
+      },
+      "payload": {
+        "summary": "The dental product development includes active FHIR endpoint mapping, a blocked task due to vendor delays, ongoing bug fixes, deferred user story, and a new task for integration testing.",
+        "decisions": [
+          {
+            "label": "map FHIR endpoint",
+            "confidence": "high",
+            "anchorText": "FHIR endpoint mapping"
+          },
+          {
+            "label": "parse legacy referral payload",
+            "confidence": "medium",
+            "anchorText": "Legacy referral payload parsing"
+          },
+          {
+            "label": "draft integration test harness",
+            "confidence": "medium",
+            "anchorText": "Draft integration test harness"
+          }
+        ],
+        "warnings": [
+          "The task to confirm vendor sandbox users is blocked by revised vendor delivery dates.",
+          "The user story to create a stakeholder demo script has been deferred to Sprint 3 due to FHIR prioritization."
+        ],
+        "confidence": "medium"
+      },
+      "promptVersion": "phase2-dump-v1",
+      "modelId": "amazon.nova-pro-v1:0",
+      "recordedAt": "2026-04-17T09:54:06.869Z"
+    },
+    {
+      "sourceId": "ingest-33",
+      "productId": "dental",
+      "productName": "DENTAL / DENCLASS",
+      "sourceType": "risk_export",
+      "sourceFamily": "spreadsheet",
+      "wave": "wave-01-operational",
+      "ingestOrder": 33,
+      "documentDate": "2026-04-10",
+      "title": "Dental Risks and Issues Export — Updated",
+      "author": "Jaden Cole",
+      "metadata": {
+        "product_id": "dental",
+        "product_name": "DENTAL / DENCLASS",
+        "wave": "wave-01-operational",
+        "wave_label": "Operational Week",
+        "source_type": "risk_export",
+        "document_date": "2026-04-10",
+        "author": "Jaden Cole",
+        "title": "Dental Risks and Issues Export — Updated",
+        "pi": 4,
+        "sprint": 2,
+        "contains_decisions": false,
+        "contains_action_items": false,
+        "status_signal": "risk",
+        "stakeholders": "Jaden Cole; Lowry Beckett",
+        "demo_effect": "Escalates the FHIR migration dependency from medium to high."
+      },
+      "payload": {
+        "summary": "The risk export details several ongoing issues and decisions related to the dental product's FHIR migration and test readiness, with varying levels of severity and confidence in the decisions made.",
+        "decisions": [
+          {
+            "label": "escalate issue to leadership",
+            "confidence": "medium",
+            "anchorText": "Escalate to leadership and obtain revised milestone plan by 4/15."
+          },
+          {
+            "label": "prioritize test harness work",
+            "confidence": "medium",
+            "anchorText": "Prioritize test harness work in Sprint 3."
+          }
+        ],
+        "warnings": [
+          "Vendor confirmed sandbox delivery will slip by approximately two weeks unless phased access is approved.",
+          "If the vendor paperwork slips, sandbox access and credential issuance will both be impacted.",
+          "Legacy samples contain inconsistent referral status codes."
+        ],
+        "confidence": "medium"
+      },
+      "promptVersion": "phase2-dump-v1",
+      "modelId": "amazon.nova-pro-v1:0",
+      "recordedAt": "2026-04-17T09:54:05.656Z"
+    },
+    {
+      "sourceId": "ingest-32",
+      "productId": "dental",
+      "productName": "DENTAL / DENCLASS",
+      "sourceType": "weekly_update",
+      "sourceFamily": "document",
+      "wave": "wave-01-operational",
+      "ingestOrder": 32,
+      "documentDate": "2026-04-10",
+      "title": "Dental Weekly Update — Sprint 2",
+      "author": "Jaden Cole",
+      "metadata": {
+        "product_id": "dental",
+        "product_name": "DENTAL / DENCLASS",
+        "wave": "wave-01-operational",
+        "wave_label": "Operational Week",
+        "source_type": "weekly_update",
+        "document_date": "2026-04-10",
+        "author": "Jaden Cole",
+        "title": "Dental Weekly Update — Sprint 2",
+        "pi": 4,
+        "sprint": 2,
+        "contains_decisions": false,
+        "contains_action_items": true,
+        "status_signal": "risk",
+        "stakeholders": "Jaden Cole; Robin Holt; Chris Alvarez",
+        "demo_effect": "Refreshes the narrative and captures the first clear 'at risk' posture."
+      },
+      "payload": {
+        "summary": "Dental is at risk in Sprint 2 due to vendor delays and leadership directives. The team needs a decision by 4/15 to recover the schedule.",
+        "decisions": [
+          {
+            "label": "approve phased access",
+            "confidence": "high",
+            "anchorText": "the vendor confirmed that the shared sandbox will slip unless phased access is approved"
+          },
+          {
+            "label": "prioritize FHIR migration",
+            "confidence": "high",
+            "anchorText": "leadership directed the team to prioritize FHIR migration over new feature work"
+          }
+        ],
+        "warnings": [
+          "The schedule is still recoverable, but the team needs a decision by 4/15.",
+          "R-014 (FHIR migration dependency) escalated to High.",
+          "Integration test coverage remains below the threshold expected by Dr. Sohl."
+        ],
+        "confidence": "high"
+      },
+      "promptVersion": "phase2-dump-v1",
+      "modelId": "amazon.nova-pro-v1:0",
+      "recordedAt": "2026-04-17T09:54:04.310Z"
+    },
+    {
+      "sourceId": "ingest-31",
+      "productId": "dental",
+      "productName": "DENTAL / DENCLASS",
+      "sourceType": "decision_memo",
+      "sourceFamily": "document",
+      "wave": "wave-01-operational",
+      "ingestOrder": 31,
+      "documentDate": "2026-04-09",
+      "title": "Dental Decision Memo — FHIR Priority",
+      "author": "Benjiman Jennings",
+      "metadata": {
+        "product_id": "dental",
+        "product_name": "DENTAL / DENCLASS",
+        "wave": "wave-01-operational",
+        "wave_label": "Operational Week",
+        "source_type": "decision_memo",
+        "document_date": "2026-04-09",
+        "author": "Benjiman Jennings",
+        "title": "Dental Decision Memo — FHIR Priority",
+        "pi": 4,
+        "sprint": 2,
+        "contains_decisions": true,
+        "contains_action_items": false,
+        "status_signal": "risk",
+        "stakeholders": "Benjiman Jennings; Jaden Cole",
+        "demo_effect": "Codifies the leadership decision to prioritize FHIR over new feature work."
+      },
+      "payload": {
+        "summary": "FHIR migration work becomes the primary priority for Dental / DenClass, deferring new feature work not required to reduce critical-path risk.",
+        "decisions": [
+          {
+            "label": "prioritize FHIR migration",
+            "confidence": "high",
+            "anchorText": "Effective immediately, FHIR migration work becomes the primary priority for Dental / DenClass."
+          },
+          {
+            "label": "defer non-critical feature work",
+            "confidence": "high",
+            "anchorText": "New feature work not required to reduce critical-path risk is deferred."
+          }
+        ],
+        "warnings": [
+          "This decision remains in force until leadership revisits the vendor dependency posture on or after April 15, 2026."
+        ],
+        "confidence": "high"
+      },
+      "promptVersion": "phase2-dump-v1",
+      "modelId": "amazon.nova-pro-v1:0",
+      "recordedAt": "2026-04-17T09:54:03.201Z"
+    },
+    {
+      "sourceId": "ingest-30",
+      "productId": "dental",
+      "productName": "DENTAL / DENCLASS",
+      "sourceType": "transcript",
+      "sourceFamily": "transcript",
+      "wave": "wave-01-operational",
+      "ingestOrder": 30,
+      "documentDate": "2026-04-09",
+      "title": "Dental Sprint 2 Review Transcript",
+      "author": "Teams Auto Transcript",
+      "metadata": {
+        "product_id": "dental",
+        "product_name": "DENTAL / DENCLASS",
+        "wave": "wave-01-operational",
+        "wave_label": "Operational Week",
+        "source_type": "transcript",
+        "document_date": "2026-04-09",
+        "author": "Teams Auto Transcript",
+        "title": "Dental Sprint 2 Review Transcript",
+        "pi": 4,
+        "sprint": 2,
+        "contains_decisions": true,
+        "contains_action_items": true,
+        "status_signal": "risk",
+        "stakeholders": "Jaden Cole; Dr. Minji Sohl; Benjiman Jennings",
+        "demo_effect": "Provides the first high-value decision-rich transcript used by Ask and reporting."
+      },
+      "payload": {
+        "summary": "Sprint 2 review shifted the program posture materially. The vendor delay became explicit, leadership directed the team to prioritize FHIR over feature work, and Dr. Sohl raised concern about insufficient integration-test readiness.",
+        "decisions": [
+          {
+            "label": "prioritize FHIR migration",
+            "confidence": "high",
+            "anchorText": "FHIR migration work will take priority over all new feature work until the dependency risk is reduced."
+          },
+          {
+            "label": "defer three feature stories",
+            "confidence": "high",
+            "anchorText": "Three feature stories will be deferred to Sprint 3 so engineering effort can stay aligned to the critical path."
+          },
+          {
+            "label": "plan integration test harness",
+            "confidence": "high",
+            "anchorText": "Integration test harness work must be planned explicitly for Sprint 3 rather than assumed as hidden labor."
+          }
+        ],
+        "warnings": [
+          "Dr. Minji Sohl raised concern about insufficient integration-test readiness.",
+          "Dr. Minji Sohl stated that approval of a schedule does not erase the environment risk."
+        ],
+        "confidence": "high"
+      },
+      "promptVersion": "phase2-dump-v1",
+      "modelId": "amazon.nova-pro-v1:0",
+      "recordedAt": "2026-04-17T09:54:02.185Z"
+    },
+    {
+      "sourceId": "ingest-29",
+      "productId": "dental",
+      "productName": "DENTAL / DENCLASS",
+      "sourceType": "email",
+      "sourceFamily": "email",
+      "wave": "wave-01-operational",
+      "ingestOrder": 29,
+      "documentDate": "2026-04-08",
+      "title": "Email — Vendor Sandbox Delay",
+      "author": "Elena Markovic",
+      "metadata": {
+        "product_id": "dental",
+        "product_name": "DENTAL / DENCLASS",
+        "wave": "wave-01-operational",
+        "wave_label": "Operational Week",
+        "source_type": "email",
+        "document_date": "2026-04-08",
+        "author": "Elena Markovic",
+        "title": "Email — Vendor Sandbox Delay",
+        "pi": 4,
+        "sprint": 2,
+        "contains_decisions": false,
+        "contains_action_items": true,
+        "status_signal": "risk",
+        "stakeholders": "Elena Markovic; Lowry Beckett; Jaden Cole",
+        "demo_effect": "Introduces hard evidence of the vendor delay that will elevate risk and reduce confidence."
+      },
+      "payload": {
+        "summary": "The email discusses a delay in the dental sandbox milestone due to infrastructure team requirements, with a potential two-week slip. Phased access for a small group is being evaluated, with more clarity expected before 4/15. The note is not a final approval but a forecast pending internal sign-off.",
+        "decisions": [
+          {
+            "label": "evaluate phased access",
+            "confidence": "medium",
+            "anchorText": "We are evaluating whether we can provide phased access earlier for a small named-user group."
+          }
+        ],
+        "warnings": [
+          "The infrastructure team needs additional time, causing a roughly two-week slip relative to the original target.",
+          "Do not interpret this note as final milestone approval; it is the best available forecast pending internal sign-off."
+        ],
+        "confidence": "medium"
+      },
+      "promptVersion": "phase2-dump-v1",
+      "modelId": "amazon.nova-pro-v1:0",
+      "recordedAt": "2026-04-17T09:54:00.804Z"
+    },
+    {
+      "sourceId": "ingest-28",
+      "productId": "dental",
+      "productName": "DENTAL / DENCLASS",
+      "sourceType": "email",
+      "sourceFamily": "email",
+      "wave": "wave-01-operational",
+      "ingestOrder": 28,
+      "documentDate": "2026-04-07",
+      "title": "Email — Test Schedule Approval",
+      "author": "Dr. Minji Sohl",
+      "metadata": {
+        "product_id": "dental",
+        "product_name": "DENTAL / DENCLASS",
+        "wave": "wave-01-operational",
+        "wave_label": "Operational Week",
+        "source_type": "email",
+        "document_date": "2026-04-07",
+        "author": "Dr. Minji Sohl",
+        "title": "Email — Test Schedule Approval",
+        "pi": 4,
+        "sprint": 2,
+        "contains_decisions": true,
+        "contains_action_items": false,
+        "status_signal": "healthy",
+        "stakeholders": "Dr. Minji Sohl; Jaden Cole",
+        "demo_effect": "Adds a stakeholder approval event that the Ask panel can cite."
+      },
+      "payload": {
+        "summary": "Dr. Minji Sohl approved the revised test schedule for the dental product but emphasized that the environment is not considered ready until actual validation is achieved.",
+        "decisions": [
+          {
+            "label": "approve revised test schedule",
+            "confidence": "high",
+            "anchorText": "Approved the revised test schedule."
+          }
+        ],
+        "warnings": [
+          "The environment is not considered ready until actual validation is achieved.",
+          "Confidence in the stakeholder demo date depends on receiving the vendor timeline in writing."
+        ],
+        "confidence": "high"
+      },
+      "promptVersion": "phase2-dump-v1",
+      "modelId": "amazon.nova-pro-v1:0",
+      "recordedAt": "2026-04-17T09:53:59.499Z"
+    }
+  ]
+}

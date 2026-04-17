@@ -1,0 +1,46 @@
+{
+  "sourceId": "ingest-48",
+  "productId": "essence",
+  "productName": "ESSENCE Transition Support",
+  "sourceType": "email",
+  "sourceFamily": "email",
+  "wave": "wave-02-escalation",
+  "ingestOrder": 48,
+  "documentDate": "2026-04-12",
+  "title": "Email — Document Gap Followup",
+  "author": "Commander Melissa Jones",
+  "metadata": {
+    "product_id": "essence",
+    "product_name": "ESSENCE Transition Support",
+    "wave": "wave-02-escalation",
+    "wave_label": "Escalation Week",
+    "source_type": "email",
+    "document_date": "2026-04-12",
+    "author": "Commander Melissa Jones",
+    "title": "Email — Document Gap Followup",
+    "pi": 4,
+    "sprint": 2,
+    "contains_decisions": false,
+    "contains_action_items": true,
+    "status_signal": "risk",
+    "stakeholders": "Commander Melissa Jones; Virginia Howard",
+    "demo_effect": "Makes the continuity gap explicit and demonstrates why Ask confidence should remain low."
+  },
+  "payload": {
+    "summary": "The continuity gap in the ESSENCE project remains substantial, with incomplete and unreliable documentation.",
+    "decisions": [
+      {
+        "label": "show low confidence",
+        "confidence": "high",
+        "anchorText": "I would rather the application show low confidence than manufacture a clean story from fragments."
+      }
+    ],
+    "warnings": [
+      "The current corpus should be treated as incomplete until more evidence is recovered."
+    ],
+    "confidence": "high"
+  },
+  "promptVersion": "phase2-dump-v1",
+  "modelId": "amazon.nova-pro-v1:0",
+  "recordedAt": "2026-04-17T09:54:22.119Z"
+}

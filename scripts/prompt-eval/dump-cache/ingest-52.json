@@ -1,0 +1,47 @@
+{
+  "sourceId": "ingest-52",
+  "productId": "dental",
+  "productName": "DENTAL / DENCLASS",
+  "sourceType": "pi_objectives_export",
+  "sourceFamily": "spreadsheet",
+  "wave": "wave-03-recovery",
+  "ingestOrder": 52,
+  "documentDate": "2026-04-16",
+  "title": "Dental PI Objectives Export — Recovery",
+  "author": "Benjiman Jennings",
+  "metadata": {
+    "product_id": "dental",
+    "product_name": "DENTAL / DENCLASS",
+    "wave": "wave-03-recovery",
+    "wave_label": "Recovery Week",
+    "source_type": "pi_objectives_export",
+    "document_date": "2026-04-16",
+    "author": "Benjiman Jennings",
+    "title": "Dental PI Objectives Export — Recovery",
+    "pi": 4,
+    "sprint": 2,
+    "contains_decisions": false,
+    "contains_action_items": false,
+    "status_signal": "caution",
+    "stakeholders": "Benjiman Jennings; Jaden Cole",
+    "demo_effect": "Shows objective progress rebounding after the mitigation plan is accepted."
+  },
+  "payload": {
+    "summary": "The dental product's objectives are progressing with varying degrees of completion and risk. Key milestones include the completion of FHIR endpoint mapping, delivery of a security assessment, readiness of the test environment, and approval of a mitigation plan.",
+    "decisions": [
+      {
+        "label": "approve staged mitigation",
+        "confidence": "high",
+        "anchorText": "Leadership approved staged mitigation on 4/16."
+      }
+    ],
+    "warnings": [
+      "The test environment is only partially ready with full access still pending.",
+      "The stakeholder demo can proceed against mock services if needed, indicating potential delays or issues with the actual services."
+    ],
+    "confidence": "high"
+  },
+  "promptVersion": "phase2-dump-v1",
+  "modelId": "amazon.nova-pro-v1:0",
+  "recordedAt": "2026-04-17T09:54:27.250Z"
+}

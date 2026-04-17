@@ -1,0 +1,57 @@
+{
+  "sourceId": "ingest-51",
+  "productId": "dental",
+  "productName": "DENTAL / DENCLASS",
+  "sourceType": "weekly_update",
+  "sourceFamily": "document",
+  "wave": "wave-03-recovery",
+  "ingestOrder": 51,
+  "documentDate": "2026-04-16",
+  "title": "Dental Weekly Update — Recovery",
+  "author": "Jaden Cole",
+  "metadata": {
+    "product_id": "dental",
+    "product_name": "DENTAL / DENCLASS",
+    "wave": "wave-03-recovery",
+    "wave_label": "Recovery Week",
+    "source_type": "weekly_update",
+    "document_date": "2026-04-16",
+    "author": "Jaden Cole",
+    "title": "Dental Weekly Update — Recovery",
+    "pi": 4,
+    "sprint": 2,
+    "contains_decisions": false,
+    "contains_action_items": true,
+    "status_signal": "caution",
+    "stakeholders": "Jaden Cole; Robin Holt; Chris Alvarez",
+    "demo_effect": "Narratively closes the loop and shows the product improving after remediation."
+  },
+  "payload": {
+    "summary": "Dental is improving from severe risk to managed caution. The vendor provided a phased recovery path, leadership approved staged mitigation, and the team can keep the stakeholder demo alive by pairing partial vendor access with mock services and a narrowed critical-path scope.",
+    "decisions": [
+      {
+        "label": "capture revised milestone path",
+        "confidence": "high",
+        "anchorText": "Held the vendor recovery call and captured the revised milestone path."
+      },
+      {
+        "label": "document staged mitigation decision",
+        "confidence": "high",
+        "anchorText": "Closed the cost-impact request and documented the staged mitigation decision."
+      },
+      {
+        "label": "resolve access for named users",
+        "confidence": "high",
+        "anchorText": "Resolved access for named users to partial sandbox capabilities starting 4/18."
+      }
+    ],
+    "warnings": [
+      "Full vendor environment access is still pending 4/25, so the product is not fully healthy.",
+      "The demo path is safer but still depends on timely integration test harness work."
+    ],
+    "confidence": "high"
+  },
+  "promptVersion": "phase2-dump-v1",
+  "modelId": "amazon.nova-pro-v1:0",
+  "recordedAt": "2026-04-17T09:54:26.035Z"
+}

@@ -1,0 +1,172 @@
+{
+  "_meta": {
+    "generatedAt": "2026-04-17T09:54:31.602Z",
+    "productId": "optima",
+    "productName": "OPTIMA Care Coordination",
+    "waveCutoffs": [
+      "wave-01-operational",
+      "wave-03-recovery"
+    ],
+    "extractionCount": 3
+  },
+  "productId": "optima",
+  "productName": "OPTIMA Care Coordination",
+  "productMission": "",
+  "extractions": [
+    {
+      "sourceId": "ingest-56",
+      "productId": "optima",
+      "productName": "OPTIMA Care Coordination",
+      "sourceType": "weekly_update",
+      "sourceFamily": "document",
+      "wave": "wave-03-recovery",
+      "ingestOrder": 56,
+      "documentDate": "2026-04-16",
+      "title": "Optima Weekly Update — April 16",
+      "author": "Anna Kim",
+      "metadata": {
+        "product_id": "optima",
+        "product_name": "OPTIMA Care Coordination",
+        "wave": "wave-03-recovery",
+        "wave_label": "Recovery Week",
+        "source_type": "weekly_update",
+        "document_date": "2026-04-16",
+        "author": "Anna Kim",
+        "title": "Optima Weekly Update — April 16",
+        "pi": 4,
+        "sprint": 2,
+        "contains_decisions": false,
+        "contains_action_items": true,
+        "status_signal": "healthy",
+        "stakeholders": "Anna Kim; Sandy Pierce",
+        "demo_effect": "Keeps the healthy comparison product current through the final demo wave."
+      },
+      "payload": {
+        "summary": "Optima remains healthy with current weeklys, a complete transcript trail, and low-noise stakeholder communications. Accomplishments include delivering the April demo without scope change, publishing post-demo actions, and maintaining a low-risk posture. Next steps involve closing a low-priority dashboard defect and continuing Sprint 2 execution.",
+        "decisions": [
+          {
+            "label": "close low-priority dashboard defect",
+            "confidence": "medium",
+            "anchorText": "Close the low-priority dashboard defect."
+          },
+          {
+            "label": "continue steady Sprint 2 execution",
+            "confidence": "medium",
+            "anchorText": "Continue steady Sprint 2 execution."
+          }
+        ],
+        "warnings": [
+          "Only minor user training variability remains under observation."
+        ],
+        "confidence": "medium"
+      },
+      "promptVersion": "phase2-dump-v1",
+      "modelId": "amazon.nova-pro-v1:0",
+      "recordedAt": "2026-04-17T09:54:31.599Z"
+    },
+    {
+      "sourceId": "ingest-37",
+      "productId": "optima",
+      "productName": "OPTIMA Care Coordination",
+      "sourceType": "decision_log",
+      "sourceFamily": "document",
+      "wave": "wave-01-operational",
+      "ingestOrder": 37,
+      "documentDate": "2026-04-10",
+      "title": "Optima Decision Log Update",
+      "author": "Anna Kim",
+      "metadata": {
+        "product_id": "optima",
+        "product_name": "OPTIMA Care Coordination",
+        "wave": "wave-01-operational",
+        "wave_label": "Operational Week",
+        "source_type": "decision_log",
+        "document_date": "2026-04-10",
+        "author": "Anna Kim",
+        "title": "Optima Decision Log Update",
+        "pi": 4,
+        "sprint": 2,
+        "contains_decisions": true,
+        "contains_action_items": false,
+        "status_signal": "healthy",
+        "stakeholders": "Anna Kim; Sandy Pierce",
+        "demo_effect": "Creates explicit decision lineage to contrast against weaker products."
+      },
+      "payload": {
+        "summary": "Optima Decision Log Update for April 10, 2026, capturing decisions on referral routing, provider reminders, and training material updates.",
+        "decisions": [
+          {
+            "label": "accept referral routing cleanup",
+            "confidence": "high",
+            "anchorText": "Referral routing cleanup is accepted as complete for the current scope."
+          },
+          {
+            "label": "prioritize provider reminder work",
+            "confidence": "high",
+            "anchorText": "Provider reminder work is the next Sprint 2 priority."
+          },
+          {
+            "label": "deliver training material updates",
+            "confidence": "high",
+            "anchorText": "Training material updates must be delivered before broader April demo circulation."
+          }
+        ],
+        "warnings": [
+          "Anna Kim to publish updated training screenshots.",
+          "Dev Team C to close the dashboard legend defect.",
+          "Sandy Pierce to confirm final demo attendee list."
+        ],
+        "confidence": "high"
+      },
+      "promptVersion": "phase2-dump-v1",
+      "modelId": "amazon.nova-pro-v1:0",
+      "recordedAt": "2026-04-17T09:54:08.475Z"
+    },
+    {
+      "sourceId": "ingest-36",
+      "productId": "optima",
+      "productName": "OPTIMA Care Coordination",
+      "sourceType": "email",
+      "sourceFamily": "email",
+      "wave": "wave-01-operational",
+      "ingestOrder": 36,
+      "documentDate": "2026-04-09",
+      "title": "Email — Demo Readout",
+      "author": "Anna Kim",
+      "metadata": {
+        "product_id": "optima",
+        "product_name": "OPTIMA Care Coordination",
+        "wave": "wave-01-operational",
+        "wave_label": "Operational Week",
+        "source_type": "email",
+        "document_date": "2026-04-09",
+        "author": "Anna Kim",
+        "title": "Email — Demo Readout",
+        "pi": 4,
+        "sprint": 2,
+        "contains_decisions": false,
+        "contains_action_items": true,
+        "status_signal": "healthy",
+        "stakeholders": "Anna Kim; Sandy Pierce",
+        "demo_effect": "Adds another confidence-building coordination thread for Optima."
+      },
+      "payload": {
+        "summary": "Optima demo readout and next actions",
+        "decisions": [
+          {
+            "label": "tighten training slide",
+            "confidence": "high",
+            "anchorText": "the only action item is to tighten one training slide before broader rollout."
+          }
+        ],
+        "warnings": [
+          "This should stay a healthy product unless something unexpected appears."
+        ],
+        "confidence": "high"
+      },
+      "promptVersion": "phase2-dump-v1",
+      "modelId": "amazon.nova-pro-v1:0",
+      "recordedAt": "2026-04-17T09:54:07.524Z"
+    }
+  ]
+}

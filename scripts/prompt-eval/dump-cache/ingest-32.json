@@ -1,0 +1,53 @@
+{
+  "sourceId": "ingest-32",
+  "productId": "dental",
+  "productName": "DENTAL / DENCLASS",
+  "sourceType": "weekly_update",
+  "sourceFamily": "document",
+  "wave": "wave-01-operational",
+  "ingestOrder": 32,
+  "documentDate": "2026-04-10",
+  "title": "Dental Weekly Update — Sprint 2",
+  "author": "Jaden Cole",
+  "metadata": {
+    "product_id": "dental",
+    "product_name": "DENTAL / DENCLASS",
+    "wave": "wave-01-operational",
+    "wave_label": "Operational Week",
+    "source_type": "weekly_update",
+    "document_date": "2026-04-10",
+    "author": "Jaden Cole",
+    "title": "Dental Weekly Update — Sprint 2",
+    "pi": 4,
+    "sprint": 2,
+    "contains_decisions": false,
+    "contains_action_items": true,
+    "status_signal": "risk",
+    "stakeholders": "Jaden Cole; Robin Holt; Chris Alvarez",
+    "demo_effect": "Refreshes the narrative and captures the first clear 'at risk' posture."
+  },
+  "payload": {
+    "summary": "Dental is at risk in Sprint 2 due to vendor delays and leadership directives. The team needs a decision by 4/15 to recover the schedule.",
+    "decisions": [
+      {
+        "label": "approve phased access",
+        "confidence": "high",
+        "anchorText": "the vendor confirmed that the shared sandbox will slip unless phased access is approved"
+      },
+      {
+        "label": "prioritize FHIR migration",
+        "confidence": "high",
+        "anchorText": "leadership directed the team to prioritize FHIR migration over new feature work"
+      }
+    ],
+    "warnings": [
+      "The schedule is still recoverable, but the team needs a decision by 4/15.",
+      "R-014 (FHIR migration dependency) escalated to High.",
+      "Integration test coverage remains below the threshold expected by Dr. Sohl."
+    ],
+    "confidence": "high"
+  },
+  "promptVersion": "phase2-dump-v1",
+  "modelId": "amazon.nova-pro-v1:0",
+  "recordedAt": "2026-04-17T09:54:04.310Z"
+}

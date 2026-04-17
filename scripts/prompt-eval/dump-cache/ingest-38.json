@@ -1,0 +1,53 @@
+{
+  "sourceId": "ingest-38",
+  "productId": "dental",
+  "productName": "DENTAL / DENCLASS",
+  "sourceType": "email",
+  "sourceFamily": "email",
+  "wave": "wave-02-escalation",
+  "ingestOrder": 38,
+  "documentDate": "2026-04-11",
+  "title": "Email — Blocker Escalation",
+  "author": "Jaden Cole",
+  "metadata": {
+    "product_id": "dental",
+    "product_name": "DENTAL / DENCLASS",
+    "wave": "wave-02-escalation",
+    "wave_label": "Escalation Week",
+    "source_type": "email",
+    "document_date": "2026-04-11",
+    "author": "Jaden Cole",
+    "title": "Email — Blocker Escalation",
+    "pi": 4,
+    "sprint": 2,
+    "contains_decisions": false,
+    "contains_action_items": true,
+    "status_signal": "risk",
+    "stakeholders": "Jaden Cole; Benjiman Jennings; Lowry Beckett",
+    "demo_effect": "Shows the PM escalating the issue as it becomes operationally material."
+  },
+  "payload": {
+    "summary": "The vendor dependency for the dental product has been escalated to a blocker due to delays and uncertainties in the contract and acquisition process.",
+    "decisions": [
+      {
+        "label": "show product as at risk",
+        "confidence": "medium",
+        "anchorText": "permission to show the product as at risk in this week's narrative"
+      },
+      {
+        "label": "support mitigation option",
+        "confidence": "medium",
+        "anchorText": "support for a mitigation option that uses mock services if the vendor cannot recover quickly"
+      }
+    ],
+    "warnings": [
+      "The sandbox is slipping according to Elena's 4/8 note.",
+      "There is still no clean contract or acquisition answer tied to the revised path.",
+      "Sprint 3 planning is being shaped by uncertainty rather than decisions."
+    ],
+    "confidence": "medium"
+  },
+  "promptVersion": "phase2-dump-v1",
+  "modelId": "amazon.nova-pro-v1:0",
+  "recordedAt": "2026-04-17T09:54:10.476Z"
+}

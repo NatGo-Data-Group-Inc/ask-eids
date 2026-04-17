@@ -1,0 +1,73 @@
+{
+  "sourceId": "ingest-54",
+  "productId": "dental",
+  "productName": "DENTAL / DENCLASS",
+  "sourceType": "decision_memo",
+  "sourceFamily": "document",
+  "wave": "wave-03-recovery",
+  "ingestOrder": 54,
+  "documentDate": "2026-04-16",
+  "title": "Dental Remediation Decision Memo",
+  "author": "Benjiman Jennings",
+  "metadata": {
+    "product_id": "dental",
+    "product_name": "DENTAL / DENCLASS",
+    "wave": "wave-03-recovery",
+    "wave_label": "Recovery Week",
+    "source_type": "decision_memo",
+    "document_date": "2026-04-16",
+    "author": "Benjiman Jennings",
+    "title": "Dental Remediation Decision Memo",
+    "pi": 4,
+    "sprint": 2,
+    "contains_decisions": true,
+    "contains_action_items": false,
+    "status_signal": "caution",
+    "stakeholders": "Benjiman Jennings; Jaden Cole; Lowry Beckett",
+    "demo_effect": "Explains the recovery path and why the product is improving but not fully healthy yet."
+  },
+  "payload": {
+    "summary": "Leadership approves a staged mitigation path for Dental, involving partial sandbox access, mock services for remaining gaps, and caution until full environment validation.",
+    "decisions": [
+      {
+        "label": "use partial sandbox access",
+        "confidence": "high",
+        "anchorText": "The team will use partial sandbox access beginning April 18"
+      },
+      {
+        "label": "pair remaining gaps with mock services",
+        "confidence": "high",
+        "anchorText": "pair remaining gaps with mock services"
+      },
+      {
+        "label": "treat the product as caution",
+        "confidence": "high",
+        "anchorText": "continue to treat the product as caution until full environment validation is available"
+      },
+      {
+        "label": "update weekly narrative and report pack",
+        "confidence": "high",
+        "anchorText": "Jaden Cole updates the weekly narrative and report pack"
+      },
+      {
+        "label": "circulate written milestone confirmation",
+        "confidence": "high",
+        "anchorText": "Lowry Beckett circulates written milestone confirmation"
+      },
+      {
+        "label": "align the ADO board to the staged-access plan",
+        "confidence": "high",
+        "anchorText": "Delivery teams align the ADO board to the staged-access plan"
+      }
+    ],
+    "warnings": [
+      "Full vendor readiness is still targeted for April 25.",
+      "Integration test harness work remains necessary.",
+      "The stakeholder demo still depends on disciplined scoping."
+    ],
+    "confidence": "high"
+  },
+  "promptVersion": "phase2-dump-v1",
+  "modelId": "amazon.nova-pro-v1:0",
+  "recordedAt": "2026-04-17T09:54:30.442Z"
+}
