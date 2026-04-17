@@ -762,7 +762,7 @@ export function attachSemanticStateToRuntimeState(
     executionMode = (process.env.VITEST || process.env.NODE_ENV === 'test') ? 'replay' : 'live',
     promptVersion = process.env.EIDS_PROMPT_REGISTRY_VERSION || 'local-dev',
     modelId = process.env.BEDROCK_TEXT_MODEL_ID || 'amazon.nova-pro-v1:0',
-    liveSourceFamilies = ['email'],
+    liveSourceFamilies = ['email', 'transcript', 'document', 'spreadsheet', 'slide_deck'],
     staleAfterHours = 24,
   } = {}
 ) {

@@ -5,7 +5,7 @@ const KNOWN_SOURCE_FAMILIES = ['email', 'document', 'transcript', 'spreadsheet',
 
 export function buildSourceFamilyModes({
   executionMode = 'replay',
-  liveSourceFamilies = ['email'],
+  liveSourceFamilies = ['email', 'transcript', 'document', 'spreadsheet', 'slide_deck'],
 } = {}) {
   const modes = Object.fromEntries(KNOWN_SOURCE_FAMILIES.map((family) => [family, 'replay']));
   if (executionMode === 'hybrid' || executionMode === 'live') {
@@ -31,7 +31,7 @@ export function resolveSemanticExecutionPolicy({
   const sourceFamilyModes = semanticConfig.sourceFamilyModes
     || buildSourceFamilyModes({
       executionMode: semanticConfig.executionMode || runtimeConfig?.semantic?.defaultExecutionMode || 'replay',
-      liveSourceFamilies: runtimeConfig?.semantic?.liveSourceFamilies || ['email'],
+      liveSourceFamilies: runtimeConfig?.semantic?.liveSourceFamilies || ['email', 'transcript', 'document', 'spreadsheet', 'slide_deck'],
     });
   const requestedMode = sourceFamilyModes[sourceFamily]
     || runtimeConfig?.semantic?.defaultExecutionMode

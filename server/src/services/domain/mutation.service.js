@@ -250,7 +250,7 @@ export function createMutationService({
         ? Object.entries(draft.semanticConfig?.sourceFamilyModes || {})
           .filter(([, mode]) => mode === 'live')
           .map(([family]) => family)
-        : (runtimeConfig?.semantic?.liveSourceFamilies || ['email']),
+        : (runtimeConfig?.semantic?.liveSourceFamilies || ['email', 'transcript', 'document', 'spreadsheet', 'slide_deck']),
       staleAfterHours: draft.semanticConfig?.staleAfterHours || runtimeConfig?.semantic?.staleAfterHours || 24,
     });
   }
