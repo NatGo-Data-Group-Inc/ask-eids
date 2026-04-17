@@ -46,7 +46,7 @@ async function main() {
       featureFlags: {
         enableNovaDentalLiveEmail: true,
         enableDentalTrustSurfaces: true,
-        enableDentalSemanticServiceSplit: true,
+        enableSemanticServicePath: true,
         enableExtractionReplayMode: false,
         enableDentalRetrievalIndexing: true,
       },

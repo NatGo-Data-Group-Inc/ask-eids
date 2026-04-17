@@ -12,7 +12,7 @@ test('Dental hybrid mode surfaces semantic freshness after email upload', async 
     featureFlags: {
       enableNovaDentalLiveEmail: false,
       enableDentalTrustSurfaces: true,
-      enableDentalSemanticServiceSplit: true,
+      enableSemanticServicePath: true,
       enableExtractionReplayMode: true,
       enableDentalRetrievalIndexing: true,
     },

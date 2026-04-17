@@ -12,7 +12,7 @@ test('Reports show semantic-state trust and regeneration state together', async 
     featureFlags: {
       enableNovaDentalLiveEmail: false,
       enableDentalTrustSurfaces: true,
-      enableDentalSemanticServiceSplit: true,
+      enableSemanticServicePath: true,
       enableExtractionReplayMode: true,
       enableDentalRetrievalIndexing: true,
     },

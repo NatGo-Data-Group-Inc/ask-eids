@@ -12,7 +12,7 @@ test('Ask shows degraded semantic state when last-known-good aggregate is active
     featureFlags: {
       enableNovaDentalLiveEmail: false,
       enableDentalTrustSurfaces: true,
-      enableDentalSemanticServiceSplit: true,
+      enableSemanticServicePath: true,
       enableExtractionReplayMode: true,
       enableDentalRetrievalIndexing: true,
     },

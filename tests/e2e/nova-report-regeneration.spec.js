@@ -11,7 +11,7 @@ test('Dental reports regenerate from updated aggregate state', async ({ page, re
     featureFlags: {
       enableNovaDentalLiveEmail: false,
       enableDentalTrustSurfaces: true,
-      enableDentalSemanticServiceSplit: false,
+      enableSemanticServicePath: false,
       enableExtractionReplayMode: true,
       enableDentalRetrievalIndexing: true,
     },

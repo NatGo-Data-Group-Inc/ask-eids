@@ -11,7 +11,7 @@ test('Structured blockers update Data tab and aggregate posture', async ({ page,
     featureFlags: {
       enableNovaDentalLiveEmail: false,
       enableDentalTrustSurfaces: true,
-      enableDentalSemanticServiceSplit: false,
+      enableSemanticServicePath: false,
       enableExtractionReplayMode: true,
       enableDentalRetrievalIndexing: true,
     },

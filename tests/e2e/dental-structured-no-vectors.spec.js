@@ -9,7 +9,7 @@ test('Fixed-schema structured Dental upload does not write rag chunks', async ({
     featureFlags: {
       enableNovaDentalLiveEmail: false,
       enableDentalTrustSurfaces: true,
-      enableDentalSemanticServiceSplit: true,
+      enableSemanticServicePath: true,
       enableExtractionReplayMode: true,
       enableDentalRetrievalIndexing: true,
     },

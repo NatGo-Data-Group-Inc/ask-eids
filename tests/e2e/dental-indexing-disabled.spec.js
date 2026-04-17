@@ -9,7 +9,7 @@ test('Dental indexing kill switch publishes but warns Ask that retrieval is not 
     featureFlags: {
       enableNovaDentalLiveEmail: false,
       enableDentalTrustSurfaces: true,
-      enableDentalSemanticServiceSplit: true,
+      enableSemanticServicePath: true,
       enableExtractionReplayMode: true,
       enableDentalRetrievalIndexing: false,
     },

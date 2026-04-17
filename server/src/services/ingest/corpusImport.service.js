@@ -355,17 +355,17 @@ function piStatusClass(value) {
   return 'planned';
 }
 
-function buildStructuredRows(entry) {
+export function buildStructuredRows(entry) {
   const rows = parseCsv(entry.rawText);
   if (entry.sourceType === 'risk_export') {
     return rows.map((row) => ({
-      id: row.risk_id,
+      id: row.risk_id || row.id,
       title: row.title,
       severity: severityClass(row.severity),
       status: String(row.status || '').toLowerCase(),
       owner: row.owner,
-      changed: `${row.last_changed}T12:00:00.000Z`,
-      description: row.summary,
+      changed: `${row.last_changed || row.changed || ''}T12:00:00.000Z`,
+      description: row.summary || row.description,
       mitigation: row.mitigation,
       relatedEvents: [
         row.opened_date ? `Opened ${row.opened_date}` : '',
@@ -375,14 +375,14 @@ function buildStructuredRows(entry) {
   }
   if (entry.sourceType === 'blocker_export') {
     return rows.map((row) => ({
-      id: row.blocker_id,
+      id: row.blocker_id || row.id,
       title: row.title,
       severity: String(row.status || '').toLowerCase() === 'active' ? 'high' : 'med',
       status: String(row.status || '').toLowerCase(),
       owner: row.owner,
-      changed: `${row.last_changed}T12:00:00.000Z`,
-      description: row.impact,
-      mitigation: row.unblock_plan,
+      changed: `${row.last_changed || row.changed || ''}T12:00:00.000Z`,
+      description: row.impact || row.description,
+      mitigation: row.unblock_plan || row.mitigation,
       relatedEvents: [
         row.opened_date ? `Opened ${row.opened_date}` : '',
         row.related_risk ? `Linked risk ${row.related_risk}` : '',
@@ -772,7 +772,7 @@ export function attachSemanticStateToRuntimeState(
   const baseFeatureFlags = featureFlagsFromLegacyMode(featureMode, {
     enableNovaDentalLiveEmail: executionMode === 'live' || executionMode === 'hybrid',
     enableDentalTrustSurfaces: true,
-    enableDentalSemanticServiceSplit: featureMode === 'service-split' || featureMode === 'live-email-trust-hardening',
+    enableSemanticServicePath: featureMode === 'service-split' || featureMode === 'live-email-trust-hardening',
     enableExtractionReplayMode: executionMode !== 'live',
     enableDentalRetrievalIndexing: true,
   });
@@ -800,7 +800,7 @@ export function attachSemanticStateToRuntimeState(
       continue;
     }
 
-    const extractionFirstEnabled = product.id === 'dental' && effectiveFeatureFlags.enableDentalSemanticServiceSplit;
+    const extractionFirstEnabled = product.id === 'dental' && effectiveFeatureFlags.enableSemanticServicePath;
     const aggregateVersion = Number(product.evidenceVersion || productData.evidenceVersion || 1);
     if (!extractionFirstEnabled) {
       const legacyTrust = computeSemanticTrustState({
@@ -1327,7 +1327,7 @@ function buildReportFromCorpus(state, productId) {
       {
         sectionId: 'executive-summary',
         title: 'Executive Summary',
-        body: latestWeekly?.summary || product.narrativeText,
+        body: product.narrativeText || latestWeekly?.summary,
       },
       {
         sectionId: 'delivery-highlights',

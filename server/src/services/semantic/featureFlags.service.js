@@ -19,7 +19,7 @@ export function getDefaultEffectiveFeatureFlags(runtimeConfig) {
   return {
     enableNovaDentalLiveEmail: Boolean(runtimeConfig?.features?.enableNovaDentalLiveEmail),
     enableDentalTrustSurfaces: Boolean(runtimeConfig?.features?.enableDentalTrustSurfaces),
-    enableDentalSemanticServiceSplit: Boolean(runtimeConfig?.features?.enableDentalSemanticServiceSplit),
+    enableSemanticServicePath: Boolean(runtimeConfig?.features?.enableSemanticServicePath),
     enableExtractionReplayMode: Boolean(runtimeConfig?.features?.enableExtractionReplayMode),
     enableDentalRetrievalIndexing: Boolean(runtimeConfig?.features?.enableDentalRetrievalIndexing),
   };
@@ -34,16 +34,16 @@ export function featureFlagsFromLegacyMode(featureMode, defaults) {
   const normalized = String(featureMode).trim();
   if (normalized === 'legacy') {
     mapped.enableDentalTrustSurfaces = false;
-    mapped.enableDentalSemanticServiceSplit = false;
+    mapped.enableSemanticServicePath = false;
   } else if (normalized === 'extraction-first') {
     mapped.enableDentalTrustSurfaces = true;
-    mapped.enableDentalSemanticServiceSplit = false;
+    mapped.enableSemanticServicePath = false;
   } else if (normalized === 'live-email-trust-hardening') {
     mapped.enableDentalTrustSurfaces = true;
-    mapped.enableDentalSemanticServiceSplit = true;
+    mapped.enableSemanticServicePath = true;
   } else if (normalized === 'service-split') {
     mapped.enableDentalTrustSurfaces = true;
-    mapped.enableDentalSemanticServiceSplit = true;
+    mapped.enableSemanticServicePath = true;
   }
   return mapped;
 }

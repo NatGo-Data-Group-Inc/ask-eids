@@ -11,7 +11,7 @@ test('Dental baseline renders from extraction-first state', async ({ page, reque
     featureFlags: {
       enableNovaDentalLiveEmail: false,
       enableDentalTrustSurfaces: true,
-      enableDentalSemanticServiceSplit: false,
+      enableSemanticServicePath: false,
       enableExtractionReplayMode: true,
       enableDentalRetrievalIndexing: true,
     },

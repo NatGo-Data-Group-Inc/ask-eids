@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { generateBedrockText } from '../../lib/aws/bedrockText.js';
-import { attachSemanticStateToRuntimeState, buildCorpusReport, buildUploadedCorpusEntry, deriveCorpusProductState } from '../ingest/corpusImport.service.js';
+import { attachSemanticStateToRuntimeState, buildCorpusReport, buildStructuredRows, buildUploadedCorpusEntry, deriveCorpusProductState } from '../ingest/corpusImport.service.js';
 import { HttpError } from '../common/httpError.js';
 import { normalizeTranscriptUpload } from '../ingest/normalize/transcriptNormalizer.js';
 import { extractTranscriptEntities } from '../extract/transcriptExtraction.service.js';
@@ -9,7 +9,7 @@ import { buildMailboxSyncDelta } from '../connectors/mailboxConnector.service.js
 import { buildAdoSyncDelta } from '../connectors/adoConnector.service.js';
 import { runAdoMcpEnrichment } from '../connectors/adoMcpAdapter.service.js';
 import { resolveSemanticExecutionPolicy } from '../semantic/executionPolicy.service.js';
-import { runEmailSemanticIngest } from '../semantic/semanticIngestOrchestrator.service.js';
+import { runSemanticIngest } from '../semantic/semanticIngestOrchestrator.service.js';
 import { runChunkingAndIndexing } from '../semantic/chunkingAndIndexing.service.js';
 import {
   appendProductAggregateAttempt,
@@ -988,9 +988,8 @@ export function createMutationService({
     });
     const queuedPublicationGuard = currentAggregateGuardForProduct(state, productId);
     const sourceFamilyClass = getSourceFamilyClass(validated.sourceType);
-    const useSemanticServicePath = productId === 'dental'
-      && effectiveFeatureFlags.enableDentalSemanticServiceSplit
-      && sourceFamilyClass === 'retrieval_eligible';
+    const useSemanticServicePath = effectiveFeatureFlags.enableSemanticServicePath
+      && ['retrieval_eligible', 'fixed_schema_structured'].includes(sourceFamilyClass);
 
     if (validated.sourceType === 'transcript' && !useSemanticServicePath) {
       return queueTranscriptJob(productId, file, {
@@ -1161,7 +1160,7 @@ export function createMutationService({
             indexingResult,
             updatedDomains,
             latestAttemptAt,
-          } = await runEmailSemanticIngest({
+          } = await runSemanticIngest({
             artifactStore,
             normalizedArtifactKey,
             file,
@@ -1526,6 +1525,31 @@ export function createMutationService({
             data.sourceContents[sourceId] = normalized.normalizedText;
             product.evidenceVersion = nextEvidenceVersion;
             data.evidenceVersion = nextEvidenceVersion;
+
+            // Phase 3: for structured imports, preserve the legacy-path side-effect
+            // that populates data.data[dataset] rows from the CSV content. Use the
+            // shared buildStructuredRows mapper so column names (e.g. blocker_id → id)
+            // match what the UI and Data-tab tests expect.
+            const structuredDefinition = getSourceTypeDefinition(sourceType);
+            if (isStructuredImportType(sourceType) && structuredDefinition?.dataset) {
+              const structuredRows = buildStructuredRows({
+                sourceType,
+                rawText: normalized.normalizedText,
+                documentDate: sourceDate,
+              });
+              if (structuredRows && structuredRows.length) {
+                data.data = { ...(data.data || {}), [structuredDefinition.dataset]: structuredRows };
+                data.lastStructuredImport = {
+                  sourceId,
+                  title,
+                  dataset: structuredDefinition.dataset,
+                  sourceType,
+                  updatedAt: new Date().toISOString(),
+                };
+              }
+            }
+
+            const isStructured = isStructuredImportType(sourceType);
             data.latestEvidenceUpdate = {
               sourceId,
               title,
@@ -1533,8 +1557,8 @@ export function createMutationService({
               message: executionDecision.executionMode === 'live'
                 ? 'Live AI extraction completed. New evidence is now available across Sources, Ask, and reports.'
                 : 'AI extraction completed in replay mode. New evidence is now available across Sources, Ask, and reports.',
-              updatedDomains,
-              impactType: 'evidence_only',
+              updatedDomains: isStructured ? [...new Set([...(updatedDomains || []), 'data'])] : updatedDomains,
+              impactType: isStructured ? 'structured' : 'evidence_only',
             };
             product.recentSignals.unshift({
               id: `sig-${Date.now()}`,

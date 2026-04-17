@@ -43,7 +43,7 @@ export function getRuntimeConfig() {
   const embedDims = envInt('EMBEDDING_DIMS', 512);
   const executionModeDefault = isTest ? 'replay' : 'live';
   const semanticDefaultExecutionMode = envString('EIDS_SEMANTIC_EXECUTION_MODE_DEFAULT', executionModeDefault).trim() || executionModeDefault;
-  const semanticLiveSourceFamilies = envString('EIDS_SEMANTIC_LIVE_SOURCE_FAMILIES', 'email')
+  const semanticLiveSourceFamilies = envString('EIDS_SEMANTIC_LIVE_SOURCE_FAMILIES', 'email,transcript,document,spreadsheet,slide_deck')
     .split(',')
     .map((item) => item.trim())
     .filter(Boolean);
@@ -96,7 +96,7 @@ export function getRuntimeConfig() {
       enableNovaDentalAggregation: envBool('ENABLE_NOVA_DENTAL_AGGREGATION', true),
       enableNovaDentalLiveEmail: envBool('ENABLE_NOVA_DENTAL_LIVE_EMAIL', false),
       enableDentalTrustSurfaces: envBool('ENABLE_DENTAL_TRUST_SURFACES', false),
-      enableDentalSemanticServiceSplit: envBool('ENABLE_DENTAL_SEMANTIC_SERVICE_SPLIT', false),
+      enableSemanticServicePath: envBool('ENABLE_SEMANTIC_SERVICE_PATH', false),
       enableExtractionReplayMode: envBool('ENABLE_EXTRACTION_REPLAY_MODE', isTest),
       enableDentalRetrievalIndexing: envBool('ENABLE_DENTAL_RETRIEVAL_INDEXING', isTest || appEnv !== 'production'),
     },

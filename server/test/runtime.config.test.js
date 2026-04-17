@@ -20,7 +20,7 @@ describe('runtime config', () => {
 
     expect(config.features.enableNovaDentalLiveEmail).toEqual(expect.any(Boolean));
     expect(config.features.enableDentalTrustSurfaces).toEqual(expect.any(Boolean));
-    expect(config.features.enableDentalSemanticServiceSplit).toEqual(expect.any(Boolean));
+    expect(config.features.enableSemanticServicePath).toEqual(expect.any(Boolean));
   });
 
   it('enforces single-region GovCloud operation', () => {

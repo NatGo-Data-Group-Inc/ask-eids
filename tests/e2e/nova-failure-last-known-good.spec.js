@@ -11,7 +11,7 @@ test('Failed extraction preserves prior Dental state', async ({ page, request })
     featureFlags: {
       enableNovaDentalLiveEmail: false,
       enableDentalTrustSurfaces: true,
-      enableDentalSemanticServiceSplit: false,
+      enableSemanticServicePath: false,
       enableExtractionReplayMode: true,
       enableDentalRetrievalIndexing: true,
     },

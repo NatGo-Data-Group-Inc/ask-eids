@@ -11,7 +11,7 @@ const runtimeConfig = getRuntimeConfig();
 const DEFAULT_FEATURE_FLAGS = {
   enableNovaDentalLiveEmail: false,
   enableDentalTrustSurfaces: true,
-  enableDentalSemanticServiceSplit: true,
+  enableSemanticServicePath: true,
   enableExtractionReplayMode: true,
   enableDentalRetrievalIndexing: true,
 };

@@ -82,7 +82,7 @@ describe('read contracts', () => {
       executionMode: 'replay',
       effectiveFeatureFlags: expect.objectContaining({
         enableDentalTrustSurfaces: expect.any(Boolean),
-        enableDentalSemanticServiceSplit: expect.any(Boolean),
+        enableSemanticServicePath: expect.any(Boolean),
         enableExtractionReplayMode: expect.any(Boolean),
         enableDentalRetrievalIndexing: expect.any(Boolean),
       }),

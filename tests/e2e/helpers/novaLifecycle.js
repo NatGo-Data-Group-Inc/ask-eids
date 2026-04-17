@@ -110,7 +110,7 @@ export async function resetLifecycleState(request, {
   const effectiveFeatureFlags = featureFlags || {
     enableNovaDentalLiveEmail: featureMode === 'live-email-trust-hardening',
     enableDentalTrustSurfaces: featureMode !== 'legacy',
-    enableDentalSemanticServiceSplit: ['service-split', 'live-email-trust-hardening'].includes(featureMode),
+    enableSemanticServicePath: ['service-split', 'live-email-trust-hardening'].includes(featureMode),
     enableExtractionReplayMode: executionMode !== 'live',
     enableDentalRetrievalIndexing: true,
   };

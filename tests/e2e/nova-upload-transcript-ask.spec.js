@@ -11,7 +11,7 @@ test('Dental Ask cites extracted transcript evidence after upload', async ({ pag
     featureFlags: {
       enableNovaDentalLiveEmail: false,
       enableDentalTrustSurfaces: true,
-      enableDentalSemanticServiceSplit: false,
+      enableSemanticServicePath: false,
       enableExtractionReplayMode: true,
       enableDentalRetrievalIndexing: true,
     },
