@@ -2,6 +2,8 @@
 __pycache__/
 *.pyc
 .pytest_cache/
+.pytest_tmp*/
+pytest-cache-files-*/
 .codex
 tmp_git_meta/
 input/**

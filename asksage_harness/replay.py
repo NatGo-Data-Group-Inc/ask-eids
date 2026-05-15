@@ -1,4 +1,4 @@
-"""Prompt replay harness for Ask EIDS synthetic cost analysis.
+"""Prompt replay harness for Ask EIDS cost analysis.
 
 Local mode exists for repeatability and governance. It validates the replay
 pipeline, prompt inventory, dataset summary construction, and snapshot
@@ -18,6 +18,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from asksage_harness.cur2_loader import load_cur2_parquet
+
 
 @dataclass(frozen=True)
 class PromptBaseline:
@@ -34,6 +36,16 @@ REPLAY_REQUIREMENTS = [
     "Respond in markdown.",
     "Do not invent benchmarks, ROI factors, scenario counts, or cost values that are not present in the supplied summary.",
     "If the instruction asks for estimates not fully supported by the summary, provide a qualitative assessment and explicitly name the missing inputs.",
+    "Prefer plain markdown with ASCII punctuation; avoid Mermaid, LaTeX, and decorative Unicode characters.",
+    "Preserve the Ask EIDS reasoning role and avoid orchestration implementation detail unless asked.",
+]
+
+CUR2_REPLAY_REQUIREMENTS = [
+    "Use only the supplied CUR 2.0 cost context.",
+    "State assumptions when the summary is insufficient.",
+    "Respond in markdown.",
+    "Do not invent benchmarks, ROI factors, scenario counts, or cost values that are not present in the supplied summary.",
+    "Treat high-spend rows as review candidates, not confirmed waste, unless the supplied context supports that conclusion.",
     "Prefer plain markdown with ASCII punctuation; avoid Mermaid, LaTeX, and decorative Unicode characters.",
     "Preserve the Ask EIDS reasoning role and avoid orchestration implementation detail unless asked.",
 ]
@@ -86,14 +98,125 @@ def load_prompt_baselines(path: str | Path) -> list[PromptBaseline]:
     return prompts
 
 
-def load_dataset(path: str | Path) -> list[dict[str, Any]]:
-    """Load the synthetic dataset from JSON output."""
+def resolve_dataset_type(path: str | Path, dataset_type: str = "auto") -> str:
+    """Resolve dataset type from an explicit value or file extension."""
+    if dataset_type != "auto":
+        return dataset_type
+    path = Path(path)
+    if path.is_dir() and any(path.rglob("*.parquet")):
+        return "cur2_parquet"
+    suffix = path.suffix.lower()
+    if suffix == ".parquet":
+        return "cur2_parquet"
+    return "synthetic_cur"
+
+
+def load_dataset(path: str | Path, dataset_type: str = "auto") -> list[dict[str, Any]]:
+    """Load a supported cost dataset into a normalized row list."""
+    resolved_dataset_type = resolve_dataset_type(path, dataset_type)
+    if resolved_dataset_type == "cur2_parquet":
+        return load_cur2_parquet(path)
+    if resolved_dataset_type != "synthetic_cur":
+        raise ValueError(f"Unsupported dataset type: {resolved_dataset_type}")
+
     data = json.loads(Path(path).read_text(encoding="utf-8"))
     return [dict(row) for row in data]
 
 
+def _sum_costs(rows: list[dict[str, Any]], key: str, limit: int = 5) -> list[dict[str, Any]]:
+    totals: dict[str, float] = {}
+    for row in rows:
+        label = str(row.get(key) or "unknown")
+        totals[label] = round(totals.get(label, 0.0) + float(row.get("cost") or 0.0), 2)
+    return [
+        {key: label, "cost": cost}
+        for label, cost in sorted(totals.items(), key=lambda item: item[1], reverse=True)[:limit]
+    ]
+
+
+def build_cur2_dataset_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Produce a compact summary for real CUR 2.0 parquet inputs."""
+    scenario_counts = Counter(row.get("scenario", "cur2_cost_line_item") for row in rows)
+    positive_cost_rows = sorted(
+        [row for row in rows if float(row.get("cost") or 0.0) > 0.0],
+        key=lambda item: float(item.get("cost") or 0.0),
+        reverse=True,
+    )
+    anomaly_examples = [
+        {
+            "service": row["service"],
+            "region": row["region"],
+            "scenario": "cur2_high_spend_candidate",
+            "technical_debt_event": "not_classified",
+            "usage_type": row.get("usage_type", "unknown"),
+            "usage_hours": row.get("usage_hours", 0.0),
+            "usage_account_id": row.get("usage_account_id", "unknown"),
+            "resource_id": row.get("resource_id", "not_available"),
+            "line_item_type": row.get("line_item_type", "unknown"),
+            "cost": row["cost"],
+            "waste_driver": "high spend candidate from CUR 2.0 line item",
+            "recommended_action": "Review service, account, usage type, and resource context in CUR 2.0",
+            "pmo_summary_line": row["pmo_summary_line"],
+        }
+        for row in positive_cost_rows[:5]
+    ]
+
+    usage_start_dates = [
+        str(row["line_item_usage_start_date"])
+        for row in rows
+        if row.get("line_item_usage_start_date")
+    ]
+    usage_end_dates = [
+        str(row["line_item_usage_end_date"])
+        for row in rows
+        if row.get("line_item_usage_end_date")
+    ]
+
+    return {
+        "dataset_type": "cur2_parquet",
+        "row_count": len(rows),
+        "total_cost": round(sum(float(row.get("cost") or 0.0) for row in rows), 2),
+        "usage_period": {
+            "start": min(usage_start_dates) if usage_start_dates else None,
+            "end": max(usage_end_dates) if usage_end_dates else None,
+        },
+        "scenario_counts": dict(sorted(scenario_counts.items())),
+        "anomaly_count": len(anomaly_examples),
+        "anomaly_definition": "Top positive-cost CUR 2.0 line items selected as review candidates.",
+        "top_services_by_cost": [
+            {"service": item["service"], "cost": item["cost"]}
+            for item in _sum_costs(rows, "service")
+        ],
+        "top_accounts_by_cost": [
+            {"usage_account_id": item["usage_account_id"], "cost": item["cost"]}
+            for item in _sum_costs(rows, "usage_account_id")
+        ],
+        "top_regions_by_cost": [
+            {"region": item["region"], "cost": item["cost"]}
+            for item in _sum_costs(rows, "region")
+        ],
+        "top_usage_types_by_cost": [
+            {"usage_type": item["usage_type"], "cost": item["cost"]}
+            for item in _sum_costs(rows, "usage_type")
+        ],
+        "top_resources_by_cost": [
+            {"resource_id": item["resource_id"], "cost": item["cost"]}
+            for item in _sum_costs(
+                [row for row in rows if row.get("resource_id") != "not_available"],
+                "resource_id",
+            )
+        ],
+        "anomaly_examples": anomaly_examples,
+    }
+
+
 def build_dataset_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
     """Produce a compact summary suitable for prompt replay."""
+    if rows and rows[0].get("data_source") == "cur2_parquet_summary":
+        return dict(rows[0]["summary"])
+    if rows and rows[0].get("data_source") == "cur2_parquet":
+        return build_cur2_dataset_summary(rows)
+
     scenario_counts = Counter(row["scenario"] for row in rows)
     service_costs: dict[str, float] = {}
     anomaly_rows = [row for row in rows if row["anomaly_score"] in {"high", "medium"}]
@@ -127,6 +250,7 @@ def build_dataset_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
     ]
 
     return {
+        "dataset_type": "synthetic_cur",
         "row_count": len(rows),
         "scenario_counts": dict(sorted(scenario_counts.items())),
         "anomaly_count": len(anomaly_rows),
@@ -141,12 +265,16 @@ def build_prompt_packet_data(
     dataset_path: str | Path,
 ) -> dict[str, Any]:
     """Build the structured replay payload prior to rendering."""
+    dataset_type = summary.get("dataset_type", "synthetic_cur")
+    requirements = CUR2_REPLAY_REQUIREMENTS if dataset_type == "cur2_parquet" else REPLAY_REQUIREMENTS
+    summary_key = "cur2_dataset_summary" if dataset_type == "cur2_parquet" else "synthetic_dataset_summary"
     return {
         "task": baseline.title,
         "instruction": baseline.instruction,
         "dataset_path": str(dataset_path),
-        "synthetic_dataset_summary": summary,
-        "requirements": REPLAY_REQUIREMENTS,
+        "dataset_type": dataset_type,
+        summary_key: summary,
+        "requirements": requirements,
     }
 
 
@@ -158,6 +286,11 @@ def build_prompt_packet(
 ) -> str:
     """Build the replay payload that gets sent to a model."""
     packet = build_prompt_packet_data(baseline, summary, dataset_path)
+    summary_key = (
+        "cur2_dataset_summary"
+        if packet.get("dataset_type") == "cur2_parquet"
+        else "synthetic_dataset_summary"
+    )
     if packet_format == "json":
         return json.dumps(packet, indent=2)
     if packet_format != "markdown":
@@ -165,19 +298,25 @@ def build_prompt_packet(
 
     scenario_lines = [
         f"- {scenario}: {count}"
-        for scenario, count in packet["synthetic_dataset_summary"]["scenario_counts"].items()
+        for scenario, count in packet[summary_key]["scenario_counts"].items()
     ]
     top_service_lines = [
         f"- {item['service']}: ${float(item['cost']):,.2f}"
-        for item in packet["synthetic_dataset_summary"]["top_services_by_cost"]
+        for item in packet[summary_key]["top_services_by_cost"]
     ]
     anomaly_lines = [
         (
             f"- {item['service']} | {item['region']} | {item['scenario']} | "
             f"{item['waste_driver']} | recommended: {item['recommended_action']}"
         )
-        for item in packet["synthetic_dataset_summary"]["anomaly_examples"]
+        for item in packet[summary_key]["anomaly_examples"]
     ]
+    dataset_label = "CUR 2.0 Dataset" if packet.get("dataset_type") == "cur2_parquet" else "Dataset"
+    summary_heading = (
+        "CUR 2.0 Dataset Summary JSON"
+        if packet.get("dataset_type") == "cur2_parquet"
+        else "Synthetic Dataset Summary JSON"
+    )
 
     markdown_lines = [
         f"# Task: {packet['task']}",
@@ -185,10 +324,11 @@ def build_prompt_packet(
         "## Instruction",
         packet["instruction"],
         "",
-        "## Dataset",
+        f"## {dataset_label}",
         f"- dataset_path: {packet['dataset_path']}",
-        f"- row_count: {packet['synthetic_dataset_summary']['row_count']}",
-        f"- anomaly_count: {packet['synthetic_dataset_summary']['anomaly_count']}",
+        f"- dataset_type: {packet['dataset_type']}",
+        f"- row_count: {packet[summary_key]['row_count']}",
+        f"- anomaly_count: {packet[summary_key]['anomaly_count']}",
         "",
         "## Scenario Counts",
         *scenario_lines,
@@ -202,9 +342,9 @@ def build_prompt_packet(
         "## Requirements",
         *(f"- {item}" for item in packet["requirements"]),
         "",
-        "## Synthetic Dataset Summary JSON",
+        f"## {summary_heading}",
         "```json",
-        json.dumps(packet["synthetic_dataset_summary"], indent=2),
+        json.dumps(packet[summary_key], indent=2),
         "```",
     ]
     return "\n".join(markdown_lines)
@@ -244,8 +384,9 @@ def parse_replay_payload(message: str) -> dict[str, Any]:
         flags=re.MULTILINE | re.DOTALL,
     )
     dataset_match = re.search(r"^- dataset_path:\s*(.+)$", message, flags=re.MULTILINE)
+    dataset_type_match = re.search(r"^- dataset_type:\s*(.+)$", message, flags=re.MULTILINE)
     summary_match = re.search(
-        r"^## Synthetic Dataset Summary JSON\s*\n```json\s*\n(?P<body>.*?)\n```",
+        r"^## (?:Synthetic Dataset Summary JSON|CUR 2\.0 Dataset Summary JSON)\s*\n```json\s*\n(?P<body>.*?)\n```",
         message,
         flags=re.MULTILINE | re.DOTALL,
     )
@@ -262,11 +403,20 @@ def parse_replay_payload(message: str) -> dict[str, Any]:
             if line.strip().startswith("- ")
         ]
 
+    summary = json.loads(summary_match.group("body"))
+    dataset_type = (
+        dataset_type_match.group(1).strip()
+        if dataset_type_match
+        else summary.get("dataset_type", "synthetic_cur")
+    )
+
     return {
         "task": title_match.group(1).strip(),
         "instruction": instruction_match.group("body").strip() if instruction_match else "",
         "dataset_path": dataset_match.group(1).strip() if dataset_match else "",
-        "synthetic_dataset_summary": json.loads(summary_match.group("body")),
+        "dataset_type": dataset_type,
+        "synthetic_dataset_summary": summary,
+        "cur2_dataset_summary": summary if dataset_type == "cur2_parquet" else None,
         "requirements": requirement_lines,
     }
 
@@ -277,7 +427,7 @@ class LocalReplayClient:
     def query(self, message: str, model: str) -> dict[str, str]:
         payload = parse_replay_payload(message)
         task = payload["task"]
-        summary = payload["synthetic_dataset_summary"]
+        summary = payload.get("synthetic_dataset_summary") or payload.get("cur2_dataset_summary")
         top_service = summary["top_services_by_cost"][0]
         anomaly_lines = [
             (
@@ -560,6 +710,7 @@ def run_replay(
     prompts_path: str | Path,
     dataset_path: str | Path,
     output_dir: str | Path,
+    dataset_type: str = "auto",
     mode: str = "local",
     model: str = "gpt-4o",
     packet_format: str = "auto",
@@ -570,7 +721,8 @@ def run_replay(
 ) -> dict[str, Any]:
     """Replay all baseline prompts against a dataset summary and write snapshots."""
     prompts = load_prompt_baselines(prompts_path)
-    rows = load_dataset(dataset_path)
+    resolved_dataset_type = resolve_dataset_type(dataset_path, dataset_type)
+    rows = load_dataset(dataset_path, dataset_type=resolved_dataset_type)
     summary = build_dataset_summary(rows)
     client = create_client(mode=mode, email=email, api_key=api_key)
     resolved_packet_format = resolve_packet_format(mode=mode, packet_format=packet_format)
@@ -642,6 +794,7 @@ def run_replay(
         ),
         "model": model,
         "packet_format": resolved_packet_format,
+        "dataset_type": resolved_dataset_type,
         "dataset_path": str(dataset_path),
         "prompt_count": len(prompts),
         "summary": summary,
@@ -673,14 +826,20 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--prompts",
         type=Path,
-        default=Path("prompts/PROMPT_BASELINES.md"),
+        default=Path("prompts/cost_cur/analyst_prompts.md"),
         help="Markdown file containing level-2 prompt baselines.",
     )
     parser.add_argument(
         "--dataset",
         type=Path,
         default=Path("output/phase1/synthetic_cur.json"),
-        help="Synthetic dataset JSON path.",
+        help="Dataset path. Supports synthetic JSON and CUR 2.0 parquet.",
+    )
+    parser.add_argument(
+        "--dataset-type",
+        choices=("auto", "synthetic_cur", "cur2_parquet"),
+        default="auto",
+        help="Dataset type. auto treats .parquet as CUR 2.0 and other inputs as synthetic JSON.",
     )
     parser.add_argument(
         "--output-dir",
@@ -751,6 +910,7 @@ def main() -> None:
         prompts_path=args.prompts,
         dataset_path=args.dataset,
         output_dir=args.output_dir,
+        dataset_type=args.dataset_type,
         mode=args.mode,
         model=args.model,
         packet_format=args.packet_format,

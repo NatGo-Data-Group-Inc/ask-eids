@@ -173,7 +173,11 @@ The current concrete capability handlers are:
 Replay the baseline prompt pack in deterministic local mode:
 
 ```bash
-.venv/bin/python -m asksage_harness.replay --mode local
+.venv/bin/python -m asksage_harness.replay \
+  --mode local \
+  --prompts prompts/cost_cur/analyst_prompts.md \
+  --dataset output/phase1/synthetic_cur.json \
+  --output-dir output/asksage_harness_local
 ```
 
 Use local mode when you want a governance baseline:
@@ -185,12 +189,31 @@ Use local mode when you want a governance baseline:
 
 Local mode validates harness repeatability. It does not validate real AskSage reasoning quality.
 
+Analyze a CUR 2.0 parquet export by pointing the same harness at the parquet file:
+
+```bash
+.venv/bin/python -m asksage_harness.replay \
+  --mode local \
+  --prompts prompts/cost_cur/analyst_prompts.md \
+  --dataset input/cur/my-cur2.parquet \
+  --dataset-type cur2_parquet \
+  --output-dir output/cur2_analysis
+```
+
+CUR 2.0 parquet input is summarized before prompting. The harness uses real CUR dimensions such as service, account, region, usage type, resource ID when present, and unblended cost. High-spend rows are treated as review candidates, not confirmed waste.
+
 When enclave credentials and `asksageclient` are available, run against AskSage:
 
 ```bash
 ASKSAGE_EMAIL=you@example.mil \
 ASKSAGE_API_KEY=... \
-.venv/bin/python -m asksage_harness.replay --mode asksage --model gpt-4o
+.venv/bin/python -m asksage_harness.replay \
+  --mode asksage \
+  --model gpt-4o \
+  --prompts prompts/cost_cur/analyst_prompts.md \
+  --dataset input/cur/my-cur2.parquet \
+  --dataset-type cur2_parquet \
+  --output-dir output/cur2_asksage
 ```
 
 Use `--mode asksage` when you want the operational reasoning baseline: actual model outputs, prompt quality evaluation, and enclave connectivity validation.
